@@ -4,8 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="chore: first web commit">
-      <change afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
+    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="chore: first server commit">
+      <change afterPath="$PROJECT_DIR$/web/src/app.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/web/src/routes/+layout.svelte" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/routes/+page.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/+page.svelte" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,6 +32,9 @@
   <component name="MacroExpansionManager">
     <option name="directoryName" value="8tvfuubc" />
   </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 0
 }]]></component>
@@ -39,17 +46,21 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.server.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "master",
     "kotlin-language-version-configured": "true",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "npm.dev.executor": "Run",
+    "ts.external.directory.path": "/home/stefa/IdeaProjects/ottimizzatore_lauree/web/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Python.server">
+  <component name="RunManager" selected="npm.dev">
     <configuration name="dev" type="js.build_tools.npm" nameIsGenerated="true">
       <package-json value="$PROJECT_DIR$/web/package.json" />
       <command value="run" />
@@ -78,7 +89,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1707751008693</updated>
-      <workItem from="1707751009733" duration="326000" />
+      <workItem from="1707751009733" duration="2601000" />
     </task>
     <task id="LOCAL-00001" summary="chore: first web commit">
       <option name="closed" value="true" />
@@ -88,7 +99,23 @@
       <option name="project" value="LOCAL" />
       <updated>1707751316037</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="chore: first web commit">
+      <option name="closed" value="true" />
+      <created>1707751402311</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1707751402311</updated>
+    </task>
+    <task id="LOCAL-00003" summary="chore: first server commit">
+      <option name="closed" value="true" />
+      <created>1707751408350</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1707751408350</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -96,6 +123,10 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="chore: first web commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="chore: first web commit" />
+    <MESSAGE value="chore: first server commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="chore: first server commit" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/ottimizzatore_lauree$server.coverage" NAME="server Coverage Results" MODIFIED="1707751349837" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/server" />
   </component>
 </project>
