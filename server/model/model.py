@@ -40,21 +40,44 @@ class Degree(enum.Enum):
 @mapper_registry.mapped
 @dataclass
 class Student:
-    __tablename__ = 'students'
+    _tablename = 'students'
+    # _id_seq = sqla.Sequence(_tablename + "_id_seq")
 
-    id: int = Column(sqla.Integer, primary_key=True)
-    matriculation_number: int = Column(sqla.Integer)
-    name: str = Column(sqla.String(128))
-    surname: str = Column(sqla.String(128))
-    phone_number: str = Column(sqla.String(32))
-    personal_email: str = Column(sqla.String(256))
-    university_email: str = Column(sqla.String(256))
+    __table__ = sqla.Table(
+        _tablename,
+        mapper_registry.metadata,
+        Column("id", sqla.Integer, primary_key=True, autoincrement=True, nullable=False),
+        Column("matriculation_number", sqla.Integer, nullable=False),
+        Column("name", sqla.String(128), nullable=False),
+        Column("surname", sqla.String(128), nullable=False),
+        Column("phone_number", sqla.String(32), nullable=False),
+        Column("personal_email", sqla.String(256), nullable=False),
+        Column("university_email", sqla.String(256), nullable=False)
+    )
+
+    id: int
+    matriculation_number: int
+    name: str
+    surname: str
+    phone_number: str
+    personal_email: str
+    university_email: str
+
+    def __init__(self, matriculation_number: int, name: str, surname: str, phone_number: str, personal_email: str,
+                 university_email: str):
+        self.matriculation_number = matriculation_number
+        self.name = name
+        self.surname = surname
+        self.phone_number = phone_number
+        self.personal_email = personal_email
+        self.university_email = university_email
 
 
 class UniversityRole(enum.Enum):
     ORDINARY = "ordinary"
     ASSOCIATE = "associate"
     RESEARCHER = "researcher"
+    UNSPECIFIED = "unspecified"
 
 
 @mapper_registry.mapped
@@ -62,10 +85,15 @@ class UniversityRole(enum.Enum):
 class Professor:
     __tablename__ = 'professors'
 
-    id: int = Column(sqla.Integer, primary_key=True)
-    name: str = Column(sqla.String(128))
-    surname: str = Column(sqla.String(128))
-    role: Mapped[UniversityRole] = Column(sqla.Enum(UniversityRole))
+    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
+    name: str = Column(sqla.String(128), nullable=False)
+    surname: str = Column(sqla.String(128), nullable=False)
+    role: UniversityRole = Column(sqla.Enum(UniversityRole), nullable=False, default=UniversityRole.UNSPECIFIED)
+
+    def __init__(self, name: str, surname: str, role: UniversityRole = UniversityRole.UNSPECIFIED):
+        self.name = name
+        self.surname = surname
+        self.role = role
 
 
 @mapper_registry.mapped
@@ -73,8 +101,8 @@ class Professor:
 class Commission:
     __tablename__ = "commissions"
 
-    id: int = Column(sqla.Integer, primary_key=True)
-    title: str = Column(sqla.String(256))
+    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
+    title: str = Column(sqla.String(256), nullable=False)
     entries: List['CommissionEntry'] = relationship("CommissionEntry", back_populates="commission")
 
     def __init__(self, title: str):
@@ -87,28 +115,34 @@ class Commission:
 class CommissionEntry:
     __tablename__ = "commission_entries"
 
-    id: int = Column(sqla.Integer, primary_key=True)
+    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
 
-    commission_id = Column(sqla.Integer, ForeignKey('commissions.id'))
+    commission_id = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission", back_populates="entries")
 
-    candidate_id: int = Column(sqla.Integer, ForeignKey('students.id'))
-    candidate: Student = relationship(back_populates="entries")
+    candidate_id: int = Column(sqla.Integer, ForeignKey('students.id'), nullable=False)
+    candidate: Student = relationship('Student', foreign_keys=[candidate_id])
 
-    degree_level: Degree = Column(sqla.Enum(Degree))
+    degree_level: Degree = Column(sqla.Enum(Degree), nullable=False)
 
     # Professor-Entry Relationships
-    supervisor_id: int = Column(sqla.Integer, ForeignKey('professors.id'))
-    supervisor: Professor = relationship('Professor', foreign_keys='supervisor_id')
+    supervisor_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=False)
+    supervisor: Professor = relationship('Professor', foreign_keys=[supervisor_id])
     # Co-relatore
-    supervisor_assistant_id: int = Column(sqla.Integer, ForeignKey('professors.id'))
-    supervisor_assistant: Professor = relationship('Professor', foreign_keys='supervisor_assistant_id')
+    supervisor_assistant_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=True)
+    supervisor_assistant: Professor = relationship('Professor', foreign_keys=[supervisor_assistant_id])
 
-    counter_supervisor_id: int = Column(sqla.Integer, ForeignKey('professors.id'))
-    counter_supervisor: Professor = relationship('Professor', foreign_keys='counter_supervisor_id')
+    counter_supervisor_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=True)
+    counter_supervisor: Professor = relationship('Professor', foreign_keys=[counter_supervisor_id])
 
-    def __init__(self, candidate: Student, degree_level: Degree, supervisor: Professor, supervisor_assistant: Professor,
-                 counter_supervisor: Professor):
+    def __init__(self,
+                 candidate: Student,
+                 degree_level: Degree,
+                 supervisor: Professor,
+                 supervisor_assistant: Professor = None,
+                 counter_supervisor: Professor = None):
         self.candidate = candidate
         self.degree_level = degree_level
         self.supervisor = supervisor
+        self.supervisor_assistant = supervisor_assistant
+        self.counter_supervisor = counter_supervisor
