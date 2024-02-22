@@ -4,11 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="db: first definition of the model">
+    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="feat: completed basic commission upload">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/model/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/app.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/app.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/app.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/routes/+page.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/+page.svelte" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/web/vite.config.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,7 +93,7 @@
       <recent name="$PROJECT_DIR$/server" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.server">
+  <component name="RunManager" selected="npm.dev">
     <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
       <deployment type="docker-compose.yml">
         <settings />
@@ -150,7 +153,7 @@
       <workItem from="1708171967703" duration="4825000" />
       <workItem from="1708295321176" duration="2560000" />
       <workItem from="1708519200253" duration="600000" />
-      <workItem from="1708615098150" duration="9967000" />
+      <workItem from="1708615098150" duration="20752000" />
     </task>
     <task id="LOCAL-00001" summary="chore: first web commit">
       <option name="closed" value="true" />
@@ -192,7 +195,15 @@
       <option name="project" value="LOCAL" />
       <updated>1708620926213</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="feat: completed basic commission upload">
+      <option name="closed" value="true" />
+      <created>1708626226460</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1708626226460</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -203,7 +214,8 @@
     <MESSAGE value="chore: first server commit" />
     <MESSAGE value="style(web): added tailwind" />
     <MESSAGE value="db: first definition of the model" />
-    <option name="LAST_COMMIT_MESSAGE" value="db: first definition of the model" />
+    <MESSAGE value="feat: completed basic commission upload" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: completed basic commission upload" />
   </component>
   <component name="WfRunsListSearchHistory"><![CDATA[{
   "history": [
