@@ -72,6 +72,17 @@ class Student:
         self.personal_email = personal_email
         self.university_email = university_email
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'matriculation_number': self.matriculation_number,
+            'name': self.name,
+            'surname': self.surname,
+            'phone_number': self.phone_number,
+            'personal_email': self.personal_email,
+            'university_email': self.university_email
+        }
+
 
 class UniversityRole(enum.Enum):
     ORDINARY = "ordinary"
@@ -95,6 +106,14 @@ class Professor:
         self.surname = surname
         self.role = role
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'surname': self.surname,
+            'role': self.role.value
+        }
+
 
 @mapper_registry.mapped
 @dataclass
@@ -108,6 +127,13 @@ class Commission:
     def __init__(self, title: str):
         self.title = title
         self.entries = []
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'entries': [entry.serialize() for entry in self.entries]
+        }
 
 
 @mapper_registry.mapped
@@ -146,3 +172,14 @@ class CommissionEntry:
         self.supervisor = supervisor
         self.supervisor_assistant = supervisor_assistant
         self.counter_supervisor = counter_supervisor
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'commission_id': self.commission_id,
+            'candidate': self.candidate.serialize(),
+            'degree_level': self.degree_level.value,
+            'supervisor': self.supervisor.serialize(),
+            'supervisor_assistant': self.supervisor_assistant.serialize() if self.supervisor_assistant else None,
+            'counter_supervisor': self.counter_supervisor.serialize() if self.counter_supervisor else None
+        }

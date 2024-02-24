@@ -129,6 +129,29 @@ def upload_file():
         return jsonify({'success': 'File processed successfully'}), 200
 
 
+@app.route('/commission', defaults={'cid': None}, methods=['GET'])
+@app.route('/commission/<id>', methods=['GET'])
+def get_commission(cid: int | None):
+    try:
+        if cid is None:
+            # No ID provided, return all commissions
+            with session_maker.begin() as session:
+                commissions = session.query(Commission.id, Commission.title).all()
+                return jsonify([{'id': cid, 'title': title} for cid, title in commissions]), 200
+        else:
+            # ID provided, return specific commission
+            with session_maker.begin() as session:
+                commission = session.query(Commission).filter_by(id=cid).first()
+                if commission is None:
+                    return jsonify({'error': 'Commission not found'}), 404
+                else:
+                    return jsonify(commission.serialize()), 200
+
+    except Exception as e:
+        print(e)
+        return jsonify({'error': 'Error retrieving the commission', 'details': str(e)}), 500
+
+
 # Needed to fix Preflight Checks for CORS.
 # https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
 @app.before_request

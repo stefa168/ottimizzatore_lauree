@@ -1,13 +1,14 @@
 <script lang="ts">
     // Icons
-    import MdiChartPie from '~icons/mdi/chart-pie'
     import MdiArchive from '~icons/mdi/archive'
+    import MdiCalendarPlusOutline from '~icons/mdi/calendar-plus-outline'
     import MdiRobotExcited from '~icons/mdi/robot-excited'
     import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
 
     // Components
     import DropdownButton from "$lib/DropdownButton.svelte";
+    import {onMount} from "svelte";
 
     // Behaviour
 
@@ -38,6 +39,29 @@
             console.error("Error:", error)
         }
     }
+
+    let problems_data: { 'loaded': boolean, 'problems': { 'id': number, 'title': string; } [] } = {
+        loaded: false,
+        problems: []
+    };
+
+    async function fetch_problems_list() {
+        try {
+            fetch('http://localhost:5000/commission')
+                .then(response => response.json())
+                .then((data) => {
+                    problems_data.problems = data;
+                    problems_data.loaded = true;
+                })
+            console.log(problems_data);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    onMount(async () => {
+        await fetch_problems_list();
+    });
 </script>
 
 <aside id="sidebar"
@@ -57,125 +81,19 @@
         <ul class="space-y-2 font-medium">
             <li>
                 <DropdownButton buttonText="Problemi Attivi" open={true}>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-blue-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Ottobre 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-red-400 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Dicembre 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#"
-                           class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
-                            <span class="bg-purple-600 rounded w-4 h-4"></span>
-                            <span class="ms-1.5">Lauree Aprile 2023</span>
-                        </a>
-                    </li>
+                    {#if !problems_data.loaded}
+                        <p>Loading</p>
+                    {:else}
+                        {#each problems_data.problems as problem (problem.id)}
+                            <li>
+                                <a href="#"
+                                   class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
+                                    <span class="bg-blue-600 rounded w-4 h-4"></span>
+                                    <span class="ms-1.5">{problem.title}</span>
+                                </a>
+                            </li>
+                        {/each}
+                    {/if}
                 </DropdownButton>
             </li>
             <li class="mt-4 pb-4 ">
