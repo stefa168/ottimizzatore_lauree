@@ -78,7 +78,6 @@
     </header>
     <nav id="sidebar-problems-navigator"
          class="flex-grow flex flex-col px-3 pt-4 overflow-y-scroll ">
-
         <ul class="space-y-2 font-medium">
             <li>
                 <DropdownButton buttonText="Problemi Attivi" open={true}>
@@ -88,7 +87,7 @@
                         {#each problems_data.problems as problem (problem.id)}
                             <li>
                                 <a href="#"
-                                   class="flex items-center p-2 text-gray-900 pl-6 group dark:text-white hover:underline">
+                                   class="flex items-center p-2 pl-6 text-gray-900 dark:text-white hover:underline">
                                     <span class="bg-blue-600 rounded w-4 h-4"></span>
                                     <span class="ms-1.5">{problem.title}</span>
                                 </a>
@@ -100,6 +99,14 @@
                             <span class="ms-2">Nessun problema disponibile</span>
                         </li>
                     {/if}
+                    <li class="mt-4 pb-4">
+                        <a href="/"
+                           class="flex items-center p-2 pl-6 text-gray-900 rounded-lg group dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                            <MdiCalendarPlusOutline
+                                    class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"/>
+                            <span class="ms-3 group-hover:text-gray-900 dark:group-hover:text-white">Nuovo Problema</span>
+                        </a>
+                    </li>
                 </DropdownButton>
             </li>
             <li class="mt-4 pb-4 ">
