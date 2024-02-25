@@ -2,6 +2,7 @@
     // Icons
     import MdiArchive from '~icons/mdi/archive'
     import MdiCalendarPlusOutline from '~icons/mdi/calendar-plus-outline'
+    import MdiAlertCircleOutline from '~icons/mdi/alert-circle-outline'
     import MdiRobotExcited from '~icons/mdi/robot-excited'
     import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
@@ -69,7 +70,7 @@
        aria-label="Sidebar">
     <!-- Titolo -->
     <header id="sidebar-logo"
-            class="px-3 py-4">
+            class="px-4 py-4">
         <a href="/" class="flex items-center ">
             <img src="/Logo_UniTO_2022_no_testo.svg" class="h-12" alt="Logo Unito"/>
             <span class="self-center text-center text-xl dark:text-white">Ottimizzatore Lauree</span>
@@ -82,8 +83,8 @@
             <li>
                 <DropdownButton buttonText="Problemi Attivi" open={true}>
                     {#if !problems_data.loaded}
-                        <p>Loading</p>
-                    {:else}
+                        <p class="dark:text-gray-600">Loading</p>
+                    {:else if problems_data.problems.length > 0}
                         {#each problems_data.problems as problem (problem.id)}
                             <li>
                                 <a href="#"
@@ -93,6 +94,11 @@
                                 </a>
                             </li>
                         {/each}
+                    {:else}
+                        <li class="flex items-center mx-2 p-2 text-center text-amber-600 group dark:text-amber-400">
+                            <MdiAlertCircleOutline class="w-10 h-10"/>
+                            <span class="ms-2">Nessun problema disponibile</span>
+                        </li>
                     {/if}
                 </DropdownButton>
             </li>
