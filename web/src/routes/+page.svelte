@@ -8,8 +8,9 @@
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
 
     // Components
-    import DropdownButton from "$lib/DropdownButton.svelte";
+    import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
     import {onMount} from "svelte";
+    import SidebarButton from "$lib/sidebar/SidebarButton.svelte";
 
     // Behaviour
 
@@ -60,6 +61,10 @@
         }
     }
 
+    function ciao() {
+        alert("Ciao");
+    }
+
     onMount(async () => {
         await fetch_problems_list();
     });
@@ -77,8 +82,15 @@
         </a>
     </header>
     <nav id="sidebar-problems-navigator"
-         class="flex-grow flex flex-col px-3 pt-4 overflow-y-scroll ">
+         class="flex-grow flex flex-col px-3 overflow-y-scroll ">
         <ul class="space-y-2 font-medium">
+            <li>
+                <SidebarButton
+                        Icon={MdiCalendarPlusOutline}
+                        on:click={ciao}>
+                    Nuovo Problema
+                </SidebarButton>
+            </li>
             <li>
                 <DropdownButton buttonText="Problemi Attivi" open={true}>
                     {#if !problems_data.loaded}
@@ -99,23 +111,10 @@
                             <span class="ms-2">Nessun problema disponibile</span>
                         </li>
                     {/if}
-                    <li class="mt-4 pb-4">
-                        <a href="/"
-                           class="flex items-center p-2 pl-6 text-gray-900 rounded-lg group dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <MdiCalendarPlusOutline
-                                    class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"/>
-                            <span class="ms-3 group-hover:text-gray-900 dark:group-hover:text-white">Nuovo Problema</span>
-                        </a>
-                    </li>
                 </DropdownButton>
             </li>
             <li class="mt-4 pb-4 ">
-                <a href="/"
-                   class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <MdiArchive
-                            class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
-                    <span class="ms-3">Problemi Archiviati</span>
-                </a>
+                <SidebarButton Icon={MdiArchive}>Problemi Archiviati</SidebarButton>
             </li>
         </ul>
     </nav>

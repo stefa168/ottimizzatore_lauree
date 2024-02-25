@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import MdiBookClock from '~icons/mdi/book-clock'
     import MdiChevronRight from '~icons/mdi/chevron-right'
 
