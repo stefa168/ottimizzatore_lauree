@@ -48,6 +48,8 @@ def upload_file():
         # The actual processing of the file, creating the objects and adding them to the database
         global session_maker
 
+        commission_name = file.filename.removesuffix(".xlsx")
+
         def get_or_create_professor(ext_session: Session, name: str, surname: str):
             """
             This function checks if a professor exists in the database by their name and surname.
@@ -81,7 +83,7 @@ def upload_file():
 
         # Automatically commit the transaction if no exception is raised
         with session_maker.begin() as session:
-            commission = Commission("Nuova commissione")
+            commission = Commission(title=commission_name)
             session.add(commission)
 
             for index, row in excel.iterrows():
@@ -126,7 +128,10 @@ def upload_file():
         print(e)
         return jsonify({'error': 'Error processing the file', 'details': str(e)}), 500
     else:
-        return jsonify({'success': 'File processed successfully'}), 200
+        return jsonify({
+            'success': 'File processed successfully',
+            'name': commission_name,
+        }), 200
 
 
 @app.route('/commission', defaults={'cid': None}, methods=['GET'])
