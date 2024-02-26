@@ -15,6 +15,7 @@
 		"@sveltejs/adapter-auto": "^3.0.0",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.0",
+		"@types/node": "^20.11.20",
 		"autoprefixer": "^10.4.17",
 		"postcss": "^8.4.35",
 		"svelte": "^4.2.7",
@@ -25,5 +26,13 @@
 		"unplugin-icons": "^0.18.5",
 		"vite": "^5.0.3"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"bits-ui": "^0.18.2",
+		"clsx": "^2.1.0",
+		"lucide-svelte": "^0.340.0",
+		"mode-watcher": "^0.2.1",
+		"tailwind-merge": "^2.2.1",
+		"tailwind-variants": "^0.2.0"
+	}
 }

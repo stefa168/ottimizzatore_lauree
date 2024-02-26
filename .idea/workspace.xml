@@ -4,11 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="feat: problems list loading">
-      <change afterPath="$PROJECT_DIR$/web/src/lib/sidebar/SidebarButton.svelte" afterDir="false" />
+    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="refactor: created sidebar button">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/src/lib/DropdownButton.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/lib/sidebar/DropdownButton.svelte" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/app.css" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/app.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/lib/sidebar/DropdownButton.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/lib/sidebar/DropdownButton.svelte" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/lib/sidebar/SidebarButton.svelte" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/routes/+layout.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/+layout.svelte" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/routes/+page.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/+page.svelte" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/tailwind.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/tailwind.config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -156,7 +161,8 @@
       <workItem from="1708519200253" duration="600000" />
       <workItem from="1708615098150" duration="23138000" />
       <workItem from="1708769773104" duration="14963000" />
-      <workItem from="1708855006562" duration="3431000" />
+      <workItem from="1708855006562" duration="5348000" />
+      <workItem from="1708894696884" duration="10453000" />
     </task>
     <task id="LOCAL-00001" summary="chore: first web commit">
       <option name="closed" value="true" />
@@ -230,7 +236,15 @@
       <option name="project" value="LOCAL" />
       <updated>1708800865025</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="refactor: created sidebar button">
+      <option name="closed" value="true" />
+      <created>1708859607450</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1708859607450</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -245,10 +259,13 @@
     <MESSAGE value="style: basic svelte style and icons" />
     <MESSAGE value="style: more styling of the OPA" />
     <MESSAGE value="feat: problems list loading" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: problems list loading" />
+    <MESSAGE value="refactor: created sidebar button" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor: created sidebar button" />
   </component>
   <component name="WfRunsListSearchHistory"><![CDATA[{
   "history": [
+    {
+    },
     {
     },
     {
@@ -271,6 +288,6 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/ottimizzatore_lauree$server.coverage" NAME="server Coverage Results" MODIFIED="1708855022265" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/server" />
+    <SUITE FILE_PATH="coverage/ottimizzatore_lauree$server.coverage" NAME="server Coverage Results" MODIFIED="1708894903972" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/server" />
   </component>
 </project>

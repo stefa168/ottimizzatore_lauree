@@ -10,7 +10,7 @@
     // Components
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
     import {onMount} from "svelte";
-    import SidebarButton from "$lib/sidebar/SidebarButton.svelte";
+    import {Button} from "$lib/components/ui/button";
 
     // Behaviour
 
@@ -71,38 +71,37 @@
 </script>
 
 <aside id="sidebar"
-       class="flex flex-col fixed top-0 left-0 z-40 w-64 h-full transition-transform -translate-x-full sm:translate-x-0 bg-gray-50 dark:bg-gray-800"
+       class="flex flex-col fixed top-0 left-0 z-40 w-64 h-full transition-transform -translate-x-full sm:translate-x-0 border-e"
        aria-label="Sidebar">
     <!-- Titolo -->
     <header id="sidebar-logo"
             class="px-4 py-4">
         <a href="/" class="flex items-center ">
             <img src="/Logo_UniTO_2022_no_testo.svg" class="h-12" alt="Logo Unito"/>
-            <span class="self-center text-center text-xl dark:text-white">Ottimizzatore Lauree</span>
+            <h3 class="self-center text-center scroll-m-20 text-2xl font-semibold tracking-tight">Ottimizzatore Lauree</h3>
         </a>
     </header>
     <nav id="sidebar-problems-navigator"
          class="flex-grow flex flex-col px-3 overflow-y-scroll ">
         <ul class="space-y-2 font-medium">
             <li>
-                <SidebarButton
-                        Icon={MdiCalendarPlusOutline}
-                        on:click={ciao}>
+                <Button variant="ghost" class="px-3 w-full justify-start" >
+                    <MdiCalendarPlusOutline class="me-2 h-4 w-4"/>
                     Nuovo Problema
-                </SidebarButton>
+                </Button>
             </li>
             <li>
                 <DropdownButton buttonText="Problemi Attivi" open={true}>
                     {#if !problems_data.loaded}
-                        <p class="dark:text-gray-600">Loading</p>
+                        <p>Loading</p>
                     {:else if problems_data.problems.length > 0}
                         {#each problems_data.problems as problem (problem.id)}
                             <li>
-                                <a href="#"
-                                   class="flex items-center p-2 pl-6 text-gray-900 dark:text-white hover:underline">
-                                    <span class="bg-blue-600 rounded w-4 h-4"></span>
-                                    <span class="ms-1.5">{problem.title}</span>
-                                </a>
+                                <Button class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
+                                        variant="link">
+                                    <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
+                                    <span class="flex-grow">{problem.title}</span>
+                                </Button>
                             </li>
                         {/each}
                     {:else}
@@ -114,13 +113,16 @@
                 </DropdownButton>
             </li>
             <li class="mt-4 pb-4 ">
-                <SidebarButton Icon={MdiArchive}>Problemi Archiviati</SidebarButton>
+                <Button variant="ghost" class="px-3 w-full justify-start">
+                    <MdiArchive class="me-2 h-4 w-4"/>
+                    Problemi Archiviati
+                </Button>
             </li>
         </ul>
     </nav>
     <footer id="sidebar-footer"
-            class="flex-shrink-0 p-4 w-full z-60 bottom-0 start-0 pt-4 border-t border-gray-700">
-        <ul class="ps-0.5 space-y-0.5 text-md text-gray-500 dark:text-gray-400">
+            class="flex-shrink-0 p-4 w-full z-60 bottom-0 start-0 pt-4 border-t">
+        <ul class="ps-0.5 space-y-0.5 text-md text-gray-400 dark:text-gray-500">
             <li>
                 <a href="#"
                    class="flex items-center transition dark:hover:text-white">
