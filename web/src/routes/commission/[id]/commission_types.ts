@@ -11,8 +11,8 @@ type CommissionEntry = {
     candidate: Student,
     degree_level: DegreeLevel,
     supervisor: Professor,
-    supervisor_assistant?: Professor,
-    counter_supervisor?: Professor
+    supervisor_assistant: Professor | null,
+    counter_supervisor: Professor | null
 }
 
 type Student = {

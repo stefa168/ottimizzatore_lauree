@@ -1,7 +1,12 @@
 <script lang="ts">
+    import DataTable from './commission-table.svelte'
     export let data;
+
+    $: commission = data.commissionData
 </script>
 
-<h1 class="text-2xl">{data.commissionId}</h1>
 
-{JSON.stringify(data.commissionData)}
+<div class="container mx-auto py-10">
+    <h1 class="text-2xl mb-4">{commission.title}</h1>
+    <DataTable {commission}/>
+</div>
