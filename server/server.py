@@ -48,7 +48,7 @@ def upload_file():
         # The actual processing of the file, creating the objects and adding them to the database
         global session_maker
 
-        commission_name = file.filename.removesuffix(".xlsx")
+        commission_name = request.form.get('title') or file.filename.removesuffix(".xlsx").removesuffix(".xls")
 
         def get_or_create_professor(ext_session: Session, name: str, surname: str):
             """

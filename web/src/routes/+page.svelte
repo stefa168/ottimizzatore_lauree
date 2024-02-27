@@ -124,7 +124,7 @@
          class="flex-grow flex flex-col px-3 overflow-y-scroll ">
         <ul class="space-y-2 font-medium">
             <li>
-                <NewCommissionDialog data={data.form}/>
+                <NewCommissionDialog/>
             </li>
             <li>
                 <DropdownButton buttonText="Problemi Attivi" loaded={problems_data.loaded} open={true}>
