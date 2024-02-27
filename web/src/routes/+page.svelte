@@ -129,7 +129,7 @@
             <li>
                 <DropdownButton buttonText="Problemi Attivi" loaded={problems_data.loaded} open={true}>
                     {#if problems_data.problems.length > 0}
-                        {#each problems_data.problems as problem (problem.id)}
+                        {#each problems_data.problems as problem, i (problem.id)}
                             <li>
                                 <Button class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
                                         variant="link">

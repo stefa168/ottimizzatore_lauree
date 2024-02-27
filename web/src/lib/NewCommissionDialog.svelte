@@ -12,12 +12,15 @@
     import {zod} from "sveltekit-superforms/adapters";
     import {Input} from "$lib/components/ui/input";
     import {commissionFormSchema} from "../routes/schema";
+    import {createEventDispatcher} from "svelte";
 
     interface UploadErrorResponse {
         error: string;
         details?: string;
         missing_columns?: string[];
     }
+
+    const dispatch = createEventDispatcher();
 
     const form = superForm(defaults(zod(commissionFormSchema)), {
         // With this setting we don't depend on a SvelteKit backend for posting or validating.
@@ -30,6 +33,8 @@
             submitting = true;
             if (form.valid) {
                 let data = new FormData();
+                // The not null check should never happen: we have a LOT of checks in place before arriving here.
+                // See: schema.ts
                 data.append('file', form.data.excel!);
                 data.append('title', form.data.title);
 
@@ -37,14 +42,16 @@
                 await fetch('http://localhost:5000/upload', {
                     method: 'POST',
                     body: data
-                }).then((response) => {
+                }).then(async (response) => {
                     if (response.ok) {
+                        // Return a promise that resolves with the parsed JSON body
+                        let json = await response.json();
+                        dispatch('commission-created', json);
                         changeDialogState(false);
                     } else {
                         // Return a promise that rejects with the parsed JSON body
-                        return response.json().then((json: UploadErrorResponse) => {
-                            return Promise.reject(json);
-                        });
+                        let json1 = await response.json();
+                        return Promise.reject(json1);
                     }
                 }).catch((error: UploadErrorResponse) => {
                     upload_error = error;
@@ -65,11 +72,11 @@
         if (!isOpen) {
             form.reset();
             upload_error = undefined;
+            submitting = false;
         }
     }
 
     let upload_error: UploadErrorResponse | undefined = undefined;
-    // set up a reactive variable that tells if we're submitting currently:
     let submitting = false;
 
 </script>
@@ -147,7 +154,8 @@
         </form>
         <Dialog.Footer>
             <Button type="submit"
-                    form="new-commission-form">Conferma
+                    form="new-commission-form">
+                Invia
             </Button>
         </Dialog.Footer>
     </Dialog.Content>
