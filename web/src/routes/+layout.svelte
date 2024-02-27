@@ -89,7 +89,7 @@
                                         class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
                                         variant="link">
                                     <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
-                                    <span class="flex-grow">{problem.title}</span>
+                                    <span class="flex-grow break-all hyphens-auto">{problem.title}</span>
                                 </Button>
                             </li>
                         {/each}
