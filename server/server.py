@@ -135,7 +135,7 @@ def upload_file():
 
 
 @app.route('/commission', defaults={'cid': None}, methods=['GET'])
-@app.route('/commission/<id>', methods=['GET'])
+@app.route('/commission/<cid>', methods=['GET'])
 def get_commission(cid: int | None):
     try:
         if cid is None:
