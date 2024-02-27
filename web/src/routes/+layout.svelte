@@ -13,6 +13,7 @@
     import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
     import MdiLoading from '~icons/mdi/loading'
+    import {navigating} from "$app/stores";
 
     // Components
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
@@ -90,7 +91,7 @@
         </a>
     </header>
     <nav id="sidebar-problems-navigator"
-         class="flex-grow flex flex-col px-3 overflow-y-scroll ">
+         class="flex-grow flex flex-col px-3 overflow-y-scroll {$navigating ? 'blur-sm pointer-events-none' : ''}">
         <ul class="space-y-2 font-medium">
             <li>
                 <NewCommissionDialog/>
@@ -153,5 +154,12 @@
 </aside>
 
 <main class="p-4 sm:ml-64">
-    <slot/>
+    {#if $navigating}
+        <div class="mt-32 flex flex-col items-center justify-center h-full">
+            <MdiLoading class="w-16 h-16 animate-spin"/>
+            <span class="mt-4 text-lg font-medium text-gray-600 dark:text-gray-400">Carico la commissione...</span>
+        </div>
+    {:else}
+        <slot/>
+    {/if}
 </main>
