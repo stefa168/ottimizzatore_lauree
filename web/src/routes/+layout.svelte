@@ -7,9 +7,6 @@
     import {onMount} from "svelte";
     import {navigating} from "$app/stores";
 
-    // https://kit.svelte.dev/docs/single-page-apps
-    export const ssr = false;
-
     // Icons
     import MdiArchive from '~icons/mdi/archive'
     import MdiAlertCircleOutline from '~icons/mdi/alert-circle-outline'
