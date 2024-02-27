@@ -8,16 +8,19 @@
     import {navigating} from "$app/stores";
 
     // Icons
-    import MdiArchive from '~icons/mdi/archive'
     import MdiAlertCircleOutline from '~icons/mdi/alert-circle-outline'
     import MdiRobotExcited from '~icons/mdi/robot-excited'
     import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
     import MdiLoading from '~icons/mdi/loading'
+    import RadixIconsTrash from '~icons/radix-icons/trash'
+    import RadixIconsArchive from '~icons/radix-icons/archive'
+    import RadixIconsPencil2 from '~icons/radix-icons/pencil-2'
 
     // Components
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
     import NewCommissionDialog from "$lib/NewCommissionDialog.svelte";
+    import * as ContextMenu from "$lib/components/ui/context-menu"
     import {Button} from "$lib/components/ui/button";
     import {Toaster} from "$lib/components/ui/sonner/";
 
@@ -82,12 +85,31 @@
                     {#if problems_data.problems.length > 0}
                         {#each problems_data.problems as problem (problem.id)}
                             <li>
-                                <Button href="/commission/{problem.id}"
-                                        class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
-                                        variant="link">
-                                    <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
-                                    <span class="flex-grow break-all hyphens-auto">{problem.title}</span>
-                                </Button>
+                                <ContextMenu.Root>
+                                    <ContextMenu.Trigger>
+                                        <Button href="/commission/{problem.id}"
+                                                class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
+                                                variant="link">
+                                            <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
+                                            <span class="flex-grow break-all hyphens-auto">{problem.title}</span>
+                                        </Button>
+                                    </ContextMenu.Trigger>
+                                    <ContextMenu.Content>
+                                        <ContextMenu.Item>
+                                            <RadixIconsPencil2 class="me-2 w-4 h-4"/>
+                                            Rinomina
+                                        </ContextMenu.Item>
+                                        <ContextMenu.Item>
+                                            <RadixIconsArchive class="me-2 w-4 h-4"/>
+                                            Archivia
+                                        </ContextMenu.Item>
+                                        <ContextMenu.Separator/>
+                                        <ContextMenu.Item class="text-destructive">
+                                            <RadixIconsTrash class="me-1 w-4 h-4"/>
+                                            Elimina
+                                        </ContextMenu.Item>
+                                    </ContextMenu.Content>
+                                </ContextMenu.Root>
                             </li>
                         {/each}
                     {:else}
@@ -100,7 +122,7 @@
             </li>
             <li class="mt-4 pb-4 ">
                 <Button variant="ghost" class="px-3 w-full justify-start">
-                    <MdiArchive class="me-2 h-4 w-4"/>
+                    <RadixIconsArchive class="me-2 h-4 w-4"/>
                     Problemi Archiviati
                 </Button>
             </li>
