@@ -120,7 +120,7 @@
                             {/if}
                             {#if upload_error.missing_columns}
                                 <p>Le seguenti colonne sono mancanti nel file excel:</p>
-                                <ul class="list-disc ms-4">
+                                <ul class="list-disc list-inside">
                                     {#each upload_error.missing_columns as column}
                                         <li>{column}</li>
                                     {/each}
