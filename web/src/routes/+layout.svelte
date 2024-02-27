@@ -1,7 +1,11 @@
 <script lang="ts">
     import "../app.css";
     import {ModeWatcher} from "mode-watcher";
-    import {Toaster} from "$lib/components/ui/sonner/";
+    import {toast} from "svelte-sonner";
+    import type {CommissionUploadSuccessEvent} from "./schema";
+    import {goto} from "$app/navigation";
+    import {onMount} from "svelte";
+    import {navigating} from "$app/stores";
 
     // https://kit.svelte.dev/docs/single-page-apps
     export const ssr = false;
@@ -13,42 +17,12 @@
     import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
     import MdiLoading from '~icons/mdi/loading'
-    import {navigating} from "$app/stores";
 
     // Components
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
-    import {onMount} from "svelte";
-    import {Button} from "$lib/components/ui/button";
     import NewCommissionDialog from "$lib/NewCommissionDialog.svelte";
-
-    // Behaviour
-    let fileInput: HTMLInputElement | null;
-
-    async function handle_new_file_submit(event: SubmitEvent) {
-        try {
-            let excel = fileInput?.files?.[0];
-
-            if (excel == undefined) {
-                return;
-            }
-            if (!(excel.name.endsWith('xlsx') || excel.name.endsWith('xls'))) {
-                alert("Sono solo accettati file XLSX o XLS.");
-                return;
-            }
-
-            let data = new FormData();
-            data.append('file', excel)
-
-            const response = await fetch('http://localhost:5000/upload', {
-                method: 'POST',
-                body: data
-            });
-
-            console.log(await response.json());
-        } catch (error) {
-            console.error("Error:", error)
-        }
-    }
+    import {Button} from "$lib/components/ui/button";
+    import {Toaster} from "$lib/components/ui/sonner/";
 
     let problems_data: { 'loaded': boolean, 'problems': { 'id': number, 'title': string; } [] } = {
         loaded: false,
@@ -56,6 +30,9 @@
     };
 
     async function fetch_problems_list() {
+        problems_data.loaded = false;
+        problems_data.problems = [];
+
         try {
             fetch('http://localhost:5000/commission')
                 .then(response => response.json())
@@ -72,6 +49,13 @@
     onMount(async () => {
         await fetch_problems_list();
     });
+
+    function uploadSuccess(event: CommissionUploadSuccessEvent) {
+        const d = event.detail;
+        problems_data.problems.push({id: d.id, title: d.name});
+        toast.success("La commissione è stata salvata correttamente; la sto aprendo...");
+        goto(`/commission/${d.id}`)
+    }
 </script>
 
 <ModeWatcher/>
@@ -94,7 +78,7 @@
          class="flex-grow flex flex-col px-3 overflow-y-scroll {$navigating ? 'blur-sm pointer-events-none' : ''}">
         <ul class="space-y-2 font-medium">
             <li>
-                <NewCommissionDialog/>
+                <NewCommissionDialog on:commission-created={uploadSuccess}/>
             </li>
             <li>
                 <DropdownButton buttonText="Problemi Attivi" loaded={problems_data.loaded} open={true}>

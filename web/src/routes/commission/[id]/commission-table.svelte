@@ -79,11 +79,7 @@
                         {#each row.cells as cell (cell.id)}
                             <Subscribe attrs={cell.attrs()} let:attrs>
                                 <Table.Cell {...attrs}>
-                                    {#if cell.id === "candidato"}
-                                        <p>Test</p>
-                                    {:else}
-                                        <Render of={cell.render()}/>
-                                    {/if}
+                                    <Render of={cell.render()}/>
                                 </Table.Cell>
                             </Subscribe>
                         {/each}

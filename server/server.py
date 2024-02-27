@@ -81,6 +81,8 @@ def upload_file():
                 ext_session.add(prof)
             return prof
 
+        commission_id: int | None = None
+
         # Automatically commit the transaction if no exception is raised
         with session_maker.begin() as session:
             commission = Commission(title=commission_name)
@@ -124,6 +126,8 @@ def upload_file():
                 # Add the student and the commission entry to the session
                 commission.entries.append(entry)
 
+            commission_id = commission.id
+
     except Exception as e:
         print(e)
         return jsonify({'error': 'Error processing the file', 'details': str(e)}), 500
@@ -131,6 +135,7 @@ def upload_file():
         return jsonify({
             'success': 'File processed successfully',
             'name': commission_name,
+            'id': commission_id
         }), 200
 
 

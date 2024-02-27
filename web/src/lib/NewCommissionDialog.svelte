@@ -11,7 +11,7 @@
     import {defaults, superForm,} from "sveltekit-superforms";
     import {zod} from "sveltekit-superforms/adapters";
     import {Input} from "$lib/components/ui/input";
-    import {commissionFormSchema} from "../routes/schema";
+    import {commissionFormSchema, type CommissionUploadSuccess} from "../routes/schema";
     import {createEventDispatcher} from "svelte";
 
     interface UploadErrorResponse {
@@ -45,7 +45,8 @@
                 }).then(async (response) => {
                     if (response.ok) {
                         // Return a promise that resolves with the parsed JSON body
-                        let json = await response.json();
+                        let json: CommissionUploadSuccess = await response.json();
+                        console.log("1")
                         dispatch('commission-created', json);
                         changeDialogState(false);
                     } else {
@@ -112,11 +113,10 @@
                 {#if upload_error}
                     <Alert.Root variant='destructive' class="mb-4">
                         <MdiAlertOutline class="me-2 h-4 w-4"/>
-                        <Alert.Title><p>Errore</p></Alert.Title>
+                        <Alert.Title class="mb-2"><p>Errore</p></Alert.Title>
                         <Alert.Description>
                             {#if upload_error.details}
-                                <p>Dettagli:</p>
-                                <p>{upload_error.details}</p>
+                                <p class="font-mono text-xs">{upload_error.details}</p>
                             {/if}
                             {#if upload_error.missing_columns}
                                 <p>Le seguenti colonne sono mancanti nel file excel:</p>
