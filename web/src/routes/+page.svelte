@@ -1,7 +1,6 @@
 <script lang="ts">
     // Icons
     import MdiArchive from '~icons/mdi/archive'
-    import MdiCalendarPlusOutline from '~icons/mdi/calendar-plus-outline'
     import MdiAlertCircleOutline from '~icons/mdi/alert-circle-outline'
     import MdiRobotExcited from '~icons/mdi/robot-excited'
     import MdiCogOutline from '~icons/mdi/cog-outline'
@@ -13,6 +12,7 @@
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
     import {onMount} from "svelte";
     import {Button} from "$lib/components/ui/button";
+    import NewCommissionDialog from "$lib/NewCommissionDialog.svelte";
 
     // Behaviour
     let fileInput: HTMLInputElement | null;
@@ -43,6 +43,44 @@
         }
     }
 
+    type Commission = {
+        id: number,
+        title: string
+        entries: CommissionEntry[]
+    }
+
+    type DegreeLevel = 'bachelors' | 'masters';
+
+    type CommissionEntry = {
+        id: number,
+        candidate: Student,
+        degree_level: DegreeLevel,
+        supervisor: Professor,
+        supervisor_assistant?: Professor,
+        counter_supervisor?: Professor
+    }
+
+    type Student = {
+        id: number,
+        matriculation_number: number,
+        name: string,
+        surname: string,
+        phone_number: string,
+        personal_email: string,
+        university_email: string,
+    }
+
+    type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
+
+    type Professor = {
+        id: number,
+        name: string,
+        surname: string,
+        role: UniversityRole
+    }
+
+    let current_problem: Commission | undefined = undefined;
+
     let problems_data: { 'loaded': boolean, 'problems': { 'id': number, 'title': string; } [] } = {
         loaded: false,
         problems: []
@@ -65,6 +103,9 @@
     onMount(async () => {
         await fetch_problems_list();
     });
+
+    export let data;
+
 </script>
 
 <aside id="sidebar"
@@ -83,10 +124,7 @@
          class="flex-grow flex flex-col px-3 overflow-y-scroll ">
         <ul class="space-y-2 font-medium">
             <li>
-                <Button variant="ghost" class="px-3 w-full justify-start">
-                    <MdiCalendarPlusOutline class="me-2 h-4 w-4"/>
-                    Nuovo Problema
-                </Button>
+                <NewCommissionDialog data={data.form}/>
             </li>
             <li>
                 <DropdownButton buttonText="Problemi Attivi" loaded={problems_data.loaded} open={true}>
@@ -152,7 +190,7 @@
         <input class="shadow-neutral-400 " type="submit" value="Upload">
     </form>-->
     {#if current_problem === undefined}
-        <div class="mt-16 flex flex-col items-center justify-center h-full">
+        <div class="mt-32 flex flex-col items-center justify-center h-full">
             <MdiRobotConfusedOutline class="w-16 h-16"/>
             <span class="mt-4 text-lg font-medium text-gray-600 dark:text-gray-400">Seleziona un problema o creane uno nuovo per iniziare</span>
         </div>
