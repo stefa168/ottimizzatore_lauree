@@ -4,14 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="feat(upload): added toast and dispatch">
-      <change afterPath="$PROJECT_DIR$/web/src/routes/commission/+page.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/web/src/routes/commission/[id]/+page.svelte" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/web/src/routes/commission/[id]/+page.ts" afterDir="false" />
+    <list default="true" id="37da68ad-7d8f-4af8-9c03-79bc99597c77" name="Changes" comment="style(upload): replaced style with tailwind class">
+      <change afterPath="$PROJECT_DIR$/web/src/routes/commission/[id]/commission_types.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/app.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/routes/+layout.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/+layout.svelte" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/src/routes/+page.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/+page.svelte" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/src/routes/+page.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/routes/commission/[id]/+page.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/commission/[id]/+page.svelte" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/routes/commission/[id]/+page.ts" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/routes/commission/[id]/+page.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -170,7 +172,7 @@
       <workItem from="1708855006562" duration="5348000" />
       <workItem from="1708894696884" duration="11449000" />
       <workItem from="1708947232577" duration="33261000" />
-      <workItem from="1709027019669" duration="15910000" />
+      <workItem from="1709027019669" duration="17381000" />
     </task>
     <task id="LOCAL-00001" summary="chore: first web commit">
       <option name="closed" value="true" />
@@ -300,7 +302,23 @@
       <option name="project" value="LOCAL" />
       <updated>1709046435364</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="feat: moved sections to be compliant with svelte's structure">
+      <option name="closed" value="true" />
+      <created>1709048323337</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1709048323337</updated>
+    </task>
+    <task id="LOCAL-00018" summary="style(upload): replaced style with tailwind class">
+      <option name="closed" value="true" />
+      <created>1709048689085</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1709048689085</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -322,7 +340,9 @@
     <MESSAGE value="feat(upload): added form" />
     <MESSAGE value="feat(upload): completed excel upload" />
     <MESSAGE value="feat(upload): added toast and dispatch" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(upload): added toast and dispatch" />
+    <MESSAGE value="feat: moved sections to be compliant with svelte's structure" />
+    <MESSAGE value="style(upload): replaced style with tailwind class" />
+    <option name="LAST_COMMIT_MESSAGE" value="style(upload): replaced style with tailwind class" />
   </component>
   <component name="WfRunsListSearchHistory"><![CDATA[{
   "history": [
