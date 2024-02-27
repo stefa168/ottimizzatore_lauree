@@ -2,4 +2,6 @@
     export let data;
 </script>
 
-<h1>{data.commissionId}</h1>
+<h1 class="text-2xl">{data.commissionId}</h1>
+
+{JSON.stringify(data.commissionData)}
