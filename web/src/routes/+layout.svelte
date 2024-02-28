@@ -81,7 +81,7 @@
                 <NewCommissionDialog on:commission-created={uploadSuccess}/>
             </li>
             <li>
-                <DropdownButton buttonText="Problemi Attivi" loaded={problems_data.loaded} open={true}>
+                <DropdownButton buttonText="Problemi Attivi" childCount={problems_data.problems.length} loaded={problems_data.loaded} open={true}>
                     {#if problems_data.problems.length > 0}
                         {#each problems_data.problems as problem (problem.id)}
                             <li>

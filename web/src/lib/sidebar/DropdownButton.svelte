@@ -1,12 +1,14 @@
 <script lang="ts">
     import MdiBookClock from '~icons/mdi/book-clock'
     import MdiChevronRight from '~icons/mdi/chevron-right'
-    import {Button} from "$lib/components/ui/button";
     import MdiLoading from "~icons/mdi/loading";
+    import {Button} from "$lib/components/ui/button";
+    import { Badge } from "$lib/components/ui/badge";
 
     export let buttonText = "Dropdown Button";
     export let open = false;
     export let loaded = true;
+    export let childCount = 0;
 
     function click_expand() {
         if (loaded)
@@ -23,6 +25,7 @@
         <MdiChevronRight
                 class="w-6 h-6 ms-2 transition-transform duration-200 {open ? 'rotate-90' : ''}"
                 aria-hidden="true"/>
+        <Badge class="ms-2" variant="outline">{childCount}</Badge>
     {:else }
         <MdiLoading class="w-6 h-6 ms-4 animate-spin"/>
     {/if}
