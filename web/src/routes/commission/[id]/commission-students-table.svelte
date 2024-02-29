@@ -7,7 +7,6 @@
     export let commission: Commission;
     const table = createTable(readable(commission.entries));
 
-
     function getFullNameIfPresent(value: { name: string, surname: string } | null) {
         if (value === null)
             return "$-$";
