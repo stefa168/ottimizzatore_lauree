@@ -1,8 +1,10 @@
 <script lang="ts">
     import type {Professor} from "./commission_types";
-    import {createTable, Render, Subscribe} from "svelte-headless-table";
+    import {createRender, createTable, Render, Subscribe} from "svelte-headless-table";
     import {readable} from "svelte/store";
     import * as Table from "$lib/components/ui/table"
+    import EditableProfessorRole from "./EditableProfessorRole.svelte";
+    import type {UniversityRole} from "./commission_types.js";
 
     export let commissionProfessors: Professor[];
     const table = createTable(readable(commissionProfessors));
@@ -18,11 +20,25 @@
         }),
         table.column({
             accessor: 'role',
-            header: 'Ruolo Universitario'
+            header: 'Ruolo Universitario',
+            cell: ({row, column, value}) => {
+                return createRender(EditableProfessorRole, {
+                    row,
+                    column,
+                    value,
+                    onUpdateValue(rowDataId, columnId, newValue) {
+                        updateData(rowDataId, columnId, newValue);
+                    },
+                })
+            }
         })
     ]);
 
     const {headerRows, pageRows, tableAttrs, tableBodyAttrs} = table.createViewModel(columns);
+
+    const updateData = (rowDataId: string, columnId: string, newValue: UniversityRole) => {
+
+    };
 </script>
 
 <div class="rounded-md border">
