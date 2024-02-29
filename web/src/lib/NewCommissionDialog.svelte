@@ -5,12 +5,14 @@
     import * as Form from "$lib/components/ui/form";
     // noinspection ES6UnusedImports
     import * as Alert from "$lib/components/ui/alert"
+    import {Input} from "$lib/components/ui/input";
     import {Button} from "$lib/components/ui/button";
+
     import MdiCalendarPlusOutline from '~icons/mdi/calendar-plus-outline'
     import MdiAlertOutline from '~icons/mdi/alert-outline'
+
     import {defaults, superForm,} from "sveltekit-superforms";
     import {zod} from "sveltekit-superforms/adapters";
-    import {Input} from "$lib/components/ui/input";
     import {commissionFormSchema, type CommissionUploadSuccess} from "../routes/schema";
     import {createEventDispatcher} from "svelte";
 
@@ -143,7 +145,8 @@
                     <Form.Control let:attrs>
                         <Form.Label>File</Form.Label>
                         <Input {...attrs}
-                               on:input={(e)=>($formData.excel = e.currentTarget.files?.item(0) ?? null)}
+                               required
+                               on:change={(e)=>($formData.excel = e.currentTarget.files?.item(0) ?? null)}
                                type="file"
                                accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>
                     </Form.Control>
