@@ -60,6 +60,8 @@
                 }).finally(() => {
                     submitting = false;
                 });
+            } else {
+                submitting = false;
             }
         },
     });
