@@ -20,14 +20,14 @@ HOST_PORT = 5000
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        return jsonify({'error': "No file part"}), 400
+        return jsonify({'details': "Nessun file specificato"}), 400
 
     file = request.files['file']
 
     # If the user does not select a file, the browser submits an empty file without a filename.
     # Because of this, we need to check if the filename is empty to avoid errors.
     if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        return jsonify({'details': 'No selected file'}), 400
 
     try:
         excel = pd.read_excel(file).fillna('None')
