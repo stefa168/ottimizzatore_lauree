@@ -1,4 +1,4 @@
-type Commission = {
+interface Commission {
     id: number,
     title: string
     entries: CommissionEntry[]
@@ -6,7 +6,7 @@ type Commission = {
 
 type DegreeLevel = 'bachelors' | 'masters';
 
-type CommissionEntry = {
+interface CommissionEntry {
     id: number,
     candidate: Student,
     degree_level: DegreeLevel,
@@ -15,7 +15,7 @@ type CommissionEntry = {
     counter_supervisor: Professor | null
 }
 
-type Student = {
+interface Student {
     id: number,
     matriculation_number: number,
     name: string,
@@ -27,7 +27,7 @@ type Student = {
 
 type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
 
-type Professor = {
+interface Professor {
     id: number,
     name: string,
     surname: string,
