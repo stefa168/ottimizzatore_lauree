@@ -42,5 +42,4 @@
             Ottimizzazione
         </Tabs.Content>
     </Tabs.Root>
-
 </div>

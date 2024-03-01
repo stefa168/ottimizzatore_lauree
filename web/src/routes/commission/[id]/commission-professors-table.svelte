@@ -5,6 +5,7 @@
     import * as Table from "$lib/components/ui/table"
     import EditableProfessorRole from "./EditableProfessorRole.svelte";
     import type {UniversityRole} from "./commission_types.js";
+    import {toast} from "svelte-sonner";
 
     export let commissionProfessors: Professor[];
     const table = createTable(readable(commissionProfessors));
@@ -36,9 +37,30 @@
 
     const {headerRows, pageRows, tableAttrs, tableBodyAttrs} = table.createViewModel(columns);
 
-    const updateData = (rowDataId: string, columnId: string, newValue: UniversityRole) => {
+    async function updateData(rowDataId: string, columnId: string, newValue: UniversityRole) {
+        // convert the row id to a number
+        const rowId = parseInt(rowDataId);
+        commissionProfessors[rowId].role = newValue;
 
-    };
+        let professorId = commissionProfessors[rowId].id;
+
+        await fetch(`http://localhost:5000/professor/${professorId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({role: newValue})
+        }).then(response => {
+            if (response.ok) {
+                console.log(`Ruolo del professore aggiornato correttamente`);
+                toast.success('Ruolo del professore aggiornato correttamente');
+            } else {
+                toast.error(`Errore durante l'aggiornamento del ruolo del professore`);
+            }
+        }).catch(error => {
+            toast.error(`Errore durante l'aggiornamento del ruolo del professore: ${error}`);
+        });
+    }
 </script>
 
 <div class="rounded-md border">

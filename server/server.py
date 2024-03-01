@@ -162,6 +162,29 @@ def get_commission(cid: int | None):
         return jsonify({'error': 'Error retrieving the commission', 'details': str(e)}), 500
 
 
+# update request that changes the role of a professor
+@app.route('/professor/<pid>', methods=['PUT'])
+def update_professor(pid: int):
+    professor: Professor | None = None
+    try:
+        with session_maker.begin() as session:
+            professor = session.query(Professor).filter_by(id=pid).first()
+            if professor is None:
+                return jsonify({'error': f'Professor with ID {pid} not found'}), 404
+
+            new_role = request.json.get('role')
+            if new_role is None or new_role == "":
+                return jsonify({'error': 'No role specified'}), 400
+
+            professor.role = UniversityRole(new_role)
+
+            return jsonify(f"Role for professor {professor.name} {professor.surname} ({pid}) updated"), 200
+
+    except Exception as e:
+        print(e)
+        return jsonify({'error': 'Error updating the professor', 'details': str(e)}), 500
+
+
 # Needed to fix Preflight Checks for CORS.
 # https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
 @app.before_request

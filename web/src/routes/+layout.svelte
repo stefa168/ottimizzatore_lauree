@@ -22,7 +22,7 @@
     import NewCommissionDialog from "$lib/NewCommissionDialog.svelte";
     import * as ContextMenu from "$lib/components/ui/context-menu"
     import {Button} from "$lib/components/ui/button";
-    import {Toaster} from "$lib/components/ui/sonner/";
+    import {Toaster} from "$lib/components/ui/sonner";
 
     let problems_data: { 'loaded': boolean, 'problems': { 'id': number, 'title': string; } [] } = {
         loaded: false,

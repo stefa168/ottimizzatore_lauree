@@ -2,6 +2,7 @@
     import {BodyRow, DataColumn} from "svelte-headless-table";
     import type {Professor, UniversityRole} from "./commission_types";
     import * as Select from '$lib/components/ui/select'
+    import type {Selected} from "bits-ui";
 
     export let row: BodyRow<Professor>;
     export let column: DataColumn<Professor>;
@@ -12,19 +13,20 @@
         {value: 'ordinary', label: 'Professore Ordinario'},
         {value: 'associate', label: 'Professore Associato'},
         {value: 'researcher', label: 'Ricercatore'},
-        {value: 'unspecified', label: 'Non Specificato'},
+        // Disabled to avoid confusion
+        {value: 'unspecified', label: 'Non Specificato', disabled: true}
     ];
 
-    const handleSubmit = () => {
+    const handleSubmit = (v: Selected<string> | undefined) => {
         if (row.isData()) {
-            onUpdateValue(row.dataId, column.id, value);
+            onUpdateValue(row.dataId, column.id, (v?.value ?? 'unspecified') as UniversityRole);
         }
     }
 
     $: selected = UniversityRoles.find(role => role.value === value)
 </script>
 
-<Select.Root {selected}>
+<Select.Root {selected} onSelectedChange={handleSubmit}>
     <Select.Trigger>
         <Select.Value placeholder="Indicare il ruolo"/>
     </Select.Trigger>
@@ -32,9 +34,9 @@
         <Select.Group>
             <Select.Label>Ruoli</Select.Label>
             {#each UniversityRoles as role}
-                <Select.Item value={role.value} label={role.label}>{role.label}</Select.Item>
+                <Select.Item value={role.value} label={role.label} disabled={role.disabled}>{role.label}</Select.Item>
             {/each}
         </Select.Group>
     </Select.Content>
-    <Select.Input name="role" />
+    <Select.Input name="role"/>
 </Select.Root>
