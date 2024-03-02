@@ -122,7 +122,11 @@ class Commission:
 
     id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
     title: str = Column(sqla.String(256), nullable=False)
-    entries: List['CommissionEntry'] = relationship("CommissionEntry", back_populates="commission")
+    entries: List['CommissionEntry'] = relationship(
+        "CommissionEntry",
+        back_populates="commission",
+        cascade="all, delete-orphan"
+    )
 
     def __init__(self, title: str):
         self.title = title
@@ -147,7 +151,12 @@ class CommissionEntry:
     commission: Commission = relationship("Commission", back_populates="entries")
 
     candidate_id: int = Column(sqla.Integer, ForeignKey('students.id'), nullable=False)
-    candidate: Student = relationship('Student', foreign_keys=[candidate_id])
+    candidate: Student = relationship(
+        'Student',
+        foreign_keys=[candidate_id],
+        cascade="all, delete-orphan",
+        single_parent=True
+    )
 
     degree_level: Degree = Column(sqla.Enum(Degree), nullable=False)
 
