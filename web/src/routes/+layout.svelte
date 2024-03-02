@@ -73,7 +73,6 @@
     }
 
     function onDeletionAlertStateChange(open: boolean) {
-        deletionAlertOpen = open;
         if (!open) {
             commissionToBeDeleted = null;
         }
