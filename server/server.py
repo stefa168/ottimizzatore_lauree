@@ -185,6 +185,28 @@ def update_professor(pid: int):
         return jsonify({'error': 'Error updating the professor', 'details': str(e)}), 500
 
 
+# delete request that deletes a commission. Never delete the professors.
+@app.route('/commission/<cid>', methods=['DELETE'])
+def delete_commission(cid: int):
+    try:
+        with session_maker.begin() as session:
+            commission = session.query(Commission).filter_by(id=cid).first()
+            if commission is None:
+                return jsonify({'error': f'Commission with ID {cid} not found'}), 404
+
+            for entry in commission.entries:
+                session.delete(entry.candidate)
+                session.delete(entry)
+
+            session.delete(commission)
+
+            return jsonify(f"Commission {cid} deleted"), 200
+
+    except Exception as e:
+        print(e)
+        return jsonify({'error': 'Error deleting the commission', 'details': str(e)}), 500
+
+
 # Needed to fix Preflight Checks for CORS.
 # https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
 @app.before_request

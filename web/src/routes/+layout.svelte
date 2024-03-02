@@ -21,10 +21,16 @@
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
     import NewCommissionDialog from "$lib/NewCommissionDialog.svelte";
     import * as ContextMenu from "$lib/components/ui/context-menu"
+    import * as AlertDialog from "$lib/components/ui/alert-dialog";
     import {Button} from "$lib/components/ui/button";
     import {Toaster} from "$lib/components/ui/sonner";
 
-    let problems_data: { 'loaded': boolean, 'problems': { 'id': number, 'title': string; } [] } = {
+    type CommissionMinimal = {
+        id: number;
+        title: string;
+    }
+
+    let problems_data: { 'loaded': boolean, 'problems': CommissionMinimal [] } = {
         loaded: false,
         problems: []
     };
@@ -53,8 +59,38 @@
     function uploadSuccess(event: CommissionUploadSuccessEvent) {
         const d = event.detail;
         problems_data.problems.push({id: d.id, title: d.name});
+        problems_data = problems_data;
         toast.success("La commissione è stata salvata correttamente; la sto aprendo...");
         goto(`/commission/${d.id}`)
+    }
+
+    let deletionAlertOpen = false;
+    let commissionToBeDeleted: CommissionMinimal | null = null;
+
+    function openDeletionAlert(problemId: CommissionMinimal) {
+        commissionToBeDeleted = problemId;
+        deletionAlertOpen = true;
+    }
+
+    function onDeletionAlertStateChange(open: boolean) {
+        deletionAlertOpen = open;
+        if (!open) {
+            commissionToBeDeleted = null;
+        }
+    }
+
+    function deleteCommission() {
+        if (commissionToBeDeleted !== null) {
+            fetch(`http://localhost:5000/commission/${commissionToBeDeleted.id}`, {
+                method: 'DELETE'
+            }).then(() => {
+                problems_data.problems = problems_data.problems.filter(p => p.id !== commissionToBeDeleted?.id);
+                problems_data = problems_data;
+                onDeletionAlertStateChange(false);
+                toast.success("La commissione è stata eliminata correttamente.");
+                goto('/');
+            });
+        }
     }
 </script>
 
@@ -81,8 +117,31 @@
                 <NewCommissionDialog on:commission-created={uploadSuccess}/>
             </li>
             <li>
-                <DropdownButton buttonText="Problemi Attivi" childCount={problems_data.problems.length} loaded={problems_data.loaded} open={true}>
+                <DropdownButton buttonText="Problemi Attivi" childCount={problems_data.problems.length}
+                                loaded={problems_data.loaded} open={true}>
                     {#if problems_data.problems.length > 0}
+                        <AlertDialog.Root bind:open={deletionAlertOpen}>
+                            <AlertDialog.Content>
+                                <AlertDialog.Header>
+                                    <AlertDialog.Title class="text-destructive">
+                                        Confermi l'eliminazione della commissione "{commissionToBeDeleted?.title}"?
+                                    </AlertDialog.Title>
+                                    <AlertDialog.Description>
+                                        <p>Questa operazione è <span class="underline">irreversibile</span>, ed
+                                            eliminerà tutti i dati associati alla commissione (studenti e
+                                            configurazione, <strong>NON i docenti</strong>).</p>
+                                        <p>Vuoi procedere?</p>
+                                    </AlertDialog.Description>
+                                </AlertDialog.Header>
+                                <AlertDialog.Footer>
+                                    <AlertDialog.Cancel>Annulla</AlertDialog.Cancel>
+                                    <AlertDialog.Action on:click={deleteCommission}
+                                            class="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90">
+                                        Continua
+                                    </AlertDialog.Action>
+                                </AlertDialog.Footer>
+                            </AlertDialog.Content>
+                        </AlertDialog.Root>
                         {#each problems_data.problems as problem (problem.id)}
                             <li>
                                 <ContextMenu.Root>
@@ -91,7 +150,7 @@
                                                 class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
                                                 variant="link">
                                             <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
-                                            <span class="flex-grow break-all hyphens-auto">{problem.title}</span>
+                                            <span class="flex-grow break-words hyphens-auto">{problem.title}</span>
                                         </Button>
                                     </ContextMenu.Trigger>
                                     <ContextMenu.Content>
@@ -104,7 +163,9 @@
                                             Archivia
                                         </ContextMenu.Item>
                                         <ContextMenu.Separator/>
-                                        <ContextMenu.Item class="text-destructive">
+                                        <ContextMenu.Item
+                                                class="text-destructive"
+                                                on:click={(_) => openDeletionAlert(problem)}>
                                             <RadixIconsTrash class="me-1 w-4 h-4"/>
                                             Elimina
                                         </ContextMenu.Item>
