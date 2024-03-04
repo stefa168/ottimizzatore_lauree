@@ -184,10 +184,10 @@ class CommissionEntry:
     supervisor: Professor = relationship('Professor', foreign_keys=[supervisor_id])
     # Co-relatore
     supervisor_assistant_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=True)
-    supervisor_assistant: Professor = relationship('Professor', foreign_keys=[supervisor_assistant_id])
+    supervisor_assistant: Professor | None = relationship('Professor', foreign_keys=[supervisor_assistant_id])
 
     counter_supervisor_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=True)
-    counter_supervisor: Professor = relationship('Professor', foreign_keys=[counter_supervisor_id])
+    counter_supervisor: Professor | None = relationship('Professor', foreign_keys=[counter_supervisor_id])
 
     def __init__(self,
                  candidate: Student,
