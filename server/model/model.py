@@ -83,12 +83,27 @@ class Student:
             'university_email': self.university_email
         }
 
+    @property
+    def full_name(self):
+        return f"{self.surname} {self.name}"
+
 
 class UniversityRole(enum.Enum):
     ORDINARY = "ordinary"
     ASSOCIATE = "associate"
     RESEARCHER = "researcher"
     UNSPECIFIED = "unspecified"
+
+    @property
+    def abbr(self):
+        if self == UniversityRole.ORDINARY:
+            return "PO"
+        elif self == UniversityRole.ASSOCIATE:
+            return "PA"
+        elif self == UniversityRole.RESEARCHER:
+            return "RIC"
+        else:
+            raise ValueError("Role not set.")
 
 
 @mapper_registry.mapped
@@ -113,6 +128,10 @@ class Professor:
             'surname': self.surname,
             'role': self.role.value
         }
+
+    @property
+    def full_name(self):
+        return f"{self.surname} {self.name}"
 
 
 @mapper_registry.mapped
