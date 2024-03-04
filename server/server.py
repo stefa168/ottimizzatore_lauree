@@ -4,6 +4,7 @@ import sqlalchemy.exc
 from sqlalchemy import create_engine
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
+from http import HTTPStatus
 import pandas as pd
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -20,14 +21,14 @@ HOST_PORT = 5000
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        return jsonify({'details': "Nessun file specificato"}), 400
+        return jsonify({'details': "Nessun file specificato"}), HTTPStatus.BAD_REQUEST
 
     file = request.files['file']
 
     # If the user does not select a file, the browser submits an empty file without a filename.
     # Because of this, we need to check if the filename is empty to avoid errors.
     if file.filename == '':
-        return jsonify({'details': 'No selected file'}), 400
+        return jsonify({'details': 'No selected file'}), HTTPStatus.BAD_REQUEST
 
     try:
         excel = pd.read_excel(file).fillna('None')
@@ -43,7 +44,7 @@ def upload_file():
             return jsonify({
                 'error': 'Some expected columns are missing',
                 'missing_columns': list(missing_columns)
-            }), 422
+            }), HTTPStatus.UNPROCESSABLE_ENTITY
 
         # The actual processing of the file, creating the objects and adding them to the database
         global session_maker
@@ -130,13 +131,13 @@ def upload_file():
 
     except Exception as e:
         print(e)
-        return jsonify({'error': 'Error processing the file', 'details': str(e)}), 500
+        return jsonify({'error': 'Error processing the file', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
     else:
         return jsonify({
             'success': 'File processed successfully',
             'name': commission_name,
             'id': commission_id
-        }), 200
+        }), HTTPStatus.OK
 
 
 @app.route('/commission', defaults={'cid': None}, methods=['GET'])
@@ -147,19 +148,22 @@ def get_commission(cid: int | None):
             # No ID provided, return all commissions
             with session_maker.begin() as session:
                 commissions = session.query(Commission.id, Commission.title).all()
-                return jsonify([{'id': cid, 'title': title} for cid, title in commissions]), 200
+                return jsonify([{'id': cid, 'title': title} for cid, title in commissions]), HTTPStatus.OK
         else:
             # ID provided, return specific commission
             with session_maker.begin() as session:
                 commission = session.query(Commission).filter_by(id=cid).first()
                 if commission is None:
-                    return jsonify({'error': 'Commission not found'}), 404
+                    return jsonify({'error': 'Commission not found'}), HTTPStatus.NOT_FOUND
                 else:
-                    return jsonify(commission.serialize()), 200
+                    return jsonify(commission.serialize()), HTTPStatus.OK
 
     except Exception as e:
         print(e)
-        return jsonify({'error': 'Error retrieving the commission', 'details': str(e)}), 500
+        return jsonify({
+            'error': 'Error retrieving the commission',
+            'details': str(e)
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # update request that changes the role of a professor
@@ -170,19 +174,19 @@ def update_professor(pid: int):
         with session_maker.begin() as session:
             professor = session.query(Professor).filter_by(id=pid).first()
             if professor is None:
-                return jsonify({'error': f'Professor with ID {pid} not found'}), 404
+                return jsonify({'error': f'Professor with ID {pid} not found'}), HTTPStatus.NOT_FOUND
 
             new_role = request.json.get('role')
             if new_role is None or new_role == "":
-                return jsonify({'error': 'No role specified'}), 400
+                return jsonify({'error': 'No role specified'}), HTTPStatus.BAD_REQUEST
 
             professor.role = UniversityRole(new_role)
 
-            return jsonify(f"Role for professor {professor.name} {professor.surname} ({pid}) updated"), 200
+            return jsonify(f"Role for professor {professor.name} {professor.surname} ({pid}) updated"), HTTPStatus.OK
 
     except Exception as e:
         print(e)
-        return jsonify({'error': 'Error updating the professor', 'details': str(e)}), 500
+        return jsonify({'error': 'Error updating the professor', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @app.route('/commission/<cid>', methods=['DELETE'])
@@ -191,15 +195,16 @@ def delete_commission(cid: int):
         with session_maker.begin() as session:
             commission = session.query(Commission).filter_by(id=cid).first()
             if commission is None:
-                return jsonify({'error': f'Commission with ID {cid} not found'}), 404
+                return jsonify({'error': f'Commission with ID {cid} not found'}), HTTPStatus.NOT_FOUND
 
             session.delete(commission)
 
-            return jsonify(f"Commission {cid} deleted"), 200
+            return jsonify(f"Commission {cid} deleted"), HTTPStatus.OK
 
     except Exception as e:
         print(e)
         return jsonify({'error': 'Error deleting the commission', 'details': str(e)}), 500
+        return jsonify({'error': 'Error deleting the commission', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Needed to fix Preflight Checks for CORS.
