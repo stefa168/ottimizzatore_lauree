@@ -185,7 +185,6 @@ def update_professor(pid: int):
         return jsonify({'error': 'Error updating the professor', 'details': str(e)}), 500
 
 
-# delete request that deletes a commission. Never delete the professors.
 @app.route('/commission/<cid>', methods=['DELETE'])
 def delete_commission(cid: int):
     try:
@@ -193,10 +192,6 @@ def delete_commission(cid: int):
             commission = session.query(Commission).filter_by(id=cid).first()
             if commission is None:
                 return jsonify({'error': f'Commission with ID {cid} not found'}), 404
-
-            for entry in commission.entries:
-                session.delete(entry.candidate)
-                session.delete(entry)
 
             session.delete(commission)
 
