@@ -1,4 +1,6 @@
+import concurrent.futures.process
 import logging
+import pathlib
 
 import sqlalchemy.exc
 from sqlalchemy import create_engine
@@ -8,7 +10,8 @@ from http import HTTPStatus
 import pandas as pd
 from sqlalchemy.orm import sessionmaker, Session
 
-from model.model import mapper_registry, Student, Commission, Professor, UniversityRole, CommissionEntry, Degree
+from model.model import mapper_registry, Student, Commission, Professor, UniversityRole, CommissionEntry, Degree, \
+    OptimizationConfiguration
 
 app = Flask(__name__)
 
@@ -166,7 +169,6 @@ def get_commission(cid: int | None):
         }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-# update request that changes the role of a professor
 @app.route('/professor/<pid>', methods=['PUT'])
 def update_professor(pid: int):
     professor: Professor | None = None
@@ -203,8 +205,59 @@ def delete_commission(cid: int):
 
     except Exception as e:
         print(e)
-        return jsonify({'error': 'Error deleting the commission', 'details': str(e)}), 500
         return jsonify({'error': 'Error deleting the commission', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+# Path to the directories that hold the datfiles and solutions produced.
+# Inside this directory there is a directory with this structure:
+# temp
+# |- [problem_id] - [config_id] --- cfg.dat
+# |_ ...                         |_ model.lp
+#                                |_ val.xls
+OPT_TMP_DIR = ".temp/"
+
+
+@app.route('/commission/<commission_id>/solve/<config_id>', methods=['POST'])
+def solve_commission(commission_id: int, config_id: int):
+    # retrieve the Commission data from the database
+    # for now we don't have a configuration data model, so we just ignore the config_id
+    try:
+        with session_maker.begin() as session:
+            commission = session.query(Commission).filter_by(id=commission_id).first()
+            if commission is None:
+                return jsonify({'error': f'Commission with ID {commission_id} not found'}), HTTPStatus.NOT_FOUND
+
+            configuration = OptimizationConfiguration(config_id, commission_id)
+            if configuration is None:
+                return jsonify({'error': f'Configuration with ID {config_id} not found'}), HTTPStatus.NOT_FOUND
+
+            # todo lock the commission and configuration to avoid concurrent optimization
+
+            base_path = pathlib.Path(OPT_TMP_DIR)
+            cc_path = base_path / str(commission_id) / str(config_id)
+
+            # We create the configuration file
+            configuration.create_dat_file(cc_path)
+            # And also the datafile
+            # noinspection PyArgumentList
+            commission.export_xls(cc_path)
+
+            # Disabled for now, as we are not using the session to store the configuration
+            # session.expunge(configuration)
+
+            global executor
+            # We start the optimization
+            # todo save the future object in a dictionary to be able to interact with it later
+            future = executor.submit(configuration.solver_wrapper, cc_path)
+
+            return jsonify({'success': 'Optimization started', 'future_id': id(future)}), HTTPStatus.ACCEPTED
+
+    except Exception as e:
+        print(e)
+        return jsonify({
+            'error': 'Error starting the optimization',
+            'details': str(e)
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Needed to fix Preflight Checks for CORS.
@@ -216,13 +269,16 @@ def basic_authentication():
 
 
 def main():
-    global engine
+    global engine, executor
 
     mapper_registry.metadata.create_all(engine)
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
     app.run(host=HOST_NAME, port=HOST_PORT, debug=True)
 
 
 if __name__ == '__main__':
+    executor: concurrent.futures.process.ProcessPoolExecutor
+
     logging.basicConfig()
     logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 

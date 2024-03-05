@@ -1,11 +1,20 @@
 import enum
+import logging
+import uuid
 from dataclasses import dataclass
 from typing import List
+from pathlib import Path
 
+import pandas as pd
 import sqlalchemy as sqla
+from pyomo.core import AbstractModel
+from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition, SolverResults
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import Mapped, relationship, registry
 from sqlalchemy.types import TypeDecorator, String
+
+import optimization.models
+from utils.logging import redirect_stdout, redirect_stderr
 
 mapper_registry = registry()
 
@@ -158,6 +167,62 @@ class Commission:
             'entries': [entry.serialize() for entry in self.entries]
         }
 
+    def export_xls(self, base_path: Path):
+        xls_path = base_path / "val.xls"
+
+        entries = []
+        for entry in self.entries:
+            try:
+                entity = [
+                    entry.candidate.id,
+                    entry.candidate.surname,
+                    entry.candidate.name,
+                    entry.duration,
+                    entry.supervisor.full_name,
+                    entry.supervisor.role.abbr,
+                    'SI',
+                    'SI'
+                ]
+            except ValueError as e:
+                raise ValueError(f"Professor '{entry.supervisor.full_name}' doesn't have a role") from e
+
+            if entry.counter_supervisor is not None:
+                try:
+                    entity.extend([
+                        entry.counter_supervisor.full_name,
+                        entry.counter_supervisor.role.abbr,
+                        'SI',
+                        'SI'
+                    ])
+                except ValueError as e:
+                    raise ValueError(f"Professor '{entry.counter_supervisor.full_name}' doesn't have a role") from e
+
+            # todo do the same for the supervisor assistant
+
+            entries.append(entity)
+
+        df = pd.DataFrame(
+            entries,
+            columns=["ID", "Cognome", "Nome", "Durata", "Relatore", "Ruolo", "Mattina", "Pomeriggio", "Controrelatore",
+                     "Ruolo", "Mattina", "Pomeriggio"]
+        )
+
+        df.to_excel(xls_path, index=False)
+
+
+class TimeAvaliability(enum.Enum):
+    MORNING = "morning"
+    AFTERNOON = "afternoon"
+    ALWAYS = "always"
+
+    @property
+    def available_morning(self):
+        return self == TimeAvaliability.MORNING or self == TimeAvaliability.ALWAYS
+
+    @property
+    def available_afternoon(self):
+        return self == TimeAvaliability.AFTERNOON or self == TimeAvaliability.ALWAYS
+
 
 @mapper_registry.mapped
 @dataclass
@@ -211,3 +276,152 @@ class CommissionEntry:
             'supervisor_assistant': self.supervisor_assistant.serialize() if self.supervisor_assistant else None,
             'counter_supervisor': self.counter_supervisor.serialize() if self.counter_supervisor else None
         }
+
+    @property
+    def duration(self):
+        return 15 if self.degree_level == Degree.BACHELORS else 20 if self.counter_supervisor is None else 30
+
+
+class SolverEnum(enum.Enum):
+    CPLEX = 'cplex'
+    GLPK = 'glpk'
+    GUROBI = 'gurobi'
+
+
+class OptimizationConfiguration:
+    __tablename__ = "optimization_configurations"
+
+    id: int
+    commission_id: int
+    max_duration: int = 210
+    max_commissions_morning: int = 6
+    max_commissions_afternoon: int = 6
+
+    online: bool = False
+    min_professor_number: int | None = 3
+    min_professor_number_masters: int | None = 5
+    max_professor_numer: int | None = 7
+
+    solver: SolverEnum = SolverEnum.CPLEX
+    optimization_time_limit: int = 60
+    optimization_gap: float = 0.005
+
+    def __init__(self, config_id: int, commission_id: int):
+        self.id = config_id
+        self.commission_id = commission_id
+
+    def create_dat_file(self, base_path: Path) -> (Path, Path):
+        dat_file = base_path / "temp.dat"
+        excel_path = base_path / "val.xls"
+
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        morning_commissions = list(range(0, self.max_commissions_morning))
+        afternoon_commissions = list(range(
+            self.max_commissions_morning,
+            self.max_commissions_morning + self.max_commissions_afternoon
+        ))
+
+        with open(dat_file, "w") as f:
+            f.write(f"param max_durata := {self.max_duration};\n")
+            f.write(f"set commissioni_mattina := {' '.join(map(str, morning_commissions))};\n")
+            f.write(f"set commissioni_pomeriggio := {' '.join(map(str, afternoon_commissions))};\n")
+            f.write(f"param excel_path := \"{excel_path.resolve()}\";\n")
+
+            if self.online:
+                f.write(f"param minDocenti := {self.min_professor_number};\n")
+                f.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
+                f.write(f"param max_doc := {self.max_professor_numer};\n")
+
+        return base_path, dat_file
+
+    def __repr__(self):
+        return f"OptimizationConfiguration({self.id=}, {self.commission_id=}, {self.max_duration=}, " \
+               f"{self.max_commissions_morning=}, {self.max_commissions_afternoon=}, {self.online=}, " \
+               f"{self.min_professor_number=}, {self.min_professor_number_masters=}, {self.max_professor_numer=}, " \
+               f"{self.solver=}, {self.optimization_time_limit=}, {self.optimization_gap=})"
+
+    def solver_wrapper(self, cc_path: Path):
+        log_path = cc_path / "log.txt"
+        logger = logging.getLogger(name=str(uuid.uuid4()))
+        logger.setLevel(logging.INFO)
+
+        file_handler = logging.FileHandler(log_path)
+        file_handler.setLevel(logging.INFO)
+
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+
+        try:
+            self._solve(cc_path)
+        except Exception as e:
+            logger.error(f"An error occurred while solving the optimization problem: {e}")
+            return None
+
+    def _solve(self, cc_path: Path):
+
+        # excel_path = cc_path / "val.xls"
+        dat_path = cc_path / "temp.dat"
+
+        model: AbstractModel
+        if self.online:
+            # mindurata
+            model = optimization.models.create_min_durata_model(dat_path)
+        else:
+            # maxdurata
+            model = optimization.models.create_max_durata_model(dat_path)
+
+        model_filename = cc_path / "model.lp"
+        # Actually create the model that will be solved
+        model.write(str(model_filename), io_options={'symbolic_solver_labels': True})
+
+        solver_arguments = dict()
+        solver_arguments['options'] = dict()
+
+        if self.solver == SolverEnum.CPLEX:
+            solver_arguments['options']['timelimit'] = self.optimization_time_limit
+            solver_arguments['options']['mip_tolerances_mipgap'] = self.optimization_gap
+            solver_arguments['executable'] = "/opt/ibm/ILOG/CPLEX_Studio128/cplex/bin/x86-64_linux/cplex"
+        elif self.solver == SolverEnum.GLPK:
+            solver_arguments['options']['tmlim'] = self.optimization_time_limit
+            solver_arguments['options']['mipgap'] = self.optimization_gap
+        elif self.solver == SolverEnum.GUROBI:
+            solver_arguments['options']['TimeLimit'] = self.optimization_time_limit
+            solver_arguments['options']['MIPGap'] = self.optimization_gap
+        else:
+            raise ValueError("Unknown solver")
+
+        solver = SolverFactory(self.solver.value, **solver_arguments)
+        results: SolverResults = solver.solve(model, tee=True)
+
+        is_solver_ok = results.solver.status == SolverStatus.ok
+        solver_reachec_optimality = results.solver.termination_condition == TerminationCondition.optimal
+        solver_reached_time_limit = results.solver.termination_condition == TerminationCondition.maxTimeLimit
+
+        if is_solver_ok and (solver_reachec_optimality or solver_reached_time_limit):
+            return SolutionHandler.extract_solution(self, model, results)
+
+
+class Solution:
+    pass
+
+
+class SolutionHandler:
+    sol = None
+
+    # id commission
+    # id configuration
+
+    def __init__(self, sol):
+        self.sol = sol
+
+    @staticmethod
+    def extract_solution(conf: OptimizationConfiguration, model: AbstractModel, result: SolverResults) -> Solution:
+        s = Solution()
+        print(repr(conf))
+        print(repr(model))
+        print(repr(result))
+
+        return s
