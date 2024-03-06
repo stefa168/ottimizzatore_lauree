@@ -6,6 +6,7 @@ from typing import List
 from pathlib import Path
 
 import pandas as pd
+import pyomo.environ
 import sqlalchemy as sqla
 from pyomo.core import AbstractModel
 from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition, SolverResults
@@ -394,7 +395,8 @@ class OptimizationConfiguration:
             raise ValueError("Unknown solver")
 
         solver = SolverFactory(self.solver.value, **solver_arguments)
-        results: SolverResults = solver.solve(model, tee=True)
+        solver_log_path = cc_path / "solver.log"
+        results: SolverResults = solver.solve(model, tee=True, keepfiles=True, logfile=str(solver_log_path.absolute()))
 
         is_solver_ok = results.solver.status == SolverStatus.ok
         solver_reachec_optimality = results.solver.termination_condition == TerminationCondition.optimal
@@ -423,5 +425,36 @@ class SolutionHandler:
         print(repr(conf))
         print(repr(model))
         print(repr(result))
+
+        def output_commissione(model: AbstractModel, commission: pyomo.environ.Set):
+            from pyomo.core.expr import evaluate_expression
+            from pyomo.environ import value
+            model.model_name = "maxDurata"
+
+            out_str = ""
+            for c in commission:
+                out_str += f'y[{c}] = {model.y[c]}\n'
+                out_str += 'durComm = {}\n'.format(value(sum(model.durata[cand] * model.x[cand, c] for cand in model.candidati)))
+
+                # if model.y[c] > 0.8:
+                #     mag = 'MAG' if model.model_name == 'minDurata' and model.y2[c] else ''
+                out_str += 'Commissione {} {}\n'.format(c, "")
+                out_str += 'Docenti:\n'
+                for d in model.nomi_docenti:
+                    if value(model.z[d, c]) > 0.8:
+                        out_str += '{}\n'.format(d)  # model.z[d,c])
+                out_str += '\nTesisti:\n'
+                durata = 0
+                for t in model.candidati:
+                    if value(model.x[t, c]) > 0.8:
+                        tMag = '*' if model.tesisti['Durata'][t] > 15 else ''
+                        out_str += '{} {} {}\n'.format(model.tesisti['Cognome'][t], model.tesisti['Nome'][t],
+                                                         tMag)  # ,model.x[t,c])
+                        durata += model.tesisti['Durata'][t]
+                out_str += 'Durata commissione: {} min\n\n'.format(durata)
+            return out_str
+
+        print(output_commissione(model, model.commissioni_mattina))
+        print(output_commissione(model, model.commissioni_pomeriggio))
 
         return s
