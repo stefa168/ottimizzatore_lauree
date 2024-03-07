@@ -179,6 +179,7 @@ class Commission:
                     entry.candidate.surname,
                     entry.candidate.name,
                     entry.duration,
+                    entry.supervisor.id,
                     entry.supervisor.full_name,
                     entry.supervisor.role.abbr,
                     'SI',
@@ -190,6 +191,7 @@ class Commission:
             if entry.counter_supervisor is not None:
                 try:
                     entity.extend([
+                        entry.counter_supervisor.id,
                         entry.counter_supervisor.full_name,
                         entry.counter_supervisor.role.abbr,
                         'SI',
@@ -204,8 +206,8 @@ class Commission:
 
         df = pd.DataFrame(
             entries,
-            columns=["ID", "Cognome", "Nome", "Durata", "Relatore", "Ruolo", "Mattina", "Pomeriggio", "Controrelatore",
-                     "Ruolo", "Mattina", "Pomeriggio"]
+            columns=["ID_Studente", "Cognome", "Nome", "Durata", "ID_Relatore", "Relatore", "Ruolo", "Mattina",
+                     "Pomeriggio", "ID_Controrelatore", "Controrelatore", "Ruolo", "Mattina", "Pomeriggio"]
         )
 
         df.to_excel(xls_path, index=False)
@@ -403,58 +405,92 @@ class OptimizationConfiguration:
         solver_reached_time_limit = results.solver.termination_condition == TerminationCondition.maxTimeLimit
 
         if is_solver_ok and (solver_reachec_optimality or solver_reached_time_limit):
-            return SolutionHandler.extract_solution(self, model, results)
+            return Solution(self, model, results)
+
+
+class SolutionCommission:
+    id: int
+    duration: int
+    professors: List['Professor']
+    students: List['Student']
+
+    def __init__(self):
+        self.id = 0
+        self.duration = 0
+        self.professors = []
+        self.students = []
 
 
 class Solution:
-    pass
-
-
-class SolutionHandler:
-    sol = None
-
     # id commission
     # id configuration
 
-    def __init__(self, sol):
-        self.sol = sol
+    morning_commissions = []
+    afternoon_commissions = []
 
-    @staticmethod
-    def extract_solution(conf: OptimizationConfiguration, model: AbstractModel, result: SolverResults) -> Solution:
-        s = Solution()
-        print(repr(conf))
-        print(repr(model))
-        print(repr(result))
+    def __init__(self, conf: OptimizationConfiguration, model: AbstractModel, result: SolverResults):
+        from session_maker import SessionMakerSingleton
+        with SessionMakerSingleton.get_session_maker().begin() as session:
+            def extract_commissions(model: AbstractModel, commission):
+                from pyomo.environ import value
+                commissions = []
 
-        def output_commissione(model: AbstractModel, commission: pyomo.environ.Set):
-            from pyomo.core.expr import evaluate_expression
-            from pyomo.environ import value
-            model.model_name = "maxDurata"
+                for commission_id, commission in enumerate(model.commissioni_mattina):
+                    new_commission = SolutionCommission()
 
-            out_str = ""
-            for c in commission:
-                out_str += f'y[{c}] = {model.y[c]}\n'
-                out_str += 'durComm = {}\n'.format(value(sum(model.durata[cand] * model.x[cand, c] for cand in model.candidati)))
+                    for index, professor in model.docenti.iterrows():
+                        if value(model.z[professor['Relatore'], commission]) > 0.8:
+                            session_professor = session.query(Professor).filter_by(id=int(professor['ID'])).first()
+                            new_commission.professors.append(session_professor)
 
-                # if model.y[c] > 0.8:
-                #     mag = 'MAG' if model.model_name == 'minDurata' and model.y2[c] else ''
-                out_str += 'Commissione {} {}\n'.format(c, "")
-                out_str += 'Docenti:\n'
-                for d in model.nomi_docenti:
-                    if value(model.z[d, c]) > 0.8:
-                        out_str += '{}\n'.format(d)  # model.z[d,c])
-                out_str += '\nTesisti:\n'
-                durata = 0
-                for t in model.candidati:
-                    if value(model.x[t, c]) > 0.8:
-                        tMag = '*' if model.tesisti['Durata'][t] > 15 else ''
-                        out_str += '{} {} {}\n'.format(model.tesisti['Cognome'][t], model.tesisti['Nome'][t],
-                                                         tMag)  # ,model.x[t,c])
-                        durata += model.tesisti['Durata'][t]
-                out_str += 'Durata commissione: {} min\n\n'.format(durata)
-            return out_str
+                    for candidate in model.candidati:
+                        if value(model.x[candidate, commission]) > 0.8:
+                            session_candidate = session.query(Student).filter_by(id=int(candidate)).first()
 
-        print(output_commissione(model, model.commissioni_mattina))
-        print(output_commissione(model, model.commissioni_pomeriggio))
+                            new_commission.students.append(session_candidate)
+                            new_commission.duration += model.tesisti['Durata'][candidate]
 
-        return s
+                    commissions.append(new_commission)
+
+                return [comm for comm in commissions if comm.duration > 0]
+
+            self.morning_commissions = extract_commissions(model, model.commissioni_mattina)
+            self.afternoon_commissions = extract_commissions(model, model.commissioni_pomeriggio)
+
+            # save the solution to the database
+
+        print("ok")
+
+        # def output_commissione(model: AbstractModel, commission: pyomo.environ.Set):
+        #     from pyomo.core.expr import evaluate_expression
+        #     from pyomo.environ import value
+        #     model.model_name = "maxDurata"
+        #
+        #     out_str = ""
+        #     for c in commission:
+        #         out_str += f'y[{c}] = {model.y[c]}\n'
+        #         out_str += 'durComm = {}\n'.format(value(sum(model.durata[cand] * model.x[cand, c] for cand in model.candidati)))
+        #
+        #         if value(model.y[c]) > 0.8 and model.model_name == 'minDurata' and value(model.y2[c]):
+        #             mag = 'MAG'
+        #         else:
+        #             mag = ''
+        #
+        #         out_str += 'Commissione {} {}\n'.format(c, mag)
+        #         out_str += 'Docenti:\n'
+        #         for d in model.nomi_docenti:
+        #             if value(model.z[d, c]) > 0.8:
+        #                 out_str += '{}\n'.format(d)  # model.z[d,c])
+        #         out_str += '\nTesisti:\n'
+        #         durata = 0
+        #         for t in model.candidati:
+        #             if value(model.x[t, c]) > 0.8:
+        #                 tMag = '*' if model.tesisti['Durata'][t] > 15 else ''
+        #                 out_str += '{} {} {}\n'.format(model.tesisti['Cognome'][t], model.tesisti['Nome'][t],
+        #                                                  tMag)  # ,model.x[t,c])
+        #                 durata += model.tesisti['Durata'][t]
+        #         out_str += 'Durata commissione: {} min\n\n'.format(durata)
+        #     return out_str
+
+        # print(output_commissione(model, model.commissioni_mattina))
+        # print(output_commissione(model, model.commissioni_pomeriggio))

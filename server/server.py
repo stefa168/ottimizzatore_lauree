@@ -3,15 +3,15 @@ import logging
 import pathlib
 
 import sqlalchemy.exc
-from sqlalchemy import create_engine
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from http import HTTPStatus
 import pandas as pd
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session
 
 from model.model import mapper_registry, Student, Commission, Professor, UniversityRole, CommissionEntry, Degree, \
     OptimizationConfiguration
+from session_maker import SessionMakerSingleton
 
 app = Flask(__name__)
 
@@ -50,8 +50,7 @@ def upload_file():
             }), HTTPStatus.UNPROCESSABLE_ENTITY
 
         # The actual processing of the file, creating the objects and adding them to the database
-        global session_maker
-
+        session_maker = SessionMakerSingleton.get_session_maker()
         commission_name = request.form.get('title') or file.filename.removesuffix(".xlsx").removesuffix(".xls")
 
         def get_or_create_professor(ext_session: Session, name: str, surname: str):
@@ -146,6 +145,8 @@ def upload_file():
 @app.route('/commission', defaults={'cid': None}, methods=['GET'])
 @app.route('/commission/<cid>', methods=['GET'])
 def get_commission(cid: int | None):
+    session_maker = SessionMakerSingleton.get_session_maker()
+
     try:
         if cid is None:
             # No ID provided, return all commissions
@@ -171,6 +172,8 @@ def get_commission(cid: int | None):
 
 @app.route('/professor/<pid>', methods=['PUT'])
 def update_professor(pid: int):
+    session_maker = SessionMakerSingleton.get_session_maker()
+
     professor: Professor | None = None
     try:
         with session_maker.begin() as session:
@@ -193,6 +196,8 @@ def update_professor(pid: int):
 
 @app.route('/commission/<cid>', methods=['DELETE'])
 def delete_commission(cid: int):
+    session_maker = SessionMakerSingleton.get_session_maker()
+
     try:
         with session_maker.begin() as session:
             commission = session.query(Commission).filter_by(id=cid).first()
@@ -219,6 +224,8 @@ OPT_TMP_DIR = ".temp/"
 
 @app.route('/commission/<commission_id>/solve/<config_id>', methods=['POST'])
 def solve_commission(commission_id: int, config_id: int):
+    session_maker = SessionMakerSingleton.get_session_maker()
+
     # retrieve the Commission data from the database
     # for now we don't have a configuration data model, so we just ignore the config_id
     try:
@@ -269,9 +276,9 @@ def basic_authentication():
 
 
 def main():
-    global engine, executor
+    global executor
 
-    mapper_registry.metadata.create_all(engine)
+    mapper_registry.metadata.create_all(SessionMakerSingleton.get_engine())
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
     app.run(host=HOST_NAME, port=HOST_PORT, debug=True)
 
@@ -282,8 +289,7 @@ if __name__ == '__main__':
     logging.basicConfig()
     logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
-    engine = create_engine('postgresql://user:password@localhost:5432/postgres')
-    session_maker = sessionmaker(engine)
+    SessionMakerSingleton.initialize("postgresql://user:password@localhost:5432/postgres")
 
     CORS(app, origins=["http://localhost:5000", "http://localhost:5173"])
     main()

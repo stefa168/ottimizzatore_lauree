@@ -177,14 +177,16 @@ def create_max_durata_model(dat_path: Path) -> pyo.AbstractModel:
     model.relatori = model.tesisti.drop_duplicates(subset='Relatore')
     # todo load also the database IDs corresponding to all the professors
     # Then, we select the columns we are interested in
-    model.relatori = model.relatori[['Relatore', 'Mattina', 'Pomeriggio', 'Ruolo']]
+    model.relatori = model.relatori[['ID_Relatore', 'Relatore', 'Mattina', 'Pomeriggio', 'Ruolo']]
     # Finally, we rename the columns of the new dataframe
-    model.relatori.columns = ['Relatore', 'Mattina', 'Pomeriggio', 'tipo']
+    model.relatori.columns = ['ID', 'Relatore', 'Mattina', 'Pomeriggio', 'tipo']
 
     # 8. Set the counter-supervisors (the procedure is the same as for the supervisors)
     model.controrelatori = model.tesisti.drop_duplicates(subset='Controrelatore').dropna(subset=['Controrelatore'])
-    model.controrelatori = model.controrelatori[['Controrelatore', 'Mattina.1', 'Pomeriggio.1', 'Ruolo.1']]
-    model.controrelatori.columns = ['Relatore', 'Mattina', 'Pomeriggio', 'tipo']
+    model.controrelatori = model.controrelatori[
+        ['ID_Controrelatore', 'Controrelatore', 'Mattina.1', 'Pomeriggio.1', 'Ruolo.1']
+    ]
+    model.controrelatori.columns = ['ID', 'Relatore', 'Mattina', 'Pomeriggio', 'tipo']
 
     # 9. Set the assistant supervisors
     # model.co_relatori = model.tesisti.drop_duplicates(subset='Co-Relatore').dropna(subset=['Co-Relatore'])
@@ -255,10 +257,14 @@ def create_max_durata_model(dat_path: Path) -> pyo.AbstractModel:
     model.max_doc = pyo.Var(within=pyo.NonNegativeIntegers)
 
     # 16. Define the binary variables
+    # X: candidati assegnati a commissione
     model.x = pyo.Var(model.candidati, model.commissioni, within=pyo.Binary)
+    # Y: commissione in uso
     model.y = pyo.Var(model.commissioni, within=pyo.Binary)
+    # Z: docenti assegnati a commissione
     model.z = pyo.Var(model.nomi_docenti, model.commissioni, within=pyo.Binary)
 
+    # W: massimizzare la durata di ogni singola commissione
     model.w = pyo.Var(within=pyo.Reals)
 
     # 17. Define the objective function
@@ -269,8 +275,8 @@ def create_max_durata_model(dat_path: Path) -> pyo.AbstractModel:
     def obj_expression(model):
         return (
                 model.alpha * model.w
-                - model.beta * (model.max_ord - model.min_ord) \
-                - model.gamma * (model.max_doc - model.min_doc) \
+                - model.beta * (model.max_ord - model.min_ord)
+                - model.gamma * (model.max_doc - model.min_doc)
                 - sum(model.y[k] for k in model.commissioni_pomeriggio)
         )
 
