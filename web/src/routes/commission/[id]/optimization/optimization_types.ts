@@ -4,6 +4,7 @@ type SolverType = 'cplex' | 'gurobi' | 'glpk';
 
 interface OptimizationConfiguration {
     id: number,
+    title: string
     commission_id: number,
     max_duration: number,
     max_commissions_morning: number,

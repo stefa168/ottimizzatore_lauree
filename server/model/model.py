@@ -261,6 +261,7 @@ class OptimizationConfiguration(Hashable):
     __tablename__ = "optimization_configurations"
 
     id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
+    title: str = Column(sqla.String(256), nullable=False, server_default="Nuova configurazione", default="Nuova configurazione")
 
     commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission")
@@ -279,8 +280,9 @@ class OptimizationConfiguration(Hashable):
     optimization_time_limit: int = Column(sqla.Integer, nullable=False, server_default='60', default=60)
     optimization_gap: float = Column(sqla.Float, nullable=False, server_default='0.005', default=0.005)
 
-    def __init__(self, commission_id: int):
+    def __init__(self, commission_id: int, title: str):
         self.commission_id = commission_id
+        self.title = title
 
     def create_dat_file(self, base_path: Path) -> (Path, Path):
         dat_file = base_path / "temp.dat"
@@ -316,6 +318,7 @@ class OptimizationConfiguration(Hashable):
     def serialize(self):
         return {
             'id': self.id,
+            'title': self.title,
             'commission_id': self.commission_id,
             'max_duration': self.max_duration,
             'max_commissions_morning': self.max_commissions_morning,

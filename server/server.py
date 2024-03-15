@@ -213,15 +213,18 @@ def create_configuration(cid: int):
     try:
         session: Session
         with session_maker.begin() as session:
-
-            configuration = OptimizationConfiguration(cid)
+            configuration = OptimizationConfiguration(cid, "Nuova configurazione")
             session.add(configuration)
             # needed to actually have the database generate the ID
             session.flush()
+
             new_id = configuration.id
+            title = f"{configuration.title} {new_id}"
+
+            configuration.title = title
             session.commit()
 
-            return jsonify({'success': 'Configuration created', 'id': new_id}), HTTPStatus.CREATED
+            return jsonify({'success': 'Configuration created', 'id': new_id, 'title': title}), HTTPStatus.CREATED
 
     except Exception as e:
         print(e)
