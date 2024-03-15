@@ -9,8 +9,12 @@ from http import HTTPStatus
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from model.model import mapper_registry, Student, Commission, Professor, CommissionEntry, \
-    OptimizationConfiguration
+from model.model import mapper_registry
+from model.optimization_configuration import OptimizationConfiguration
+from model.commission_entry import CommissionEntry
+from model.commission import Commission
+from model.professor import Professor
+from model.student import Student
 from model.enums import Degree, UniversityRole
 from session_maker import SessionMakerSingleton
 
