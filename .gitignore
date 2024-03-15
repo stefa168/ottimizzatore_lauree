@@ -11,6 +11,9 @@ keys.json
 cplex*.bin
 venv
 
+# Copilot
+.idea/copilot
+
 *.xlsx
 *.xlsx#
 *.xls

@@ -230,11 +230,15 @@ def solve_commission(commission_id: int, config_id: int):
     # for now we don't have a configuration data model, so we just ignore the config_id
     try:
         with session_maker.begin() as session:
-            commission = session.query(Commission).filter_by(id=commission_id).first()
+            commission: Commission = session.query(Commission).filter_by(id=commission_id).first()
             if commission is None:
                 return jsonify({'error': f'Commission with ID {commission_id} not found'}), HTTPStatus.NOT_FOUND
 
-            configuration = OptimizationConfiguration(config_id, commission_id)
+            configuration: OptimizationConfiguration = (
+                session.query(OptimizationConfiguration)
+                .filter_by(id=config_id)
+                .first()
+            )
             if configuration is None:
                 return jsonify({'error': f'Configuration with ID {config_id} not found'}), HTTPStatus.NOT_FOUND
 
@@ -249,13 +253,13 @@ def solve_commission(commission_id: int, config_id: int):
             # noinspection PyArgumentList
             commission.export_xls(cc_path)
 
-            # Disabled for now, as we are not using the session to store the configuration
-            # session.expunge(configuration)
+            version_hash = configuration.hash()
+            session.expunge(configuration)
 
             global executor
             # We start the optimization
             # todo save the future object in a dictionary to be able to interact with it later
-            future = executor.submit(configuration.solver_wrapper, cc_path)
+            future = executor.submit(configuration.solver_wrapper, cc_path, version_hash)
 
             return jsonify({'success': 'Optimization started', 'future_id': id(future)}), HTTPStatus.ACCEPTED
 
