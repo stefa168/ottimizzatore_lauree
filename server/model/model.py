@@ -279,8 +279,7 @@ class OptimizationConfiguration(Hashable):
     optimization_time_limit: int = Column(sqla.Integer, nullable=False, server_default='60', default=60)
     optimization_gap: float = Column(sqla.Float, nullable=False, server_default='0.005', default=0.005)
 
-    def __init__(self, config_id: int, commission_id: int):
-        self.id = config_id
+    def __init__(self, commission_id: int):
         self.commission_id = commission_id
 
     def create_dat_file(self, base_path: Path) -> (Path, Path):

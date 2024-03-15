@@ -206,6 +206,31 @@ def get_configuration(cid: int, config_id: int | None):
         }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
+@app.route('/commission/<cid>/configuration', methods=['POST'])
+def create_configuration(cid: int):
+    session_maker = SessionMakerSingleton.get_session_maker()
+
+    try:
+        session: Session
+        with session_maker.begin() as session:
+
+            configuration = OptimizationConfiguration(cid)
+            session.add(configuration)
+            # needed to actually have the database generate the ID
+            session.flush()
+            new_id = configuration.id
+            session.commit()
+
+            return jsonify({'success': 'Configuration created', 'id': new_id}), HTTPStatus.CREATED
+
+    except Exception as e:
+        print(e)
+        return jsonify({
+            'error': 'Error creating the configuration',
+            'details': str(e)
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
 @app.route('/professor/<pid>', methods=['PUT'])
 def update_professor(pid: int):
     session_maker = SessionMakerSingleton.get_session_maker()
