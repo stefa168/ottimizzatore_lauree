@@ -98,7 +98,6 @@
         // If the id changes it means that we are moving to a new page.
         // Only in this case we want to show the loading message because we might take a while to load the data of the
         // new commission chosen.
-        console.log(from, to, from?.route.id, to?.route.id)
         if (from?.params?.id != to?.params?.id) {
             loadingProblem = true;
         }
