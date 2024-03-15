@@ -222,9 +222,14 @@ def create_configuration(cid: int):
             title = f"{configuration.title} {new_id}"
 
             configuration.title = title
-            session.commit()
+            # session.commit()
 
-            return jsonify({'success': 'Configuration created', 'id': new_id, 'title': title}), HTTPStatus.CREATED
+            return jsonify({
+                'success': 'Configuration created',
+                'id': new_id,
+                'title': title,
+                'new_config': configuration.serialize()
+            }), HTTPStatus.CREATED
 
     except Exception as e:
         print(e)
