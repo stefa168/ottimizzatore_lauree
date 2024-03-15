@@ -261,7 +261,10 @@ class OptimizationConfiguration(Hashable):
     __tablename__ = "optimization_configurations"
 
     id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
-    title: str = Column(sqla.String(256), nullable=False, server_default="Nuova configurazione", default="Nuova configurazione")
+    title: str = Column(sqla.String(256),
+                        nullable=False,
+                        server_default="Nuova configurazione",
+                        default="Nuova configurazione")
 
     commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission")
