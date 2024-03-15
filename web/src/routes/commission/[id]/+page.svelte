@@ -1,5 +1,6 @@
 <script lang="ts">
     import * as Tabs from "$lib/components/ui/tabs";
+    import * as Card from "$lib/components/ui/card";
     import StudentsTable from './commission-students-table.svelte'
     import ProfessorsTable from './commission-professors-table.svelte'
     import type {Commission} from "./commission_types";
@@ -22,7 +23,7 @@
 </script>
 
 
-<div class="container mx-auto py-10">
+<div class="container mx-auto pb-10">
     <h1 class="text-2xl mb-4">{commission.title}</h1>
     <Tabs.Root value="candidates">
         <div id="toolbar" class="w-full">
@@ -39,7 +40,18 @@
             <ProfessorsTable {commissionProfessors}/>
         </Tabs.Content>
         <Tabs.Content value="optimization" class="text-center">
-            Ottimizzazione
+            <Card.Root>
+                <Card.Header>
+                    <Card.Title>Card Title</Card.Title>
+                    <Card.Description>Card Description</Card.Description>
+                </Card.Header>
+                <Card.Content>
+                    <p>Card Content</p>
+                </Card.Content>
+                <Card.Footer>
+                    <p>Card Footer</p>
+                </Card.Footer>
+            </Card.Root>
         </Tabs.Content>
     </Tabs.Root>
 </div>

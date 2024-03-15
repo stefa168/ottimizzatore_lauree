@@ -216,7 +216,7 @@
     </footer>
 </aside>
 
-<main class="p-4 sm:ml-64">
+<main class="pt-6 p-4 sm:ml-64">
     {#if $navigating}
         <div class="mt-32 flex flex-col items-center justify-center h-full">
             <MdiLoading class="w-16 h-16 animate-spin"/>
