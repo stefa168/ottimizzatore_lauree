@@ -9,8 +9,9 @@ from http import HTTPStatus
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from model.model import mapper_registry, Student, Commission, Professor, UniversityRole, CommissionEntry, Degree, \
+from model.model import mapper_registry, Student, Commission, Professor, CommissionEntry, \
     OptimizationConfiguration
+from model.enums import Degree, UniversityRole
 from session_maker import SessionMakerSingleton
 
 app = Flask(__name__)

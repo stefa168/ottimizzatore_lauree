@@ -1,4 +1,3 @@
-import enum
 import logging
 import uuid
 from dataclasses import dataclass
@@ -11,53 +10,15 @@ from pyomo.core import AbstractModel
 from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition, SolverResults
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship, registry
-from sqlalchemy.types import TypeDecorator, String
 
 import optimization.models
-import hashlib
+from model.enums import Degree, UniversityRole, SolverEnum
+
+from model.hashable import Hashable
+from model.string_enum import StringEnum
 
 mapper_registry = registry()
 metadata = mapper_registry.metadata
-
-
-class Hashable:
-    def hash(self) -> str:
-        raise NotImplementedError("Subclasses must implement this method")
-
-    @staticmethod
-    def hash_data(data) -> str:
-        # Ensure the data is in bytes
-        if not isinstance(data, bytes):
-            data = repr(data).encode('utf-8')
-        return hashlib.sha256(data).hexdigest()
-
-
-class StringEnum(TypeDecorator):
-    """
-    A custom type for SQLAlchemy to store enums as strings in the database,
-    while representing them as enum objects in Python.
-    """
-    impl = String
-
-    def __init__(self, enum_type, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.enum_type = enum_type
-
-    def process_bind_param(self, value, dialect):
-        """Convert enum object to string before storing in the database."""
-        return value.value if value is not None else None
-
-    def process_result_value(self, value, dialect):
-        """Convert string back to enum object when loading from the database."""
-        return self.enum_type(value) if value is not None else None
-
-
-class Degree(Hashable, enum.Enum):
-    BACHELORS = "bachelors"
-    MASTERS = "masters"
-
-    def hash(self):
-        return Hashable.hash_data(self.value)
 
 
 # The annotation is needed to avoid having to declare a boilerplate class...
@@ -118,27 +79,6 @@ class Student(Hashable):
 
     def hash(self):
         return Hashable.hash_data(repr(self))
-
-
-class UniversityRole(Hashable, enum.Enum):
-    ORDINARY = "ordinary"
-    ASSOCIATE = "associate"
-    RESEARCHER = "researcher"
-    UNSPECIFIED = "unspecified"
-
-    @property
-    def abbr(self):
-        if self == UniversityRole.ORDINARY:
-            return "PO"
-        elif self == UniversityRole.ASSOCIATE:
-            return "PA"
-        elif self == UniversityRole.RESEARCHER:
-            return "RIC"
-        else:
-            raise ValueError("Role not set.")
-
-    def hash(self):
-        return Hashable.hash_data(self.value)
 
 
 @mapper_registry.mapped
@@ -251,23 +191,6 @@ class Commission(Hashable):
         return Hashable.hash_data(repr(self) + "".join([entry.hash() for entry in self.entries]))
 
 
-class TimeAvaliability(Hashable, enum.Enum):
-    MORNING = "morning"
-    AFTERNOON = "afternoon"
-    ALWAYS = "always"
-
-    @property
-    def available_morning(self):
-        return self == TimeAvaliability.MORNING or self == TimeAvaliability.ALWAYS
-
-    @property
-    def available_afternoon(self):
-        return self == TimeAvaliability.AFTERNOON or self == TimeAvaliability.ALWAYS
-
-    def hash(self):
-        return Hashable.hash_data(self.value)
-
-
 @mapper_registry.mapped
 @dataclass
 class CommissionEntry(Hashable):
@@ -331,15 +254,6 @@ class CommissionEntry(Hashable):
 
     def hash(self):
         return Hashable.hash_data(repr(self))
-
-
-class SolverEnum(Hashable, enum.Enum):
-    CPLEX = 'cplex'
-    GLPK = 'glpk'
-    GUROBI = 'gurobi'
-
-    def hash(self):
-        return Hashable.hash_data(self.value)
 
 
 @mapper_registry.mapped
