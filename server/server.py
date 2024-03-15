@@ -171,6 +171,41 @@ def get_commission(cid: int | None):
         }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
+@app.route('/commission/<cid>/configuration', defaults={'config_id': None}, methods=['GET'])
+@app.route('/commission/<cid>/configuration/<config_id>', methods=['GET'])
+def get_configuration(cid: int, config_id: int | None):
+    session_maker = SessionMakerSingleton.get_session_maker()
+
+    try:
+        with session_maker.begin() as session:
+            if config_id is None:
+                # No ID provided, return all configurations for the commission
+                configurations: list[OptimizationConfiguration] = (
+                    session.query(OptimizationConfiguration)
+                    .filter_by(commission_id=cid)
+                    .all()
+                )
+                return jsonify([c.serialize() for c in configurations]), HTTPStatus.OK
+            else:
+                # ID provided, return specific configuration
+                configuration = (
+                    session.query(OptimizationConfiguration)
+                    .filter_by(id=config_id, commission_id=cid)
+                    .first()
+                )
+                if configuration is None:
+                    return jsonify({'error': 'Configuration not found'}), HTTPStatus.NOT_FOUND
+                else:
+                    return jsonify(configuration.serialize()), HTTPStatus.OK
+
+    except Exception as e:
+        print(e)
+        return jsonify({
+            'error': 'Error retrieving the configuration',
+            'details': str(e)
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
 @app.route('/professor/<pid>', methods=['PUT'])
 def update_professor(pid: int):
     session_maker = SessionMakerSingleton.get_session_maker()

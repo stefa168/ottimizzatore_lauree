@@ -314,6 +314,22 @@ class OptimizationConfiguration(Hashable):
                f"{self.min_professor_number=}, {self.min_professor_number_masters=}, {self.max_professor_numer=}, " \
                f"{self.solver=}, {self.optimization_time_limit=}, {self.optimization_gap=})"
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'commission_id': self.commission_id,
+            'max_duration': self.max_duration,
+            'max_commissions_morning': self.max_commissions_morning,
+            'max_commissions_afternoon': self.max_commissions_afternoon,
+            'online': self.online,
+            'min_professor_number': self.min_professor_number,
+            'min_professor_number_masters': self.min_professor_number_masters,
+            'max_professor_numer': self.max_professor_numer,
+            'solver': self.solver.value,
+            'optimization_time_limit': self.optimization_time_limit,
+            'optimization_gap': self.optimization_gap
+        }
+
     def solver_wrapper(self, cc_path: Path, version_hash: str):
         log_path = cc_path / "log.txt"
         logger = logging.getLogger(name=str(uuid.uuid4()))
