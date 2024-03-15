@@ -1,7 +1,7 @@
 from pyomo.core import AbstractModel
 from pyomo.opt import SolverResults
 
-from model.optimization_configuration import OptimizationConfiguration
+from model.model import OptimizationConfiguration
 
 
 class Solution:
