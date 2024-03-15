@@ -27,7 +27,6 @@ metadata = mapper_registry.metadata
 @dataclass
 class Student(Hashable):
     _tablename = 'students'
-    # _id_seq = sqla.Sequence(_tablename + "_id_seq")
 
     __table__ = sqla.Table(
         _tablename,
