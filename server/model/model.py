@@ -267,7 +267,7 @@ class OptimizationConfiguration(Hashable):
                         default="Nuova configurazione")
 
     commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission")
+    commission: Commission = relationship("Commission", cascade="all, delete-orphan", single_parent=True)
 
     max_duration: int = Column(sqla.Integer, nullable=False, server_default='210', default=210)
     max_commissions_morning: int = Column(sqla.Integer, nullable=False, server_default='6', default=6)
@@ -431,11 +431,15 @@ class SolutionCommission:
 
     # The commission that this solution is for
     commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission")
+    commission: Commission = relationship("Commission",
+                                          cascade="all, delete-orphan",
+                                          single_parent=True)
 
     # The optimization configuration that generated this solution
     opt_config_id: int = Column(sqla.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
-    opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
+    opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration",
+                                                         cascade="all, delete-orphan",
+                                                         single_parent=True)
 
     duration: int = Column(sqla.Integer, nullable=False)
 
@@ -453,8 +457,14 @@ class SolutionCommission:
         Column('student_id', sqla.Integer, ForeignKey('students.id'), primary_key=True)
     )
 
-    professors: List['Professor'] = relationship("Professor", secondary=_solution_commission_professors)
-    students: List['Student'] = relationship("Student", secondary=_solution_commission_students)
+    professors: List['Professor'] = relationship("Professor",
+                                                 secondary=_solution_commission_professors,
+                                                 cascade="all, delete-orphan",
+                                                 single_parent=True)
+    students: List['Student'] = relationship("Student",
+                                             secondary=_solution_commission_students,
+                                             cascade="all, delete-orphan",
+                                             single_parent=True)
 
     __table_args__ = (
         sqla.UniqueConstraint('commission_id', 'order', 'opt_config_id'),
