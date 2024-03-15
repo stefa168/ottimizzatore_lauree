@@ -1,1 +1,1 @@
-Optimization
+<p class="text-center mt-6">Nessun problema di ottimizzazione scelto</p>
