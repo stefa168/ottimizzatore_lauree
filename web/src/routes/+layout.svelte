@@ -3,9 +3,8 @@
     import {ModeWatcher} from "mode-watcher";
     import {toast} from "svelte-sonner";
     import type {CommissionUploadSuccessEvent} from "./schema";
-    import {goto} from "$app/navigation";
+    import {goto, beforeNavigate, afterNavigate} from "$app/navigation";
     import {onMount} from "svelte";
-    import {navigating} from "$app/stores";
 
     // Icons
     import MdiAlertCircleOutline from '~icons/mdi/alert-circle-outline'
@@ -59,6 +58,7 @@
     function uploadSuccess(event: CommissionUploadSuccessEvent) {
         const d = event.detail;
         problems_data.problems.push({id: d.id, title: d.name});
+        // Force reactivity
         problems_data = problems_data;
         toast.success("La commissione è stata salvata correttamente; la sto aprendo...");
         goto(`/commission/${d.id}`)
@@ -91,6 +91,22 @@
             });
         }
     }
+
+    $: loadingProblem = false;
+
+    beforeNavigate(({from, to}) => {
+        // If the id changes it means that we are moving to a new page.
+        // Only in this case we want to show the loading message because we might take a while to load the data of the
+        // new commission chosen.
+        console.log(from, to, from?.route.id, to?.route.id)
+        if (from?.params?.id != to?.params?.id) {
+            loadingProblem = true;
+        }
+    });
+
+    afterNavigate(() => {
+        loadingProblem = false;
+    });
 </script>
 
 <ModeWatcher/>
@@ -110,7 +126,7 @@
         </a>
     </header>
     <nav id="sidebar-problems-navigator"
-         class="flex-grow flex flex-col px-3 overflow-y-scroll {$navigating ? 'blur-sm pointer-events-none' : ''}">
+         class="flex-grow flex flex-col px-3 overflow-y-scroll {loadingProblem ? 'blur-sm pointer-events-none' : ''}">
         <ul class="space-y-2 font-medium">
             <li>
                 <NewCommissionDialog on:commission-created={uploadSuccess}/>
@@ -135,7 +151,7 @@
                                 <AlertDialog.Footer>
                                     <AlertDialog.Cancel>Annulla</AlertDialog.Cancel>
                                     <AlertDialog.Action on:click={deleteCommission}
-                                            class="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90">
+                                                        class="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90">
                                         Continua
                                     </AlertDialog.Action>
                                 </AlertDialog.Footer>
@@ -145,7 +161,7 @@
                             <li>
                                 <ContextMenu.Root>
                                     <ContextMenu.Trigger>
-                                        <Button href="/commission/{problem.id}"
+                                        <Button href="/commission/{problem.id}/info"
                                                 class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
                                                 variant="link">
                                             <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
@@ -216,13 +232,14 @@
     </footer>
 </aside>
 
-<main class="pt-6 p-4 sm:ml-64">
-    {#if $navigating}
-        <div class="mt-32 flex flex-col items-center justify-center h-full">
+<main class="pt-6 p-4 sm:ml-64 transition duration-1000 ease-in-out relative">
+    {#if loadingProblem}
+        <div id="loadingMessage"
+             class="mt-32 flex flex-col items-center justify-center h-max absolute z-10 w-full"
+             style="position: absolute">
             <MdiLoading class="w-16 h-16 animate-spin"/>
-            <span class="mt-4 text-lg font-medium text-gray-600 dark:text-gray-400">Carico la commissione...</span>
+            <span class="mt-4 text-lg font-medium">Caricando...</span>
         </div>
-    {:else}
-        <slot/>
     {/if}
+    <slot class="{loadingProblem ? 'blur-sm pointer-events-none' : ''}"/>
 </main>

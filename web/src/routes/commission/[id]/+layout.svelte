@@ -1,34 +1,37 @@
 <script lang="ts">
     import * as Tabs from "$lib/components/ui/tabs";
-    import * as Card from "$lib/components/ui/card";
-    import StudentsTable from './commission-students-table.svelte'
-    import ProfessorsTable from './commission-professors-table.svelte'
     import type {Commission} from "./commission_types";
+    import { page } from '$app/stores';
+    import ProfessorsTable from "./commission-professors-table.svelte";
+    import StudentsTable from "./commission-students-table.svelte";
+    import {goto} from "$app/navigation";
 
     export let data: { commissionId: string, commissionData: Commission };
 
     $: commission = data.commissionData
-    $: commissionProfessors = data.commissionData.entries.flatMap((student) => {
-        let professors = [student.supervisor];
-        if (student.supervisor_assistant != null) {
-            professors.push(student.supervisor_assistant);
-        }
-        if (student.counter_supervisor != null) {
-            professors.push(student.counter_supervisor);
-        }
-        return professors;
-    }).filter((professor, index, self) => {
-        return index === self.findIndex((p) => p.id === professor.id);
-    });
+    $: currentSection =  $page.url.pathname.split('/').filter(s => s.length > 0)[2]
 
+    function changeSection(section: string | undefined) {
+        goto(`/commission/${commission.id}/${section ? section : ''}`);
+    }
 </script>
 
-
-
-<!--
 <div class="container mx-auto pb-10">
     <h1 class="text-2xl mb-4">{commission.title}</h1>
-    <Tabs.Root value="candidates">
+
+    <Tabs.Root value={currentSection} onValueChange={changeSection} class="mb-2">
+        <div id="toolbar" class="w-full">
+            <Tabs.List class="content-center">
+                <Tabs.Trigger value="info">Informazioni</Tabs.Trigger>
+                <Tabs.Trigger value="candidates">Studenti Candidati</Tabs.Trigger>
+                <Tabs.Trigger value="professors">Docenti della Commissione</Tabs.Trigger>
+                <Tabs.Trigger value="optimization">Ottimizzazione</Tabs.Trigger>
+            </Tabs.List>
+        </div>
+    </Tabs.Root>
+    
+    <slot/>
+    <!--<Tabs.Root value="candidates">
         <div id="toolbar" class="w-full">
             <Tabs.List class="content-center">
                 <Tabs.Trigger value="candidates">Studenti Candidati</Tabs.Trigger>
@@ -56,5 +59,5 @@
                 </Card.Footer>
             </Card.Root>
         </Tabs.Content>
-    </Tabs.Root>
-</div>-->
+    </Tabs.Root>-->
+</div>
