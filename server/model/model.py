@@ -126,6 +126,11 @@ class Commission(Hashable):
         back_populates="commission",
         cascade="all, delete-orphan"
     )
+    optimization_configurations: List['OptimizationConfiguration'] = relationship(
+        "OptimizationConfiguration",
+        back_populates="commission",
+        cascade="all, delete-orphan"
+    )
 
     def __init__(self, title: str):
         self.title = title
@@ -267,7 +272,7 @@ class OptimizationConfiguration(Hashable):
                         default="Nuova configurazione")
 
     commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission", cascade="all, delete-orphan", single_parent=True)
+    commission: Commission = relationship("Commission")
 
     max_duration: int = Column(sqla.Integer, nullable=False, server_default='210', default=210)
     max_commissions_morning: int = Column(sqla.Integer, nullable=False, server_default='6', default=6)
@@ -282,6 +287,12 @@ class OptimizationConfiguration(Hashable):
                                 server_default=SolverEnum.CPLEX.value)
     optimization_time_limit: int = Column(sqla.Integer, nullable=False, server_default='60', default=60)
     optimization_gap: float = Column(sqla.Float, nullable=False, server_default='0.005', default=0.005)
+
+    solution_commissions: List['SolutionCommission'] = relationship(
+        "SolutionCommission",
+        back_populates="opt_config",
+        cascade="all, delete-orphan"
+    )
 
     def __init__(self, commission_id: int, title: str):
         self.commission_id = commission_id
@@ -431,15 +442,11 @@ class SolutionCommission:
 
     # The commission that this solution is for
     commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission",
-                                          cascade="all, delete-orphan",
-                                          single_parent=True)
+    commission: Commission = relationship("Commission")
 
     # The optimization configuration that generated this solution
     opt_config_id: int = Column(sqla.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
-    opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration",
-                                                         cascade="all, delete-orphan",
-                                                         single_parent=True)
+    opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
 
     duration: int = Column(sqla.Integer, nullable=False)
 
@@ -457,14 +464,8 @@ class SolutionCommission:
         Column('student_id', sqla.Integer, ForeignKey('students.id'), primary_key=True)
     )
 
-    professors: List['Professor'] = relationship("Professor",
-                                                 secondary=_solution_commission_professors,
-                                                 cascade="all, delete-orphan",
-                                                 single_parent=True)
-    students: List['Student'] = relationship("Student",
-                                             secondary=_solution_commission_students,
-                                             cascade="all, delete-orphan",
-                                             single_parent=True)
+    professors: List['Professor'] = relationship("Professor", secondary=_solution_commission_professors)
+    students: List['Student'] = relationship("Student", secondary=_solution_commission_students)
 
     __table_args__ = (
         sqla.UniqueConstraint('commission_id', 'order', 'opt_config_id'),
