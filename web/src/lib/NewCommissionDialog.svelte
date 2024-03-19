@@ -13,16 +13,15 @@
 
     import {defaults, superForm,} from "sveltekit-superforms";
     import {zod} from "sveltekit-superforms/adapters";
-    import {commissionFormSchema, type CommissionUploadSuccess} from "../routes/schema";
-    import {createEventDispatcher} from "svelte";
+    import {commissionFormSchema} from "../routes/schema";
+    import {handleUploadSuccess} from "$lib/store";
+    import type {Commission} from "../routes/commission/[id]/commission_types";
 
     interface UploadErrorResponse {
         error: string;
         details?: string;
         missing_columns?: string[];
     }
-
-    const dispatch = createEventDispatcher();
 
     const form = superForm(defaults(zod(commissionFormSchema)), {
         // With this setting we don't depend on a SvelteKit backend for posting or validating.
@@ -40,16 +39,15 @@
                 data.append('file', form.data.excel!);
                 data.append('title', form.data.title);
 
-                // submit_commission(form.data.title, form.data.excel);
+                // This call needs to stay here because it is too much bound to the component to be moved to a store.
                 await fetch('http://localhost:5000/upload', {
                     method: 'POST',
                     body: data
                 }).then(async (response) => {
                     if (response.ok) {
-                        // Return a promise that resolves with the parsed JSON body
-                        let json: CommissionUploadSuccess = await response.json();
-                        console.log("1")
-                        dispatch('commission-created', json);
+                        // console.log("1") // I don't remember why I put this here, better not to remove it.
+                        let json: {commission: Commission, success:string} = await response.json();
+                        handleUploadSuccess(json.commission);
                         changeDialogState(false);
                     } else {
                         // Return a promise that rejects with the parsed JSON body
@@ -154,13 +152,17 @@
                     </Form.Description>
                     <Form.FieldErrors/>
                 </Form.Field>
-
             </fieldset>
         </form>
         <Dialog.Footer>
-            <Button type="submit"
+            <Button disabled={submitting}
+                    type="submit"
                     form="new-commission-form">
-                Invia
+                {#if submitting}
+                    Caricando...
+                {:else}
+                    Carica
+                {/if}
             </Button>
         </Dialog.Footer>
     </Dialog.Content>

@@ -85,7 +85,7 @@ def upload_file():
                 ext_session.add(prof)
             return prof
 
-        commission_id: int | None = None
+        session: Session
 
         # Automatically commit the transaction if no exception is raised
         with session_maker.begin() as session:
@@ -130,17 +130,34 @@ def upload_file():
                 # Add the student and the commission entry to the session
                 commission.entries.append(entry)
 
-            commission_id = commission.id
+            session.flush()
+
+            return jsonify({
+                'success': 'File processed successfully',
+                'commission': commission.serialize()
+            }), HTTPStatus.CREATED
 
     except Exception as e:
         print(e)
         return jsonify({'error': 'Error processing the file', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
-    else:
+
+
+@app.route('/commissions', methods=['GET'])
+def get_commissions():
+    session_maker = SessionMakerSingleton.get_session_maker()
+
+    try:
+        session: Session
+        with session_maker.begin() as session:
+            commissions = session.query(Commission).all()
+            return jsonify([c.serialize() for c in commissions]), HTTPStatus.OK
+
+    except Exception as e:
+        print(e)
         return jsonify({
-            'success': 'File processed successfully',
-            'name': commission_name,
-            'id': commission_id
-        }), HTTPStatus.OK
+            'error': 'Error retrieving the commissions',
+            'details': str(e)
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @app.route('/commission', defaults={'cid': None}, methods=['GET'])
@@ -149,18 +166,19 @@ def get_commission(cid: int | None):
     session_maker = SessionMakerSingleton.get_session_maker()
 
     try:
-        if cid is None:
-            # No ID provided, return all commissions
-            with session_maker.begin() as session:
+        session: Session
+        with session_maker.begin() as session:
+            if cid is None:
+                # No ID provided, return all commissions
                 commissions = session.query(Commission.id, Commission.title).all()
                 return jsonify([{'id': cid, 'title': title} for cid, title in commissions]), HTTPStatus.OK
-        else:
-            # ID provided, return specific commission
-            with session_maker.begin() as session:
+            else:
+                # ID provided, return specific commission
                 commission = session.query(Commission).filter_by(id=cid).first()
                 if commission is None:
                     return jsonify({'error': 'Commission not found'}), HTTPStatus.NOT_FOUND
                 else:
+                    # noinspection PyArgumentList
                     return jsonify(commission.serialize()), HTTPStatus.OK
 
     except Exception as e:

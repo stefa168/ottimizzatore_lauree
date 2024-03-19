@@ -1,7 +1,10 @@
+import type {OptimizationConfiguration} from "./optimization/optimization_types";
+
 interface Commission {
     id: number,
     title: string
     entries: CommissionEntry[]
+    optimization_configurations: OptimizationConfiguration[]
 }
 
 type DegreeLevel = 'bachelors' | 'masters';

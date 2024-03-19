@@ -2,7 +2,6 @@
     import "../app.css";
     import {ModeWatcher} from "mode-watcher";
     import {toast} from "svelte-sonner";
-    import type {CommissionUploadSuccessEvent} from "./schema";
     import {goto, beforeNavigate, afterNavigate} from "$app/navigation";
     import {onMount} from "svelte";
 
@@ -23,51 +22,15 @@
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
     import {Button} from "$lib/components/ui/button";
     import {Toaster} from "$lib/components/ui/sonner";
+    import {deleteCommission, fetch_problems, loaded, problemsData} from "$lib/store";
+    import type {Commission} from "./commission/[id]/commission_types";
 
-    type CommissionMinimal = {
-        id: number;
-        title: string;
-    }
-
-    let problems_data: { 'loaded': boolean, 'problems': CommissionMinimal [] } = {
-        loaded: false,
-        problems: []
-    };
-
-    async function fetch_problems_list() {
-        problems_data.loaded = false;
-        problems_data.problems = [];
-
-        try {
-            fetch('http://localhost:5000/commission')
-                .then(response => response.json())
-                .then((data) => {
-                    problems_data.problems = data;
-                    problems_data.loaded = true;
-                })
-            console.log(problems_data);
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    onMount(async () => {
-        await fetch_problems_list();
-    });
-
-    function uploadSuccess(event: CommissionUploadSuccessEvent) {
-        const d = event.detail;
-        problems_data.problems.push({id: d.id, title: d.name});
-        // Force reactivity
-        problems_data = problems_data;
-        toast.success("La commissione è stata salvata correttamente; la sto aprendo...");
-        goto(`/commission/${d.id}`)
-    }
+    onMount(fetch_problems);
 
     let deletionAlertOpen = false;
-    let commissionToBeDeleted: CommissionMinimal | null = null;
+    let commissionToBeDeleted: Commission | null = null;
 
-    function openDeletionAlert(problemId: CommissionMinimal) {
+    function openDeletionAlert(problemId: Commission) {
         commissionToBeDeleted = problemId;
         deletionAlertOpen = true;
     }
@@ -78,34 +41,17 @@
         }
     }
 
-    function deleteCommission() {
+    function startCommissionDeletion() {
         if (commissionToBeDeleted !== null) {
-            fetch(`http://localhost:5000/commission/${commissionToBeDeleted.id}`, {
-                method: 'DELETE'
-            }).then(() => {
-                problems_data.problems = problems_data.problems.filter(p => p.id !== commissionToBeDeleted?.id);
-                problems_data = problems_data;
+            // todo catch potential errors
+            deleteCommission(commissionToBeDeleted).then(() => {
                 onDeletionAlertStateChange(false);
                 toast.success("La commissione è stata eliminata correttamente.");
+                // todo redirect only if the currently opened commission is the one that has been deleted
                 goto('/');
             });
         }
     }
-
-    $: loadingProblem = false;
-
-    beforeNavigate(({from, to}) => {
-        // If the id changes it means that we are moving to a new page.
-        // Only in this case we want to show the loading message because we might take a while to load the data of the
-        // new commission chosen.
-        if (from?.params?.id != to?.params?.id) {
-            loadingProblem = true;
-        }
-    });
-
-    afterNavigate(() => {
-        loadingProblem = false;
-    });
 </script>
 
 <ModeWatcher/>
@@ -125,15 +71,17 @@
         </a>
     </header>
     <nav id="sidebar-problems-navigator"
-         class="flex-grow flex flex-col px-3 overflow-y-scroll {loadingProblem ? 'blur-sm pointer-events-none' : ''}">
+         class="flex-grow flex flex-col px-3 overflow-y-scroll">
         <ul class="space-y-2 font-medium">
             <li>
-                <NewCommissionDialog on:commission-created={uploadSuccess}/>
+                <NewCommissionDialog/>
             </li>
             <li>
-                <DropdownButton buttonText="Problemi Attivi" childCount={problems_data.problems.length}
-                                loaded={problems_data.loaded} open={true}>
-                    {#if problems_data.problems.length > 0}
+                <DropdownButton buttonText="Problemi Attivi"
+                                childCount={$problemsData.length}
+                                loaded={$loaded}
+                                open={true}>
+                    {#if $problemsData.length > 0}
                         <AlertDialog.Root bind:open={deletionAlertOpen}>
                             <AlertDialog.Content>
                                 <AlertDialog.Header>
@@ -149,14 +97,14 @@
                                 </AlertDialog.Header>
                                 <AlertDialog.Footer>
                                     <AlertDialog.Cancel>Annulla</AlertDialog.Cancel>
-                                    <AlertDialog.Action on:click={deleteCommission}
+                                    <AlertDialog.Action on:click={startCommissionDeletion}
                                                         class="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90">
                                         Continua
                                     </AlertDialog.Action>
                                 </AlertDialog.Footer>
                             </AlertDialog.Content>
                         </AlertDialog.Root>
-                        {#each problems_data.problems as problem (problem.id)}
+                        {#each $problemsData as problem (problem.id)}
                             <li>
                                 <ContextMenu.Root>
                                     <ContextMenu.Trigger>
@@ -232,13 +180,5 @@
 </aside>
 
 <main class="pt-6 p-4 sm:ml-64 transition duration-1000 ease-in-out relative">
-    {#if loadingProblem}
-        <div id="loadingMessage"
-             class="mt-32 flex flex-col items-center justify-center h-max absolute z-10 w-full"
-             style="position: absolute">
-            <MdiLoading class="w-16 h-16 animate-spin"/>
-            <span class="mt-4 text-lg font-medium">Caricando...</span>
-        </div>
-    {/if}
-    <slot class="{loadingProblem ? 'blur-sm pointer-events-none' : ''}"/>
+    <slot/>
 </main>

@@ -10,13 +10,3 @@ export const commissionFormSchema = z.object({
         .refine((f) => f.name.includes('xls') || f.name.includes('xlsx'), "Il file della commissione deve essere in formato xls o xlsx")
         .nullable()
 });
-
-export type CommissionUploadSuccess = {
-    id: number,
-    name: string,
-    success: string,
-}
-
-export interface CommissionUploadSuccessEvent extends Event {
-    detail: CommissionUploadSuccess
-}

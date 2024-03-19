@@ -140,7 +140,8 @@ class Commission(Hashable):
         return {
             'id': self.id,
             'title': self.title,
-            'entries': [entry.serialize() for entry in self.entries]
+            'entries': [entry.serialize() for entry in self.entries],
+            'optimization_configurations': [conf.serialize() for conf in self.optimization_configurations]
         }
 
     def export_xls(self, base_path: Path):
