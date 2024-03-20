@@ -5,6 +5,7 @@
     import {afterNavigate, goto} from "$app/navigation";
     import {selectedProblem} from "$lib/store";
     import {afterUpdate, onDestroy, onMount} from "svelte";
+    import {browser} from "$app/environment";
 
     export let data: { commission: Commission };
     $: currentSection = $page.url.pathname.split('/').filter(s => s.length > 0)[2];
@@ -25,11 +26,14 @@
     });
 
     function changeSection(section: string | undefined) {
-        if (section === undefined || section === 'info') {
-            goto(`/commission/${$selectedProblem?.id}`);
-        } else {
-            goto(`/commission/${$selectedProblem?.id}/${section}`);
-        }
+        console.log('Changing section to', section);
+        // Fix to prevent the server from trying to call goto, because it can't
+        if (browser)
+            if (section === undefined || section === 'info') {
+                goto(`/commission/${$selectedProblem?.id}`);
+            } else {
+                goto(`/commission/${$selectedProblem?.id}/${section}`);
+            }
     }
 </script>
 
