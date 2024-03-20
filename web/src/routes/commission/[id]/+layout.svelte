@@ -4,7 +4,7 @@
     import {page} from '$app/stores';
     import {afterNavigate, goto} from "$app/navigation";
     import {selectedProblem} from "$lib/store";
-    import {afterUpdate, onMount} from "svelte";
+    import {afterUpdate, onDestroy, onMount} from "svelte";
 
     export let data: { commission: Commission };
     $: currentSection = $page.url.pathname.split('/').filter(s => s.length > 0)[2];
@@ -14,9 +14,14 @@
     // 2. The component is created. Before this, the corresponding .ts file is executed, and the selectedProblem is set,
     //    but only if it's not already set.
     // 3. The component is mounted.
-    // We need to update the selectedProblem only when the user changes the chosen problem: in that case we will have loaded the new problem and then data will contain it.
+    // We need to update the selectedProblem only when the user changes the chosen problem: in that case we will have
+    // loaded the new problem and then data will contain it.
     afterUpdate(() => {
         selectedProblem.set(data.commission);
+    });
+
+    onDestroy(() => {
+        selectedProblem.set(undefined);
     });
 
     function changeSection(section: string | undefined) {
