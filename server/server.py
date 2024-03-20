@@ -234,20 +234,22 @@ def create_configuration(cid: int):
     try:
         session: Session
         with session_maker.begin() as session:
+            # get count of all configurations for the commission
+            count = session.query(OptimizationConfiguration).filter_by(commission_id=cid).count()
+
             configuration = OptimizationConfiguration(cid, "Nuova configurazione")
             session.add(configuration)
             # needed to actually have the database generate the ID
             session.flush()
 
-            new_id = configuration.id
-            title = f"{configuration.title} {new_id}"
+            title = f"{configuration.title} {count + 1}"
 
             configuration.title = title
             # session.commit()
 
             return jsonify({
                 'success': 'Configuration created',
-                'id': new_id,
+                'id': configuration.id,
                 'title': title,
                 'new_config': configuration.serialize()
             }), HTTPStatus.CREATED
