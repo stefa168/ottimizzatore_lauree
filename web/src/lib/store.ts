@@ -4,6 +4,7 @@ import type {Commission} from "../routes/commission/[id]/commission_types";
 export const isLoading = writable(false);
 export const loaded = writable(false);
 export const problemsData: Writable<Commission[]> = writable([]);
+export const selectedProblem: Writable<Commission | null> = writable(null);
 
 export const fetch_problems = async () => {
     isLoading.set(true);
@@ -34,4 +35,8 @@ export const deleteCommission = async (comm: Commission) => {
             return data.filter((c) => c.id !== comm.id);
         });
     });
+}
+
+export const selectProblem = (comm: Commission | null) => {
+    selectedProblem.set(comm)
 }

@@ -25,7 +25,9 @@
     import {deleteCommission, fetch_problems, loaded, problemsData} from "$lib/store";
     import type {Commission} from "./commission/[id]/commission_types";
 
-    onMount(fetch_problems);
+    onMount(async () => {
+        await fetch_problems();
+    });
 
     let deletionAlertOpen = false;
     let commissionToBeDeleted: Commission | null = null;
@@ -108,7 +110,7 @@
                             <li>
                                 <ContextMenu.Root>
                                     <ContextMenu.Trigger>
-                                        <Button href="/commission/{problem.id}/info"
+                                        <Button href="/commission/{problem.id}/"
                                                 class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
                                                 variant="link">
                                             <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
