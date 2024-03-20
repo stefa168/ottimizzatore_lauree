@@ -1,10 +1,8 @@
 <script lang="ts">
-    import type {Commission} from "../commission_types";
     import ProfessorsTable from "../commission-professors-table.svelte";
+    import {selectedProblem} from "$lib/store";
 
-    export let data: { commissionId: string, commissionData: Commission };
-
-    $: commissionProfessors = data.commissionData.entries.flatMap((student) => {
+    $: commissionProfessors = $selectedProblem?.entries.flatMap((student) => {
         let professors = [student.supervisor];
         if (student.supervisor_assistant != null) {
             professors.push(student.supervisor_assistant);
@@ -18,4 +16,6 @@
     });
 </script>
 
-<ProfessorsTable {commissionProfessors}/>
+{#if commissionProfessors !== undefined}
+    <ProfessorsTable {commissionProfessors}/>
+{/if}
