@@ -14,7 +14,7 @@
     import {defaults, superForm,} from "sveltekit-superforms";
     import {zod} from "sveltekit-superforms/adapters";
     import {commissionFormSchema} from "../routes/schema";
-    import {handleUploadSuccess} from "$lib/store";
+    import {type CommissionPreview, handleUploadSuccess} from "$lib/store";
     import type {Commission} from "../routes/commission/[id]/commission_types";
 
     interface UploadErrorResponse {
@@ -46,7 +46,7 @@
                 }).then(async (response) => {
                     if (response.ok) {
                         // console.log("1") // I don't remember why I put this here, better not to remove it.
-                        let json: {commission: Commission, success:string} = await response.json();
+                        let json: { commission: CommissionPreview, success: string } = await response.json();
                         handleUploadSuccess(json.commission);
                         changeDialogState(false);
                     } else {

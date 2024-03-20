@@ -22,17 +22,23 @@
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
     import {Button} from "$lib/components/ui/button";
     import {Toaster} from "$lib/components/ui/sonner";
-    import {deleteCommission, fetch_problems, loaded, problemsData} from "$lib/store";
     import type {Commission} from "./commission/[id]/commission_types";
+    import {
+        type CommissionPreview,
+        commissionsPreviewLoaded,
+        commissionsPreview,
+        fetchCommissionPreviews,
+        deleteCommission
+    } from "$lib/store";
 
     onMount(async () => {
-        await fetch_problems();
+        await fetchCommissionPreviews();
     });
 
     let deletionAlertOpen = false;
-    let commissionToBeDeleted: Commission | null = null;
+    let commissionToBeDeleted: CommissionPreview | null = null;
 
-    function openDeletionAlert(problemId: Commission) {
+    function openDeletionAlert(problemId: CommissionPreview) {
         commissionToBeDeleted = problemId;
         deletionAlertOpen = true;
     }
@@ -50,6 +56,7 @@
                 onDeletionAlertStateChange(false);
                 toast.success("La commissione è stata eliminata correttamente.");
                 // todo redirect only if the currently opened commission is the one that has been deleted
+                // todo redirect eagerly to avoid potential issues
                 goto('/');
             });
         }
@@ -80,10 +87,10 @@
             </li>
             <li>
                 <DropdownButton buttonText="Problemi Attivi"
-                                childCount={$problemsData.length}
-                                loaded={$loaded}
+                                childCount={$commissionsPreview.length}
+                                loaded={$commissionsPreviewLoaded}
                                 open={true}>
-                    {#if $problemsData.length > 0}
+                    {#if $commissionsPreview.length > 0}
                         <AlertDialog.Root bind:open={deletionAlertOpen}>
                             <AlertDialog.Content>
                                 <AlertDialog.Header>
@@ -106,7 +113,7 @@
                                 </AlertDialog.Footer>
                             </AlertDialog.Content>
                         </AlertDialog.Root>
-                        {#each $problemsData as problem (problem.id)}
+                        {#each $commissionsPreview as problem (problem.id)}
                             <li>
                                 <ContextMenu.Root>
                                     <ContextMenu.Trigger>

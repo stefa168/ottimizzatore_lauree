@@ -134,7 +134,10 @@ def upload_file():
 
             return jsonify({
                 'success': 'File processed successfully',
-                'commission': commission.serialize()
+                'commission': {
+                    'id': commission.id,
+                    'title': commission.title
+                }
             }), HTTPStatus.CREATED
 
     except Exception as e:
