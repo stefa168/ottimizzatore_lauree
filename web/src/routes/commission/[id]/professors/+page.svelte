@@ -13,9 +13,7 @@
         return professors;
     }).filter((professor, index, self) => {
         return index === self.findIndex((p) => p.id === professor.id);
-    });
+    }) ?? [];
 </script>
 
-{#if commissionProfessors !== undefined}
-    <ProfessorsTable {commissionProfessors}/>
-{/if}
+<ProfessorsTable {commissionProfessors}/>
