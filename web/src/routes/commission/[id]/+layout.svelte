@@ -3,26 +3,21 @@
     import type {Commission} from "./commission_types";
     import {page} from '$app/stores';
     import {afterNavigate, goto} from "$app/navigation";
-    import {problemsData, selectedProblem, selectProblem} from "$lib/store";
+    import {selectedProblem} from "$lib/store";
+    import {afterUpdate, onMount} from "svelte";
 
-    $: currentSection = $page.url.pathname.split('/').filter(s => s.length > 0)[2]
+    export let data: { commission: Commission };
+    $: currentSection = $page.url.pathname.split('/').filter(s => s.length > 0)[2];
 
-    afterNavigate((nav) => {
-        // If the id changes it means that we are moving to a new commission.
-        const differentCommission = nav.from?.params?.id != nav.to?.params?.id;
-        if (!differentCommission) return;
-
-        const newProblemId = Number(nav.to?.params?.id);
-        const problem = $problemsData.find(p => p.id === newProblemId);
-
-        if (problem === undefined) {
-            goto('/');
-            selectProblem(null);
-        } else {
-            selectProblem(problem);
-            goto(`/commission/${problem.id}`);
-        }
-    })
+    // This is needed because the cycle is a bit complex because of how Svelte's lifecycle works:
+    // 1. The page is navigated to
+    // 2. The component is created. Before this, the corresponding .ts file is executed, and the selectedProblem is set,
+    //    but only if it's not already set.
+    // 3. The component is mounted.
+    // We need to update the selectedProblem only when the user changes the chosen problem: in that case we will have loaded the new problem and then data will contain it.
+    afterUpdate(() => {
+        selectedProblem.set(data.commission);
+    });
 
     function changeSection(section: string | undefined) {
         if (section === undefined || section === 'info') {
