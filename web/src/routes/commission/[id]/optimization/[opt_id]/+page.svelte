@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { page } from '$app/stores';
+    import {selectedConfiguration} from "$lib/store";
 </script>
 
-<p>opt_id: {$page.params.opt_id}</p>
+<p>opt_id: {$selectedConfiguration?.title}</p>
