@@ -11,10 +11,6 @@
     import {get} from "svelte/store";
 
     $: availableConfigurations = $selectedProblem?.optimization_configurations ?? [];
-    $: selected = {
-        value: $selectedConfiguration?.id ?? undefined,
-        label: $selectedConfiguration?.title ?? undefined
-    };
 
     onMount(() => {
         console.log("mounted");
