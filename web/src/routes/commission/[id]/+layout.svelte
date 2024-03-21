@@ -39,7 +39,6 @@
 
 <div class="container mx-auto pb-10">
     <h1 class="text-2xl mb-4">{$selectedProblem?.title}</h1>
-
     <Tabs.Root value={currentSection} onValueChange={changeSection} class="mb-2">
         <div id="toolbar" class="w-full">
             <Tabs.List class="content-center">
