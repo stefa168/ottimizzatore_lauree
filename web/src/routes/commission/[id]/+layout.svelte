@@ -8,7 +8,7 @@
     import {browser} from "$app/environment";
 
     export let data: { commission: Commission };
-    $: currentSection = $page.url.pathname.split('/').filter(s => s.length > 0)[2];
+    $: currentSection = $page.url.pathname.split('/').filter(s => s.length > 0)[2] ?? 'info';
 
     // This is needed because the cycle is a bit complex because of how Svelte's lifecycle works:
     // 1. The page is navigated to
