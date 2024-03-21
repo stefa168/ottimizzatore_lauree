@@ -4,8 +4,6 @@ import {get} from "svelte/store";
 import {error} from "@sveltejs/kit";
 
 export async function load({fetch, params}) {
-    console.log("1", params.id);
-
     // We load the problem here to avoid the need to load it in the layout.
     // This way we can ensure that the problem is loaded before the layout is rendered.
     // This simplifies the layout code a lot.

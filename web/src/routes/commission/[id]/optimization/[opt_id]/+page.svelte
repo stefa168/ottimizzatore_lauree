@@ -251,5 +251,5 @@
         </div>
     </div>
 
-    <Separator decorative={true} class="my-4"/>
+    <Separator decorative={true}/>
 {/if}

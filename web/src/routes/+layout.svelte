@@ -165,25 +165,22 @@
             class="flex-shrink-0 p-4 w-full z-60 bottom-0 start-0 pt-4 border-t">
         <ul class="ps-0.5 space-y-0.5 text-md text-gray-400 dark:text-gray-500">
             <li>
-                <a href="#"
-                   class="flex items-center transition dark:hover:text-white">
+                <button class="flex items-center transition dark:hover:text-white">
                     <MdiRobotExcited/>
                     <span class="ms-1.5">Stato Solver</span>
-                </a>
+                </button>
             </li>
             <li>
-                <a href="#"
-                   class="flex items-center transition dark:hover:text-white">
+                <button class="flex items-center transition dark:hover:text-white">
                     <MdiCogOutline/>
                     <span class="ms-1.5">Impostazioni</span>
-                </a>
+                </button>
             </li>
             <li>
-                <a href="#"
-                   class="flex items-center transition dark:hover:text-white">
+                <button class="flex items-center transition dark:hover:text-white">
                     <MdiBookInformationVariant/>
                     <span class="ms-1.5">Documentazione</span>
-                </a>
+                </button>
             </li>
         </ul>
     </footer>

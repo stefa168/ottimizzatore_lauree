@@ -14,7 +14,6 @@
     $: availableConfigurations = $selectedProblem?.optimization_configurations ?? [];
 
     onMount(() => {
-        console.log("mounted");
         const problem = get(selectedProblem);
 
         if (problem === undefined) return;
