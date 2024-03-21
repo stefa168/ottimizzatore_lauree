@@ -117,7 +117,8 @@
                             <li>
                                 <ContextMenu.Root>
                                     <ContextMenu.Trigger>
-                                        <Button href="/commission/{problem.id}/"
+                                        <Button data-sveltekit-preload-data="tap"
+                                                href="/commission/{problem.id}/"
                                                 class="flex items-center pl-6 whitespace-pre-line h-fit gap-x-2"
                                                 variant="link">
                                             <span class="flex-shrink-0 bg-blue-600 rounded w-4 h-4"></span>
