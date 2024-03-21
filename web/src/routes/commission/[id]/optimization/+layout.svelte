@@ -1,6 +1,7 @@
 <script lang="ts">
     import * as Select from '$lib/components/ui/select'
     import * as Button from '$lib/components/ui/button'
+    import {Label} from "$lib/components/ui/label";
     import type {Selected} from "bits-ui";
     import type {OptimizationConfiguration} from "./optimization_types";
     import {goto} from "$app/navigation";

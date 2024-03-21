@@ -1,8 +1,12 @@
 import type {Professor, Student} from "../commission_types";
 
-type SolverType = 'cplex' | 'gurobi' | 'glpk';
+export enum SolverType{
+    CPLEX = "CPLEX",
+    GUROBI = "GUROBI",
+    GLPK = "GLPK"
+}
 
-interface OptimizationConfiguration {
+export interface OptimizationConfiguration {
     id: number,
     title: string
     commission_id: number,
@@ -13,14 +17,16 @@ interface OptimizationConfiguration {
 
     min_professor_number: number | null,
     min_professor_number_masters: number | null,
-    max_professor_numer: number | null,
+    max_professor_number: number | null,
 
     solver: SolverType,
     optimization_time_limit: number,
-    optimization_gap: number
+    optimization_gap: number,
+
+    solution_commissions: SolutionCommission[]
 }
 
-interface SolutionCommission {
+export interface SolutionCommission {
     id: number,
     order: number,
     morning: boolean,
@@ -31,5 +37,3 @@ interface SolutionCommission {
     professors: Professor[],
     students: Student[]
 }
-
-export type {SolverType, OptimizationConfiguration, SolutionCommission};

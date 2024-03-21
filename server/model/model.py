@@ -341,7 +341,7 @@ class OptimizationConfiguration(Hashable):
             'online': self.online,
             'min_professor_number': self.min_professor_number,
             'min_professor_number_masters': self.min_professor_number_masters,
-            'max_professor_numer': self.max_professor_numer,
+            'max_professor_number': self.max_professor_numer,
             'solver': self.solver.value,
             'optimization_time_limit': self.optimization_time_limit,
             'optimization_gap': self.optimization_gap

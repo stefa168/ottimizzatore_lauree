@@ -146,7 +146,7 @@
                             </li>
                         {/each}
                     {:else}
-                        <li class="flex items-center mx-2 ps-4 p-2 text-amber-600 group dark:text-amber-400">
+                        <li class="flex items-center mx-2 ps-4 p-2 text-yellow-600 group dark:text-yellow-400">
                             <MdiAlertCircleOutline class="w-5 h-5"/>
                             <span class="ms-2 text-sm font-medium">Nessun problema disponibile</span>
                         </li>
