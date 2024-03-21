@@ -1,9 +1,12 @@
 import {writable, readonly, type Writable} from "svelte/store";
 import type {Commission} from "../routes/commission/[id]/commission_types";
 import type {OptimizationConfiguration} from "../routes/commission/[id]/optimization/optimization_types";
+import {persisted} from "svelte-persisted-store";
 
 export const selectedProblem: Writable<Commission | undefined> = writable(undefined);
 export const selectedConfiguration: Writable<OptimizationConfiguration | undefined> = writable(undefined);
+
+export const debugEnabled = persisted("debugEnabled", false);
 
 /* Commission Problems Preview */
 export type CommissionPreview = {

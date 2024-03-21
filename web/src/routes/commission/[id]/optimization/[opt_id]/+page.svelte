@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {selectedConfiguration} from "$lib/store";
+    import {debugEnabled, selectedConfiguration} from "$lib/store";
     import {Separator} from "$lib/components/ui/separator";
     import {Input} from "$lib/components/ui/input";
     import {Label} from "$lib/components/ui/label";
@@ -11,6 +11,8 @@
     import {zod} from "sveltekit-superforms/adapters";
     import {browser} from "$app/environment";
     import MdiReminder from '~icons/mdi/reminder'
+    import MdiChevronRight from '~icons/mdi/chevron-right'
+    import MdiCogPlayOutline from '~icons/mdi/cog-play-outline'
 
     const optimizationConfigurationSchema = z.object({
         title: z.string().min(1).max(256),
@@ -75,160 +77,179 @@
     )
     const {form: formData, enhance} = form;
 
+    let settingsOpened = false;
 </script>
 
 {#if $selectedConfiguration}
-    <h2 class="mt-4 mb-2 text-xl">{$selectedConfiguration.title}</h2>
-    <form id="optimizationDetailsEditor"
-          method="post"
-          enctype="multipart/form-data"
-          use:enhance>
-        <!-- Todo add feedback sections if errors occur -->
-        <div class="rounded-lg border p-4">
-            <h3 class="text-lg">Impostazioni Generali</h3>
-            <Separator decorative={true} class="mt-2 mb-4"/>
-            <Form.Field {form} name="title">
-                <Form.Control let:attrs>
-                    <Form.Label>Titolo</Form.Label>
-                    <Input {...attrs} bind:value={$formData.title}/>
-                </Form.Control>
-                <Form.Description>Un titolo utile per distinguere questa configurazione</Form.Description>
-                <Form.FieldErrors/>
-            </Form.Field>
+    <div>
+        <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
+                on:click={() => settingsOpened = !settingsOpened}>
+            <MdiCogPlayOutline class="w-6 h-6 me-2"/>
+            <span>Impostazioni</span>
+            <MdiChevronRight
+                    class="w-6 h-6 ms-2 transition-transform duration-200 {settingsOpened ? 'rotate-90' : ''}"
+                    aria-hidden="true"
+            />
+        </button>
 
-            <Form.Field {form} name="max_duration">
-                <Form.Control let:attrs>
-                    <Form.Label>Durata massima</Form.Label>
-                    <Input {...attrs} bind:value={$formData.max_duration}/>
-                </Form.Control>
-                <Form.Description>La durata massima della singola commissione (in minuti)</Form.Description>
-                <Form.FieldErrors/>
-            </Form.Field>
-        </div>
+        <div id="config" class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {settingsOpened ? 'max-h-[20000px]' : 'max-h-0'}">
+            <form id="optimizationDetailsEditor"
+                  method="post"
+                  enctype="multipart/form-data"
+                  use:enhance>
+                <!-- Todo add feedback sections if errors occur -->
+                <div class="rounded-lg border p-4">
+                    <h3 class="text-lg">Generali</h3>
+                    <Separator decorative={true} class="mt-2 mb-4"/>
+                    <Form.Field {form} name="title">
+                        <Form.Control let:attrs>
+                            <Form.Label>Titolo</Form.Label>
+                            <Input {...attrs} bind:value={$formData.title}/>
+                        </Form.Control>
+                        <Form.Description>Un titolo utile per distinguere questa configurazione</Form.Description>
+                        <Form.FieldErrors/>
+                    </Form.Field>
 
-        <div class="rounded-lg border p-4 mt-4">
-            <h3 class="text-lg">Massimo numero di commissioni</h3>
-            <Separator decorative={true} class="mt-2 mb-4"/>
-            <div class="grid grid-cols-2 gap-4">
-                <Form.Field {form} name="max_commissions_morning">
-                    <Form.Control let:attrs>
-                        <Form.Label>Di mattina</Form.Label>
-                        <Input {...attrs} bind:value={$formData.max_commissions_morning}/>
-                    </Form.Control>
-                    <Form.Description>
-                        Il massimo numero di commissioni che possono essere svolte di mattina
-                    </Form.Description>
-                    <Form.FieldErrors/>
-                </Form.Field>
+                    <Form.Field {form} name="max_duration">
+                        <Form.Control let:attrs>
+                            <Form.Label>Durata massima</Form.Label>
+                            <Input {...attrs} bind:value={$formData.max_duration}/>
+                        </Form.Control>
+                        <Form.Description>La durata massima della singola commissione (in minuti)</Form.Description>
+                        <Form.FieldErrors/>
+                    </Form.Field>
+                </div>
 
-                <Form.Field {form} name="max_commissions_afternoon">
-                    <Form.Control let:attrs>
-                        <Form.Label>Di pomeriggio</Form.Label>
-                        <Input type="number" {...attrs} bind:value={$formData.max_commissions_afternoon}/>
-                    </Form.Control>
-                    <Form.Description>
-                        Il massimo numero di commissioni che possono essere svolte di pomeriggio
-                    </Form.Description>
-                    <Form.FieldErrors/>
-                </Form.Field>
-            </div>
-        </div>
+                <div class="rounded-lg border p-4 mt-4">
+                    <h3 class="text-lg">Numero massimo di commissioni</h3>
+                    <Separator decorative={true} class="mt-2 mb-4"/>
+                    <div class="grid grid-cols-2 gap-4">
+                        <Form.Field {form} name="max_commissions_morning">
+                            <Form.Control let:attrs>
+                                <Form.Label>Di mattina</Form.Label>
+                                <Input {...attrs} bind:value={$formData.max_commissions_morning}/>
+                            </Form.Control>
+                            <Form.Description>
+                                Il massimo numero di commissioni che possono essere svolte di mattina
+                            </Form.Description>
+                            <Form.FieldErrors/>
+                        </Form.Field>
 
-        <div class="rounded-lg border p-4 mt-4">
-            <Form.Field {form} name="online">
-                <Form.Control let:attrs>
-                    <div class="flex items-center justify-between">
-                        <Form.Label class="text-lg">Commissione online</Form.Label>
-                        <Switch {...attrs} bind:checked={$formData.online} class="ms-3 justify-self-end"/>
+                        <Form.Field {form} name="max_commissions_afternoon">
+                            <Form.Control let:attrs>
+                                <Form.Label>Di pomeriggio</Form.Label>
+                                <Input type="number" {...attrs} bind:value={$formData.max_commissions_afternoon}/>
+                            </Form.Control>
+                            <Form.Description>
+                                Il massimo numero di commissioni che possono essere svolte di pomeriggio
+                            </Form.Description>
+                            <Form.FieldErrors/>
+                        </Form.Field>
                     </div>
-                </Form.Control>
-                <Form.Description>
-                    Se le commissioni di laurea saranno svolte online
-                </Form.Description>
-                <!-- Probably not needed -->
-                <!-- <Form.FieldErrors style="margin-top: 0"/>-->
-            </Form.Field>
-
-            <div class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {$formData.online ? 'max-h-screen' : 'max-h-0'}">
-                <Separator decorative={true} class="mt-2 mb-4"/>
-                <div class="flex items-center mt-2 text-[0.8rem] text-yellow-600 group dark:text-yellow-400">
-                    <MdiReminder class="w-5 h-5"/>
-                    <span class="justify-start ms-2"> Se le commissioni saranno svolte online, è necessario specificare il numero minimo e massimo di professori necessari</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mt-4">
-                    <Form.Field {form} name="min_professor_number">
+                <div class="rounded-lg border p-4 mt-4">
+                    <Form.Field {form} name="online">
                         <Form.Control let:attrs>
-                            <Form.Label>Numero minimo di professori</Form.Label>
-                            <Input {...attrs} bind:value={$formData.min_professor_number}/>
+                            <div class="flex items-center justify-between">
+                                <Form.Label class="text-lg">Commissione online</Form.Label>
+                                <Switch {...attrs} bind:checked={$formData.online} class="ms-3 justify-self-end"/>
+                            </div>
                         </Form.Control>
                         <Form.Description>
-                            Il numero minimo di professori necessari per una commissione
+                            Attiva lo switch a destra se le commissioni di laurea saranno svolte online
                         </Form.Description>
+                        <!-- Probably not needed -->
+                        <!-- <Form.FieldErrors style="margin-top: 0"/>-->
+                    </Form.Field>
+
+                    <div class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {$formData.online ? 'max-h-screen' : 'max-h-0'}">
+                        <Separator decorative={true} class="mt-2 mb-4"/>
+                        <div class="flex items-center mt-2 text-[0.8rem] text-yellow-600 group dark:text-yellow-400">
+                            <MdiReminder class="w-5 h-5"/>
+                            <span class="justify-start ms-2"> Se le commissioni saranno svolte online, è necessario specificare il numero minimo e massimo di professori necessari</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <Form.Field {form} name="min_professor_number">
+                                <Form.Control let:attrs>
+                                    <Form.Label>Numero minimo di professori</Form.Label>
+                                    <Input {...attrs} bind:value={$formData.min_professor_number}/>
+                                </Form.Control>
+                                <Form.Description>
+                                    Il numero minimo di professori necessari per una commissione
+                                </Form.Description>
+                                <Form.FieldErrors/>
+                            </Form.Field>
+
+                            <Form.Field {form} name="max_professor_number">
+                                <Form.Control let:attrs>
+                                    <Form.Label>Numero massimo di professori</Form.Label>
+                                    <Input {...attrs} bind:value={$formData.max_professor_number}/>
+                                </Form.Control>
+                                <Form.Description>
+                                    Il numero massimo di professori necessari per una commissione
+                                </Form.Description>
+                                <Form.FieldErrors/>
+                            </Form.Field>
+                        </div>
+
+                        <Form.Field {form} name="min_professor_number_masters">
+                            <Form.Control let:attrs>
+                                <Form.Label>Numero minimo di professori per il corso di laurea magistrale</Form.Label>
+                                <Input {...attrs} bind:value={$formData.min_professor_number_masters}/>
+                            </Form.Control>
+                            <Form.Description>
+                                Il numero minimo di professori necessari per una commissione magistrale
+                            </Form.Description>
+                            <Form.FieldErrors/>
+                        </Form.Field>
+                    </div>
+                </div>
+
+                <div class="rounded-lg border p-4 mt-4">
+                    <h3 class="text-lg">Impostazioni avanzate</h3>
+                    <Separator decorative={true} class="mt-2 mb-4"/>
+                    <Form.Field {form} name="solver">
+                        <Form.Control let:attrs>
+                            <Form.Label>Solver</Form.Label>
+                            <Input type="select" {...attrs} bind:value={$formData.solver}>
+                                <option value={SolverType.CPLEX}>CPLEX</option>
+                                <option value={SolverType.GUROBI}>GUROBI</option>
+                            </Input>
+                        </Form.Control>
+                        <Form.Description>Il solver da utilizzare per l'ottimizzazione</Form.Description>
                         <Form.FieldErrors/>
                     </Form.Field>
 
-                    <Form.Field {form} name="max_professor_number">
-                        <Form.Control let:attrs>
-                            <Form.Label>Numero massimo di professori</Form.Label>
-                            <Input {...attrs} bind:value={$formData.max_professor_number}/>
-                        </Form.Control>
-                        <Form.Description>
-                            Il numero massimo di professori necessari per una commissione
-                        </Form.Description>
-                        <Form.FieldErrors/>
-                    </Form.Field>
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <Form.Field {form} name="optimization_time_limit">
+                            <Form.Control let:attrs>
+                                <Form.Label>Limite di tempo per l'ottimizzazione</Form.Label>
+                                <Input {...attrs} bind:value={$formData.optimization_time_limit}/>
+                            </Form.Control>
+                            <Form.Description>Il limite di tempo massimo per l'ottimizzazione (in secondi)
+                            </Form.Description>
+                            <Form.FieldErrors/>
+                        </Form.Field>
+
+                        <Form.Field {form} name="optimization_gap">
+                            <Form.Control let:attrs>
+                                <Form.Label>Gap di ottimizzazione</Form.Label>
+                                <Input {...attrs} bind:value={$formData.optimization_gap}/>
+                            </Form.Control>
+                            <Form.Description>Il gap di ottimizzazione massimo accettabile</Form.Description>
+                            <Form.FieldErrors/>
+                        </Form.Field>
+                    </div>
                 </div>
 
-                <Form.Field {form} name="min_professor_number_masters">
-                    <Form.Control let:attrs>
-                        <Form.Label>Numero minimo di professori per il corso di laurea magistrale</Form.Label>
-                        <Input {...attrs} bind:value={$formData.min_professor_number_masters}/>
-                    </Form.Control>
-                    <Form.Description>
-                        Il numero minimo di professori necessari per una commissione magistrale
-                    </Form.Description>
-                    <Form.FieldErrors/>
-                </Form.Field>
-            </div>
+                {#if browser && $debugEnabled}
+                    <SuperDebug data={$formData}/>
+                {/if}
+            </form>
         </div>
+    </div>
 
-        <div class="rounded-lg border p-4 mt-4">
-            <h3 class="text-lg">Impostazioni avanzate</h3>
-            <Separator decorative={true} class="mt-2 mb-4"/>
-            <Form.Field {form} name="solver">
-                <Form.Control let:attrs>
-                    <Form.Label>Solver</Form.Label>
-                    <Input type="select" {...attrs} bind:value={$formData.solver}>
-                        <option value={SolverType.CPLEX}>CPLEX</option>
-                        <option value={SolverType.GUROBI}>GUROBI</option>
-                    </Input>
-                </Form.Control>
-                <Form.Description>Il solver da utilizzare per l'ottimizzazione</Form.Description>
-                <Form.FieldErrors/>
-            </Form.Field>
-
-            <Form.Field {form} name="optimization_time_limit">
-                <Form.Control let:attrs>
-                    <Form.Label>Limite di tempo per l'ottimizzazione</Form.Label>
-                    <Input {...attrs} bind:value={$formData.optimization_time_limit}/>
-                </Form.Control>
-                <Form.Description>Il limite di tempo massimo per l'ottimizzazione in secondi</Form.Description>
-                <Form.FieldErrors/>
-            </Form.Field>
-
-            <Form.Field {form} name="optimization_gap">
-                <Form.Control let:attrs>
-                    <Form.Label>Gap di ottimizzazione</Form.Label>
-                    <Input {...attrs} bind:value={$formData.optimization_gap}/>
-                </Form.Control>
-                <Form.Description>Il gap di ottimizzazione massimo accettabile</Form.Description>
-                <Form.FieldErrors/>
-            </Form.Field>
-        </div>
-
-        {#if browser}
-            <SuperDebug data={$formData}/>
-        {/if}
-    </form>
+    <Separator decorative={true} class="my-4"/>
 {/if}
