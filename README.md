@@ -1,5 +1,5 @@
 # Ottimizzatore Lauree 
-_(graduation day optimizer)
+_(graduation day optimizer)_
 
 This is a web application built with Svelte and TypeScript, and uses Python for backend services. The application is
 designed to handle optimization configurations. It requires a CPLEX license to run the optimization algorithm. The code
@@ -54,9 +54,11 @@ purposes.
 - [TypeScript](https://www.typescriptlang.org/) - The language for web development
 - [Python](https://www.python.org/) - The language for backend services
 
-## Authors
+## Acknowledgments
 
-- **stefa168** - *Initial work*
+- **Stefano Vittorio Porta** - *All this project development*
+- **Paolo Sanfilippo, Michele Castrovilli** - _Original python application_
+- [Favicon by JM Graphic](https://www.freepik.com/icon/graduation-cap_9341781#fromView=search&page=1&position=66&uuid=6e70094c-447a-46eb-8950-e90b91142ad1)
 
 ## License
 
