@@ -8,7 +8,6 @@
     // Icons
     import MdiAlertCircleOutline from '~icons/mdi/alert-circle-outline'
     import MdiRobotExcited from '~icons/mdi/robot-excited'
-    import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
     import RadixIconsTrash from '~icons/radix-icons/trash'
     import RadixIconsArchive from '~icons/radix-icons/archive'
@@ -60,8 +59,6 @@
             });
         }
     }
-
-    let settingsOpen = false;
 </script>
 
 <ModeWatcher/>
@@ -172,12 +169,7 @@
                 </button>
             </li>
             <li>
-                <button class="flex items-center transition dark:hover:text-white"
-                        on:click={() => settingsOpen = !settingsOpen}>
-                    <MdiCogOutline/>
-                    <span class="ms-1.5">Impostazioni</span>
-                </button>
-                <SettingsDialog bind:open={settingsOpen}/>
+                <SettingsDialog/>
             </li>
             <li>
                 <button class="flex items-center transition enabled:dark:hover:text-white disabled:cursor-not-allowed" disabled>

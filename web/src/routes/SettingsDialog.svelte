@@ -8,6 +8,7 @@
     import type {Selected} from "bits-ui";
     import {userPrefersMode} from "mode-watcher";
     import {debugEnabled} from "$lib/store";
+    import MdiCogOutline from '~icons/mdi/cog-outline'
 
     export let open = false;
 
@@ -23,6 +24,12 @@
         {value: "system", label: "Sistema"}
     ];
 </script>
+
+<button class="flex items-center transition dark:hover:text-white"
+        on:click={() => open = !open}>
+    <MdiCogOutline/>
+    <span class="ms-1.5">Impostazioni</span>
+</button>
 
 <Dialog.Root bind:open>
     <Dialog.Content>
