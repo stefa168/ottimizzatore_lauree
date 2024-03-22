@@ -92,7 +92,7 @@
             />
         </button>
 
-        <div id="config" class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {settingsOpened ? 'max-h-[20000px]' : 'max-h-0'}">
+        <div class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {settingsOpened ? 'max-h-[20000px]' : 'max-h-0'}">
             <form id="optimizationDetailsEditor"
                   method="post"
                   enctype="multipart/form-data"
@@ -245,7 +245,9 @@
                 </div>
 
                 {#if browser && $debugEnabled}
-                    <SuperDebug data={$formData}/>
+                    <div class="my-4">
+                        <SuperDebug data={$formData}/>
+                    </div>
                 {/if}
             </form>
         </div>
