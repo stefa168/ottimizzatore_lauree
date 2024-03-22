@@ -10,7 +10,6 @@
     import MdiRobotExcited from '~icons/mdi/robot-excited'
     import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
-    import MdiLoading from '~icons/mdi/loading'
     import RadixIconsTrash from '~icons/radix-icons/trash'
     import RadixIconsArchive from '~icons/radix-icons/archive'
     import RadixIconsPencil2 from '~icons/radix-icons/pencil-2'
@@ -22,7 +21,6 @@
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
     import {Button} from "$lib/components/ui/button";
     import {Toaster} from "$lib/components/ui/sonner";
-    import type {Commission} from "./commission/[id]/commission_types";
     import {
         type CommissionPreview,
         commissionsPreviewLoaded,
