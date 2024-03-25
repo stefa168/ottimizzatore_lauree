@@ -1,5 +1,4 @@
 import logging
-import uuid
 from dataclasses import dataclass
 from typing import List
 from pathlib import Path
@@ -10,12 +9,12 @@ from pyomo.core import AbstractModel
 from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition, SolverResults
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship, registry
+from watchdog.observers import Observer
 
 import optimization.models
-from model.enums import Degree, UniversityRole, SolverEnum
+from model import Degree, UniversityRole, SolverEnum, Hashable, StringEnum
 
-from model.hashable import Hashable
-from model.string_enum import StringEnum
+from utils import FileChangeHandler
 
 mapper_registry = registry()
 metadata = mapper_registry.metadata
@@ -289,6 +288,8 @@ class OptimizationConfiguration(Hashable):
     optimization_time_limit: int = Column(sqla.Integer, nullable=False, server_default='60', default=60)
     optimization_gap: float = Column(sqla.Float, nullable=False, server_default='0.005', default=0.005)
 
+    run_lock: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
+
     solution_commissions: List['SolutionCommission'] = relationship(
         "SolutionCommission",
         back_populates="opt_config",
@@ -347,18 +348,8 @@ class OptimizationConfiguration(Hashable):
             'optimization_gap': self.optimization_gap
         }
 
-    def solver_wrapper(self, cc_path: Path, version_hash: str):
-        log_path = cc_path / "log.txt"
-        logger = logging.getLogger(name=str(uuid.uuid4()))
+    def solver_wrapper(self, cc_path: Path, version_hash: str, logger: logging.Logger):
         logger.setLevel(logging.INFO)
-
-        file_handler = logging.FileHandler(log_path)
-        file_handler.setLevel(logging.INFO)
-
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
 
         logger.info(f"Starting optimization for commission with ID ${self.commission_id},"
                     f" version hash ${version_hash}.")
@@ -372,8 +363,6 @@ class OptimizationConfiguration(Hashable):
             logger.info("Optimization completed and correctly saved to database.")
 
     def _solve(self, cc_path: Path, logger: logging.Logger, version_hash: str):
-
-        # excel_path = cc_path / "val.xls"
         dat_path = cc_path / "temp.dat"
 
         model: AbstractModel
@@ -410,18 +399,46 @@ class OptimizationConfiguration(Hashable):
 
         solver = SolverFactory(self.solver.value, **solver_arguments)
         solver_log_path = cc_path / "solver.log"
-        logger.info("Starting solver...")
-        results: SolverResults = solver.solve(model, tee=True, keepfiles=True, logfile=str(solver_log_path.absolute()))
+
+        # Wipe the file clean if it already exists, otherwise the existing content will mess with the watchdog logger.
+        solver_log_path.open("w").close()
+        solver_log_handler = FileChangeHandler(logger.getChild("solver"), solver_log_path)
+
+        observer = Observer()
+        observer.schedule(solver_log_handler, str(solver_log_path.parent), recursive=False)
+        observer.start()
+        logger.info("Running solver...")
+        results: SolverResults = solver.solve(
+            model,
+            tee=True,
+            keepfiles=True,
+            logfile=str(solver_log_path.absolute())
+        )
         logger.info("The solver has exited.")
+        logger.debug("Stopping observer...")
+        observer.stop()
+        logger.debug("Observer stopped. Joining observer thread...")
+        observer.join()
+        logger.debug("Observer thread joined.")
 
         is_solver_ok = results.solver.status == SolverStatus.ok
-        solver_reachec_optimality = results.solver.termination_condition == TerminationCondition.optimal
+        solver_reached_optimality = results.solver.termination_condition == TerminationCondition.optimal
         solver_reached_time_limit = results.solver.termination_condition == TerminationCondition.maxTimeLimit
 
         logger.debug(f"Solver status: {results.solver.status}")
 
-        if is_solver_ok and (solver_reachec_optimality or solver_reached_time_limit):
-            return SolutionCommission.generate_from_model(self, model, version_hash)
+        if is_solver_ok:
+            if solver_reached_optimality or solver_reached_time_limit:
+                # todo return also the reason why the solver stopped
+                return SolutionCommission.generate_from_model(self, model, version_hash)
+            else:
+                # todo decide what to do in case of failure
+                logger.error(f"Solver failed to reach optimality. Solver status: {results.solver.status}")
+                return None
+        else:
+            # todo decide what to do in case of failure
+            logger.error(f"Solver encountered an error. Solver status: {results.solver.status}")
+            return None
 
     def hash(self):
         return Hashable.hash_data(repr(self))
@@ -482,8 +499,8 @@ class SolutionCommission:
         self.version_hash = version_hash
 
     @staticmethod
-    def generate_from_model(conf: OptimizationConfiguration, model: AbstractModel, version_hash: str) -> tuple[
-        List['SolutionCommission'], List['SolutionCommission']]:
+    def generate_from_model(conf: OptimizationConfiguration, model: AbstractModel, version_hash: str) \
+            -> tuple[List['SolutionCommission'], List['SolutionCommission']]:
         from session_maker import SessionMakerSingleton
         session: sqla.orm.Session
         with SessionMakerSingleton.get_session_maker().begin() as session:

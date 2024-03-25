@@ -1,6 +1,7 @@
 import concurrent.futures.process
 import logging
 import pathlib
+import uuid
 
 import sqlalchemy.exc
 from flask import Flask, request, jsonify, Response
@@ -10,7 +11,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from model.model import mapper_registry, Student, Commission, Professor, CommissionEntry, \
-    OptimizationConfiguration
+    OptimizationConfiguration, SolutionCommission
 from model.enums import Degree, UniversityRole
 from session_maker import SessionMakerSingleton
 
@@ -20,6 +21,8 @@ app.secret_key = 'key'
 
 HOST_NAME = "0.0.0.0"
 HOST_PORT = 5000
+
+SERVER_PROCESS_NAME = "server"
 
 
 @app.route('/upload', methods=['POST'])
@@ -316,14 +319,19 @@ OPT_TMP_DIR = ".temp/"
 
 @app.route('/commission/<commission_id>/solve/<config_id>', methods=['POST'])
 def solve_commission(commission_id: int, config_id: int):
+    logger = logging.getLogger(SERVER_PROCESS_NAME)
+
+    logger.info(f"Received request to solve commission {commission_id} with configuration {config_id}")
     session_maker = SessionMakerSingleton.get_session_maker()
 
     # retrieve the Commission data from the database
     # for now we don't have a configuration data model, so we just ignore the config_id
     try:
         with session_maker.begin() as session:
+            logger.debug(f"Retrieving commission {commission_id} and configuration {config_id}")
             commission: Commission = session.query(Commission).filter_by(id=commission_id).first()
             if commission is None:
+                logger.error(f"Commission with ID {commission_id} not found")
                 return jsonify({'error': f'Commission with ID {commission_id} not found'}), HTTPStatus.NOT_FOUND
 
             configuration: OptimizationConfiguration = (
@@ -331,16 +339,34 @@ def solve_commission(commission_id: int, config_id: int):
                 .filter_by(id=config_id)
                 .first()
             )
+
             if configuration is None:
+                logger.error(f"Configuration with ID {config_id} not found")
                 return jsonify({'error': f'Configuration with ID {config_id} not found'}), HTTPStatus.NOT_FOUND
 
-            # todo lock the commission and configuration to avoid concurrent optimization
+            # First we check if the configuration has already been solved
+            if session.query(SolutionCommission).filter_by(opt_config_id=config_id).count() > 0:
+                logger.error(f"Configuration with ID {config_id} already solved")
+                return jsonify({'error': f'Configuration with ID {config_id} already solved'}), HTTPStatus.CONFLICT
 
+            # Then we check if the configuration is already running. If we're here, we're sure that we haven't saved a
+            # solution yet.
+            # todo we should return another kind of error if the lock is set but there is no future currently running
+            if configuration.run_lock:
+                logger.error(f"Configuration with ID {config_id} is already running")
+                return jsonify({'error': f'Configuration with ID {config_id} is already running'}), HTTPStatus.CONFLICT
+
+            logger.debug(f"Locking the configuration {config_id}")
+            configuration.run_lock = True
+            session.flush()
+
+            logger.debug(f"Setting up the optimization for commission {commission_id} and configuration {config_id}")
             base_path = pathlib.Path(OPT_TMP_DIR)
             cc_path = base_path / str(commission_id) / str(config_id)
 
             # We create the configuration file
             configuration.create_dat_file(cc_path)
+            logger.debug(f"Configuration file created at {cc_path}")
             # And also the datafile
             # noinspection PyArgumentList
             commission.export_xls(cc_path)
@@ -351,12 +377,39 @@ def solve_commission(commission_id: int, config_id: int):
             global executor
             # We start the optimization
             # todo save the future object in a dictionary to be able to interact with it later
-            future = executor.submit(configuration.solver_wrapper, cc_path, version_hash)
+            process_uuid = uuid.uuid4()
 
-            return jsonify({'success': 'Optimization started', 'future_id': id(future)}), HTTPStatus.ACCEPTED
+            process_logger = logger.getChild(str(process_uuid))
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            log_path = cc_path / "log.txt"
+            file_handler = logging.FileHandler(log_path)
+            file_handler.setLevel(logging.INFO)
+            file_handler.setFormatter(formatter)
+
+            process_logger.addHandler(file_handler)
+            # todo add socket/database handler
+
+            future: concurrent.futures.Future = executor.submit(
+                configuration.solver_wrapper,
+                cc_path,
+                version_hash,
+                process_logger
+            )
+            logger.info(f"Optimization process started for commission {commission_id} and configuration {config_id}")
+
+            return jsonify({
+                'success': 'Optimization started',
+                'future_id': id(future),
+                'uuid': process_uuid,
+                'version_hash': version_hash
+            }), HTTPStatus.ACCEPTED
 
     except Exception as e:
-        print(e)
+        logger.exception(
+            f"Error starting the optimization for commission {commission_id} and configuration {config_id}",
+            exc_info=e
+        )
+
         return jsonify({
             'error': 'Error starting the optimization',
             'details': str(e)
@@ -383,7 +436,8 @@ if __name__ == '__main__':
     executor: concurrent.futures.process.ProcessPoolExecutor
 
     logging.basicConfig()
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
+    logging.getLogger(SERVER_PROCESS_NAME).setLevel(logging.DEBUG)
 
     SessionMakerSingleton.initialize("postgresql://user:password@localhost:5432/postgres")
 
