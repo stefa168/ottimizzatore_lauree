@@ -3,6 +3,11 @@ import { twMerge } from "tailwind-merge";
 import { cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
 
+// https://blog.logrocket.com/iterate-over-enums-typescript/
+export function enumKeys<O extends object, K extends keyof O = keyof O>(obj: O): K[] {
+    return Object.keys(obj).filter(k => !Number.isNaN(k)) as K[]
+}
+
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }

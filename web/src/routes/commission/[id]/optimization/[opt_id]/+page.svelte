@@ -1,18 +1,27 @@
 <script lang="ts">
     import {debugEnabled, selectedConfiguration} from "$lib/store";
+    import {browser} from "$app/environment";
+    import {enumKeys} from "$lib/utils";
+
     import {Separator} from "$lib/components/ui/separator";
     import {Input} from "$lib/components/ui/input";
-    import {Label} from "$lib/components/ui/label";
-    import * as Form from "$lib/components/ui/form";
+    import {Button} from "$lib/components/ui/button";
     import {Switch} from "$lib/components/ui/switch";
-    import {z} from "zod";
-    import {SolverType} from "../optimization_types";
+    import * as Select from "$lib/components/ui/select";
+    import * as Form from "$lib/components/ui/form";
+    import * as HoverCard from "$lib/components/ui/hover-card";
+
     import SuperDebug, {defaults, superForm, superValidate} from "sveltekit-superforms";
     import {zod} from "sveltekit-superforms/adapters";
-    import {browser} from "$app/environment";
+    import {z} from "zod";
+
+    import {SolverType} from "../optimization_types";
     import MdiReminder from '~icons/mdi/reminder'
     import MdiChevronRight from '~icons/mdi/chevron-right'
     import MdiCogPlayOutline from '~icons/mdi/cog-play-outline'
+    import MdiUndoVariant from '~icons/mdi/undo-variant'
+    import MdiCloudArrowUp from '~icons/mdi/cloud-arrow-up'
+    import MdiPlayOutline from '~icons/mdi/play-outline'
 
     const optimizationConfigurationSchema = z.object({
         title: z.string().min(1).max(256),
@@ -77,20 +86,55 @@
     )
     const {form: formData, enhance} = form;
 
+    // the right way to use superform/formsnap with bits-ui is this:
+    // https://formsnap.dev/docs/recipes/bits-ui-select#setup-the-form
+    $: selectedSolver = {
+        label: String($formData.solver).toUpperCase(),
+        value: $formData.solver
+    };
+
     let settingsOpened = false;
+    let tainted = form.tainted;
+    let tainted_fields_count = 0;
+    tainted.subscribe((value) => {
+        if (value === undefined) {
+            tainted_fields_count = 0;
+        } else {
+            // Works OK, however Superforms sets fields to undefined if they are not touched
+            tainted_fields_count = Object.keys(value).length;
+        }
+    });
 </script>
 
 {#if $selectedConfiguration}
     <div>
-        <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
-                on:click={() => settingsOpened = !settingsOpened}>
-            <MdiCogPlayOutline class="w-6 h-6 me-2"/>
-            <span>Impostazioni</span>
-            <MdiChevronRight
-                    class="w-6 h-6 ms-2 transition-transform duration-200 {settingsOpened ? 'rotate-90' : ''}"
-                    aria-hidden="true"
-            />
-        </button>
+        <div class="flex items-center justify-between">
+            <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
+                    on:click={() => settingsOpened = !settingsOpened}>
+                <MdiCogPlayOutline class="w-6 h-6 me-2"/>
+                <span>Impostazioni</span>
+                <MdiChevronRight
+                        class="w-6 h-6 ms-2 transition-transform duration-200 {settingsOpened ? 'rotate-90' : ''}"
+                        aria-hidden="true"
+                />
+            </button>
+            <div class="transition-all duration-150 ease-in-out {tainted_fields_count > 0 ? 'opacity-100' : 'opacity-0 invisible'}"
+                 role="group">
+                <Button variant="ghost"
+                        on:click={() => form.reset()}
+                        disabled={tainted_fields_count === 0}>
+                    <MdiUndoVariant class="h-4 w-4 me-2"/>
+                    <span>Annulla le modifiche</span>
+                </Button>
+
+                <Button variant="ghost"
+                        on:click={() => form.submit()}
+                        disabled={tainted_fields_count === 0}>
+                    <MdiCloudArrowUp class="h-4 w-4 me-2"/>
+                    <span>Salva le modifiche</span>
+                </Button>
+            </div>
+        </div>
 
         <div class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {settingsOpened ? 'max-h-[20000px]' : 'max-h-0'}">
             <form id="optimizationDetailsEditor"
@@ -213,10 +257,21 @@
                     <Form.Field {form} name="solver">
                         <Form.Control let:attrs>
                             <Form.Label>Solver</Form.Label>
-                            <Input type="select" {...attrs} bind:value={$formData.solver}>
-                                <option value={SolverType.CPLEX}>CPLEX</option>
-                                <option value={SolverType.GUROBI}>GUROBI</option>
-                            </Input>
+                            <Select.Root
+                                    selected={selectedSolver}
+                                    onSelectedChange={(v) => {
+                                        v && ($formData.solver = v.value)
+                                    }}>
+                                <Select.Input name={attrs.name}/>
+                                <Select.Trigger {...attrs}>
+                                    <Select.Value placeholder="Seleziona un solver"/>
+                                </Select.Trigger>
+                                <Select.Content>
+                                    {#each enumKeys(SolverType) as type}
+                                        <Select.Item value={SolverType[type]}>{type}</Select.Item>
+                                    {/each}
+                                </Select.Content>
+                            </Select.Root>
                         </Form.Control>
                         <Form.Description>Il solver da utilizzare per l'ottimizzazione</Form.Description>
                         <Form.FieldErrors/>
@@ -246,7 +301,7 @@
 
                 {#if browser && $debugEnabled}
                     <div class="my-4">
-                        <SuperDebug data={$formData}/>
+                        <SuperDebug data={$formData} theme="vscode" status={false}/>
                     </div>
                 {/if}
             </form>

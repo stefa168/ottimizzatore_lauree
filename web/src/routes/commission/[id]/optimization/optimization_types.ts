@@ -1,9 +1,9 @@
 import type {Professor, Student} from "../commission_types";
 
 export enum SolverType{
-    CPLEX = "CPLEX",
-    GUROBI = "GUROBI",
-    GLPK = "GLPK"
+    CPLEX = "cplex",
+    GUROBI = "gurobi",
+    GLPK = "glpk"
 }
 
 export interface OptimizationConfiguration {
