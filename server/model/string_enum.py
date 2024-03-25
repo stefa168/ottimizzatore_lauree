@@ -7,6 +7,7 @@ class StringEnum(TypeDecorator):
     while representing them as enum objects in Python.
     """
     impl = String
+    cache_ok = False
 
     def __init__(self, enum_type, *args, **kwargs):
         super().__init__(*args, **kwargs)
