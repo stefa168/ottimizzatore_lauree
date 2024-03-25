@@ -102,7 +102,7 @@
                     <Form.Field {form} name="max_duration">
                         <Form.Control let:attrs>
                             <Form.Label>Durata massima</Form.Label>
-                            <Input {...attrs} bind:value={$formData.max_duration}/>
+                            <Input type="number" {...attrs} bind:value={$formData.max_duration}/>
                         </Form.Control>
                         <Form.Description>La durata massima della singola commissione (in minuti)</Form.Description>
                         <Form.FieldErrors/>
@@ -116,7 +116,7 @@
                         <Form.Field {form} name="max_commissions_morning">
                             <Form.Control let:attrs>
                                 <Form.Label>Di mattina</Form.Label>
-                                <Input {...attrs} bind:value={$formData.max_commissions_morning}/>
+                                <Input type="number" {...attrs} bind:value={$formData.max_commissions_morning}/>
                             </Form.Control>
                             <Form.Description>
                                 Il massimo numero di commissioni che possono essere svolte di mattina
@@ -163,7 +163,7 @@
                             <Form.Field {form} name="min_professor_number">
                                 <Form.Control let:attrs>
                                     <Form.Label>Numero minimo di professori</Form.Label>
-                                    <Input {...attrs} bind:value={$formData.min_professor_number}/>
+                                    <Input type="number" {...attrs} bind:value={$formData.min_professor_number}/>
                                 </Form.Control>
                                 <Form.Description>
                                     Il numero minimo di professori necessari per una commissione
@@ -174,7 +174,7 @@
                             <Form.Field {form} name="max_professor_number">
                                 <Form.Control let:attrs>
                                     <Form.Label>Numero massimo di professori</Form.Label>
-                                    <Input {...attrs} bind:value={$formData.max_professor_number}/>
+                                    <Input type="number" {...attrs} bind:value={$formData.max_professor_number}/>
                                 </Form.Control>
                                 <Form.Description>
                                     Il numero massimo di professori necessari per una commissione
@@ -186,7 +186,7 @@
                         <Form.Field {form} name="min_professor_number_masters">
                             <Form.Control let:attrs>
                                 <Form.Label>Numero minimo di professori per il corso di laurea magistrale</Form.Label>
-                                <Input {...attrs} bind:value={$formData.min_professor_number_masters}/>
+                                <Input type="number" {...attrs} bind:value={$formData.min_professor_number_masters}/>
                             </Form.Control>
                             <Form.Description>
                                 Il numero minimo di professori necessari per una commissione magistrale
@@ -226,7 +226,7 @@
                         <Form.Field {form} name="optimization_time_limit">
                             <Form.Control let:attrs>
                                 <Form.Label>Limite di tempo per l'ottimizzazione</Form.Label>
-                                <Input {...attrs} bind:value={$formData.optimization_time_limit}/>
+                                <Input type="number" {...attrs} bind:value={$formData.optimization_time_limit}/>
                             </Form.Control>
                             <Form.Description>Il limite di tempo massimo per l'ottimizzazione (in secondi)
                             </Form.Description>
