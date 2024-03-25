@@ -23,6 +23,7 @@ HOST_NAME = "0.0.0.0"
 HOST_PORT = 5000
 
 SERVER_PROCESS_NAME = "server"
+FORMATTER = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 @app.route('/upload', methods=['POST'])
@@ -380,11 +381,10 @@ def solve_commission(commission_id: int, config_id: int):
             process_uuid = uuid.uuid4()
 
             process_logger = logger.getChild(str(process_uuid))
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             log_path = cc_path / "log.txt"
             file_handler = logging.FileHandler(log_path)
             file_handler.setLevel(logging.INFO)
-            file_handler.setFormatter(formatter)
+            file_handler.setFormatter(FORMATTER)
 
             process_logger.addHandler(file_handler)
             # todo add socket/database handler
@@ -435,9 +435,13 @@ def main():
 if __name__ == '__main__':
     executor: concurrent.futures.process.ProcessPoolExecutor
 
-    logging.basicConfig()
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
-    logging.getLogger(SERVER_PROCESS_NAME).setLevel(logging.DEBUG)
+
+    server_logger = logging.getLogger(SERVER_PROCESS_NAME)
+    server_logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler()
+    handler.setFormatter(FORMATTER)
+    server_logger.addHandler(handler)
 
     SessionMakerSingleton.initialize("postgresql://user:password@localhost:5432/postgres")
 
