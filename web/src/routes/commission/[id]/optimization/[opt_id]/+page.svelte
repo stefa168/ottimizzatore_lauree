@@ -52,7 +52,7 @@
 </script>
 
 {#if $selectedConfiguration}
-    <div>
+    <div id="configuration-settings">
         <div class="flex items-center justify-between">
             <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
                     on:click={() => settingsOpened = !settingsOpened}>
