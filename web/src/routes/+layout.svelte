@@ -61,6 +61,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>Ottimizzatore Lauree</title>
+</svelte:head>
+
 <ModeWatcher/>
 <Toaster closeButton/>
 
