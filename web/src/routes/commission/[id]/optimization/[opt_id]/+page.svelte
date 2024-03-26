@@ -22,11 +22,11 @@
     import MdiCloudArrowUp from '~icons/mdi/cloud-arrow-up'
     import {optimizationConfigurationSchema} from "./schema";
 
-    const form = superForm(
-        defaults($selectedConfiguration, zod(optimizationConfigurationSchema)), {
+    const form = superForm(defaults($selectedConfiguration, zod(optimizationConfigurationSchema)), {
             SPA: true,
             validationMethod: "oninput",
-            validators: zod(optimizationConfigurationSchema)
+            validators: zod(optimizationConfigurationSchema),
+            taintedMessage: "La configurazione è stata modificata. Confermi di voler perdere le modifiche non salvate?"
         }
     )
     const {form: formData, enhance} = form;
