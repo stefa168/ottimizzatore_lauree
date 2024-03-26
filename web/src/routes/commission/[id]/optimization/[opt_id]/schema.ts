@@ -53,4 +53,11 @@ export const optimizationConfigurationSchema = z.object({
 }, {
     message: "Il numero minimo di professori deve essere minore o uguale al numero massimo di professori se la commissione è online",
     path: ["min_professor_number_masters", "max_professor_number"]
+}).refine((data) => {
+    // If online, then the minimum number of professors for the master's degree must be less than or equal to the maximum number of professors
+    if (data.online && data.min_professor_number_masters !== null && data.max_professor_number !== null) {
+        return data.min_professor_number_masters <= data.max_professor_number;
+    } else {
+        return true;
+    }
 });
