@@ -1,8 +1,8 @@
 <script lang="ts">
     import "../app.css";
-    import {ModeWatcher, userPrefersMode} from "mode-watcher";
+    import {ModeWatcher} from "mode-watcher";
     import {toast} from "svelte-sonner";
-    import {goto, beforeNavigate, afterNavigate} from "$app/navigation";
+    import {goto} from "$app/navigation";
     import {onMount} from "svelte";
 
     // Icons

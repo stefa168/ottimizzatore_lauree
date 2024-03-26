@@ -1,15 +1,16 @@
 <script lang="ts">
-    import * as Select from '$lib/components/ui/select'
-    import * as Button from '$lib/components/ui/button'
-    import {Label} from "$lib/components/ui/label";
-    import type {Selected} from "bits-ui";
-    import type {OptimizationConfiguration} from "./optimization_types";
+    import {onDestroy, onMount} from "svelte";
     import {goto} from "$app/navigation";
     import {page} from "$app/stores";
-    import {onDestroy, onMount} from "svelte";
-    import {toast} from "svelte-sonner";
-    import {selectedConfiguration, selectedProblem} from "$lib/store";
     import {get} from "svelte/store";
+    import {selectedConfiguration, selectedProblem} from "$lib/store";
+    import {toast} from "svelte-sonner";
+
+    import type {Selected} from "bits-ui";
+    import * as Select from '$lib/components/ui/select'
+    import * as Button from '$lib/components/ui/button'
+
+    import type {OptimizationConfiguration} from "./optimization_types";
 
     $: availableConfigurations = $selectedProblem?.optimization_configurations ?? [];
 

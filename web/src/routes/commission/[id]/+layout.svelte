@@ -34,10 +34,8 @@
         console.log('Changing section to', section.name);
         // Fix to prevent the server from trying to call goto, because it can't
         if (browser) {
-            console.log("A")
             const destination = section.path ?? section.name;
             goto(`/commission/${$selectedProblem?.id}/${destination}`);
-            console.log("B")
         }
     }
 
