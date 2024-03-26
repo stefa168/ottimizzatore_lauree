@@ -59,7 +59,7 @@
         <!-- Tabs List -->
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400">
             {#each sections as section}
-                <li class="me-2">
+                <li>
                     <button data-sveltekit-preload-data="tap"
                             on:click={() => changeSection(section)}
                             data-active={currentSection === section.name}
