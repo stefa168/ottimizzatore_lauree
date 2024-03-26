@@ -58,8 +58,7 @@
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400">
             {#each sections as section}
                 <li>
-                    <button data-sveltekit-preload-data="tap"
-                            on:click={() => changeSection(section)}
+                    <button on:click={() => changeSection(section)}
                             data-active={currentSection === section.name}
                             class="inline-flex items-center justify-center p-4 px-2 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group data-[active=true]:text-primary data-[active=true]:border-primary transition-all ease-in-out duration-150">
                         <svelte:component this={section.icon} class="w-4 h-4 me-2"/>
