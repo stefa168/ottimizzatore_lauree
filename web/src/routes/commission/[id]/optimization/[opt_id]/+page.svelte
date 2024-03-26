@@ -21,6 +21,7 @@
     import MdiUndoVariant from '~icons/mdi/undo-variant'
     import MdiCloudArrowUp from '~icons/mdi/cloud-arrow-up'
     import {optimizationConfigurationSchema} from "./schema";
+    import {derived} from "svelte/store";
 
     const form = superForm(defaults($selectedConfiguration, zod(optimizationConfigurationSchema)), {
             SPA: true,
@@ -39,15 +40,8 @@
     };
 
     let settingsOpened = false;
-    let tainted = form.tainted;
-    let tainted_fields_count = 0;
-    tainted.subscribe((value) => {
-        if (value === undefined) {
-            tainted_fields_count = 0;
-        } else {
-            // Works OK, however Superforms sets fields to undefined if they are not touched
-            tainted_fields_count = Object.keys(value).length;
-        }
+    let tainted_fields_count = derived(form.tainted, (tainted) => {
+        return tainted ? Object.keys(tainted).length : 0;
     });
 </script>
 
@@ -63,18 +57,18 @@
                         aria-hidden="true"
                 />
             </button>
-            <div class="transition-all duration-150 ease-in-out {tainted_fields_count > 0 ? 'opacity-100' : 'opacity-0 invisible'}"
+            <div class="transition-all duration-150 ease-in-out {$tainted_fields_count > 0 ? 'opacity-100' : 'opacity-0 invisible'}"
                  role="group">
                 <Button variant="ghost"
                         on:click={() => form.reset()}
-                        disabled={tainted_fields_count === 0}>
+                        disabled={$tainted_fields_count === 0}>
                     <MdiUndoVariant class="h-4 w-4 me-2"/>
                     <span>Annulla le modifiche</span>
                 </Button>
 
                 <Button variant="ghost"
                         on:click={() => form.submit()}
-                        disabled={tainted_fields_count === 0}>
+                        disabled={$tainted_fields_count === 0}>
                     <MdiCloudArrowUp class="h-4 w-4 me-2"/>
                     <span>Salva le modifiche</span>
                 </Button>
