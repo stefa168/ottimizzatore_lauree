@@ -345,7 +345,9 @@ class OptimizationConfiguration(Hashable):
             'max_professor_number': self.max_professor_numer,
             'solver': self.solver.value,
             'optimization_time_limit': self.optimization_time_limit,
-            'optimization_gap': self.optimization_gap
+            'optimization_gap': self.optimization_gap,
+            'run_lock': self.run_lock,
+            'solution_commissions': [sol.serialize() for sol in self.solution_commissions]
         }
 
     def solver_wrapper(self, cc_path: Path, version_hash: str, logger: logging.Logger):
@@ -553,3 +555,16 @@ class SolutionCommission:
             session.commit()
 
             return morning_commissions, afternoon_commissions
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'order': self.order,
+            'morning': self.morning,
+            'commission_id': self.commission_id,
+            'opt_config_id': self.opt_config_id,
+            'duration': self.duration,
+            'version_hash': self.version_hash,
+            'professors': [prof.serialize() for prof in self.professors],
+            'students': [stud.serialize() for stud in self.students]
+        }

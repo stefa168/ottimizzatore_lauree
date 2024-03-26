@@ -1,5 +1,46 @@
 import {z} from "zod";
-import {SolverType} from "../optimization_types";
+import {type OptimizationConfiguration, type SolutionCommission, SolverType} from "../optimization_types";
+
+export interface FormOptConf {
+    id: number,
+    title: string
+    commission_id: number,
+    max_duration: number,
+    max_commissions_morning: number,
+    max_commissions_afternoon: number,
+    online: boolean,
+
+    min_professor_number: number | null,
+    min_professor_number_masters: number | null,
+    max_professor_number: number | null,
+
+    solver: SolverType,
+    optimization_time_limit: number,
+    optimization_gap: number
+}
+
+// Required because Superforms does not support a way to ignore certain fields, so the only way to ignore the
+// solution_commissions field is to remove it
+export function generateForForm(original: OptimizationConfiguration | undefined): FormOptConf | undefined {
+    if (original === undefined) return undefined;
+    return {
+        id: original.id,
+        title: original.title,
+        commission_id: original.commission_id,
+        max_duration: original.max_duration,
+        max_commissions_morning: original.max_commissions_morning,
+        max_commissions_afternoon: original.max_commissions_afternoon,
+        online: original.online,
+
+        min_professor_number: original.min_professor_number,
+        min_professor_number_masters: original.min_professor_number_masters,
+        max_professor_number: original.max_professor_number,
+
+        solver: original.solver,
+        optimization_time_limit: original.optimization_time_limit,
+        optimization_gap: original.optimization_gap
+    }
+}
 
 export const optimizationConfigurationSchema = z.object({
     title: z.string().min(1).max(256),

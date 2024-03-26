@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from model.model import mapper_registry, Student, Commission, Professor, CommissionEntry, \
     OptimizationConfiguration, SolutionCommission
-from model.enums import Degree, UniversityRole
+from model.enums import Degree, UniversityRole, SolverEnum
 from session_maker import SessionMakerSingleton
 
 app = Flask(__name__)
@@ -262,6 +262,105 @@ def create_configuration(cid: int):
         print(e)
         return jsonify({
             'error': 'Error creating the configuration',
+            'details': str(e)
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+@app.route('/commission/<cid>/configuration/<config_id>', methods=['PUT'])
+def update_configuration(cid: int, config_id: int):
+    logger = logging.getLogger(SERVER_PROCESS_NAME)
+    session_maker = SessionMakerSingleton.get_session_maker()
+
+    logger.debug(f"Updating configuration {config_id} for commission {cid}")
+
+    try:
+        session: Session
+        with session_maker.begin() as session:
+            configuration = session.query(OptimizationConfiguration).filter_by(id=config_id, commission_id=cid).first()
+            if configuration is None:
+                logger.error(f"Configuration with ID {config_id} not found")
+                return jsonify({'error': 'Configuration not found'}), HTTPStatus.NOT_FOUND
+
+            if configuration.run_lock:
+                if session.query(SolutionCommission).filter_by(opt_config_id=config_id).count() > 0:
+                    logger.error(f"Configuration with ID {config_id} already solved")
+                    return jsonify({
+                        'error': 'Configuration already solved',
+                        'state': 'solved'
+                    }), HTTPStatus.CONFLICT
+                else:
+                    logger.error(f"Configuration with ID {config_id} is currently being solved")
+                    return jsonify({
+                        'error': 'Configuration is currently being solved',
+                        'state': 'solving'
+                    }), HTTPStatus.CONFLICT
+
+            new_config: dict = request.get_json()
+
+            configuration.title = new_config.get('title', configuration.title)
+            configuration.max_duration = new_config.get('max_duration', configuration.max_duration)
+            configuration.max_commissions_morning = new_config.get('max_commissions_morning',
+                                                                   configuration.max_commissions_morning)
+            configuration.max_commissions_afternoon = new_config.get('max_commissions_afternoon',
+                                                                     configuration.max_commissions_afternoon)
+
+            # We need to do some additional checks if the configuration is online
+            configuration.online = new_config.get('online', configuration.online)
+            if configuration.online:
+                configuration.min_professor_number = new_config.get('min_professor_number',
+                                                                    configuration.min_professor_number)
+                configuration.max_professor_number = new_config.get('max_professor_number',
+                                                                    configuration.max_professor_number)
+                configuration.min_professor_number_masters = new_config.get('min_professor_number_masters',
+                                                                            configuration.min_professor_number_masters)
+
+                if (configuration.min_professor_number is None or
+                        configuration.max_professor_number is None or
+                        configuration.min_professor_number_masters is None):
+                    session.rollback()
+                    return jsonify({
+                        'error': 'min_professor_number, max_professor_number and min_professor_number_masters must be '
+                                 'specified'
+                    }), HTTPStatus.BAD_REQUEST
+                elif configuration.min_professor_number > configuration.max_professor_number:
+                    session.rollback()
+                    return jsonify({
+                        'error': 'min_professor_number must be less than or equal to max_professor_number'
+                    }), HTTPStatus.BAD_REQUEST
+                elif configuration.min_professor_number_masters > configuration.max_professor_number:
+                    session.rollback()
+                    return jsonify({
+                        'error': 'min_professor_number_masters must be less than or equal to max_professor_number'
+                    }), HTTPStatus.BAD_REQUEST
+            else:
+                configuration.min_professor_number = None
+                configuration.max_professor_number = None
+                configuration.min_professor_number_masters = None
+
+            solver_str: str | None = new_config.get('solver', None)
+            if solver_str is not None:
+                try:
+                    configuration.solver = SolverEnum[solver_str.upper()]
+                except KeyError:
+                    session.rollback()
+                    return jsonify({
+                        'error': 'Invalid solver specified',
+                        'valid_solvers': [solver.name for solver in SolverEnum]
+                    }), HTTPStatus.BAD_REQUEST
+
+            configuration.optimization_time_limit = new_config.get('optimization_time_limit',
+                                                                   configuration.optimization_time_limit)
+            configuration.optimization_gap = new_config.get('optimization_gap', configuration.optimization_gap)
+
+            return jsonify({
+                'success': 'Configuration updated',
+                'updated_config': configuration.serialize()
+            }), HTTPStatus.OK
+
+    except Exception as e:
+        logger.exception("Error updating the configuration", exc_info=e)
+        return jsonify({
+            'error': 'Error updating the configuration',
             'details': str(e)
         }), HTTPStatus.INTERNAL_SERVER_ERROR
 

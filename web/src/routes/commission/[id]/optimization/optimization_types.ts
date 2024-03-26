@@ -14,6 +14,7 @@ export interface OptimizationConfiguration {
     max_commissions_morning: number,
     max_commissions_afternoon: number,
     online: boolean,
+    run_lock: boolean,
 
     min_professor_number: number | null,
     min_professor_number_masters: number | null,
