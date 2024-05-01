@@ -13,9 +13,11 @@
 
     import {defaults, superForm,} from "sveltekit-superforms";
     import {zod} from "sveltekit-superforms/adapters";
-    import {commissionFormSchema} from "../routes/schema";
+    import {commissionFormSchema} from "./schema";
     import {type CommissionPreview, handleUploadSuccess} from "$lib/store";
-    import type {Commission} from "../routes/commission/[id]/commission_types";
+    // Had to disable the check because the import is actually used, but the IDE doesn't recognize it.
+    // noinspection TypeScriptCheckImport
+    import {env} from '$env/dynamic/public';
 
     interface UploadErrorResponse {
         error: string;
@@ -40,7 +42,7 @@
                 data.append('title', form.data.title);
 
                 // This call needs to stay here because it is too much bound to the component to be moved to a store.
-                await fetch('http://localhost:5000/upload', {
+                await fetch(`${env.PUBLIC_API_URL}/upload`, {
                     method: 'POST',
                     body: data
                 }).then(async (response) => {

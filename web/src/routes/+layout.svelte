@@ -15,7 +15,7 @@
 
     // Components
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
-    import NewCommissionDialog from "$lib/NewCommissionDialog.svelte";
+    import NewCommissionDialog from "./NewCommissionDialog.svelte";
     import * as ContextMenu from "$lib/components/ui/context-menu"
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
     import {Button} from "$lib/components/ui/button";

@@ -2,6 +2,7 @@ import {writable, readonly, type Writable} from "svelte/store";
 import type {Commission} from "../routes/commission/[id]/commission_types";
 import type {OptimizationConfiguration} from "../routes/commission/[id]/optimization/optimization_types";
 import {persisted} from "svelte-persisted-store";
+import {env} from "$env/dynamic/public";
 
 export const selectedProblem: Writable<Commission | undefined> = writable(undefined);
 export const selectedConfiguration: Writable<OptimizationConfiguration | undefined> = writable(undefined);
@@ -20,7 +21,7 @@ export const commissionsPreviewLoaded = writable(false);
 export const commissionPreviewsLoading = writable(false);
 export const fetchCommissionPreviews = async () => {
     commissionPreviewsLoading.set(true);
-    await fetch("http://localhost:5000/commission")
+    await fetch(`${env.PUBLIC_API_URL}/commission`)
         .then((res) => res.json())
         .then((data: CommissionPreview[]) => {
             commissionsPreview.set(data);
@@ -32,7 +33,7 @@ export const fetchCommissionPreviews = async () => {
 
 export const deleteCommission = async (comm: Commission | CommissionPreview) => {
     // todo return true if the deleted commission was the one currently selected to signal the router to close viewer
-    return fetch(`http://localhost:5000/commission/${comm.id}`, {
+    return fetch(`${env.PUBLIC_API_URL}/commission/${comm.id}`, {
         method: 'DELETE'
     }).then(() => {
         commissionsPreview.update((data) => {

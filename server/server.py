@@ -544,5 +544,6 @@ if __name__ == '__main__':
 
     SessionMakerSingleton.initialize("postgresql://user:password@localhost:5432/postgres")
 
-    CORS(app, origins=["http://localhost:5000", "http://localhost:5173"])
+    CORS(app, origins=["http://localhost:5000", "http://localhost:5173",
+                       "http://192.168.0.23:5000", "http://192.168.0.23:5173"])
     main()

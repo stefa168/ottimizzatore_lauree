@@ -23,6 +23,8 @@
     import MdiCloudArrowUp from '~icons/mdi/cloud-arrow-up'
     import MdiContentDuplicate from '~icons/mdi/content-duplicate'
     import {derived} from "svelte/store";
+    // noinspection TypeScriptCheckImport
+    import {env} from '$env/dynamic/public';
 
     let submitting = false;
     const form = superForm(defaults(generateForForm($selectedConfiguration), zod(optimizationConfigurationSchema)), {
@@ -35,7 +37,7 @@
                 if (form.valid) {
                     const cid = $selectedConfiguration!.commission_id;
                     const conf_id = $selectedConfiguration!.id;
-                    await fetch(`http://localhost:5000/commission/${cid}/configuration/${conf_id}`, {
+                    await fetch(`${env.PUBLIC_API_URL}/commission/${cid}/configuration/${conf_id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json"
