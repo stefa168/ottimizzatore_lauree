@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {debugEnabled, selectedConfiguration} from "$lib/store";
+    import {debugEnabled, selectedConfiguration, selectedProblem} from "$lib/store";
     import {browser} from "$app/environment";
     import {enumKeys} from "$lib/utils";
 
@@ -22,9 +22,11 @@
     import MdiUndoVariant from '~icons/mdi/undo-variant'
     import MdiCloudArrowUp from '~icons/mdi/cloud-arrow-up'
     import MdiContentDuplicate from '~icons/mdi/content-duplicate'
+    import MdiData from '~icons/mdi/data'
     import {derived} from "svelte/store";
     // noinspection TypeScriptCheckImport
     import {env} from '$env/dynamic/public';
+    import CommissionCard from "./CommissionCard.svelte";
 
     let submitting = false;
     const form = superForm(defaults(generateForForm($selectedConfiguration), zod(optimizationConfigurationSchema)), {
@@ -76,6 +78,8 @@
     const {form: formData, enhance} = form;
 
     $: solutions = $selectedConfiguration?.solution_commissions ?? [];
+    $: morningSolutions = solutions.filter(s => s.morning);
+    $: afternoonSolutions = solutions.filter(s => !s.morning);
 
     // the right way to use superform/formsnap with bits-ui is this:
     // https://formsnap.dev/docs/recipes/bits-ui-select#setup-the-form
@@ -88,9 +92,54 @@
     let tainted_fields_count = derived(form.tainted, (tainted) => {
         return tainted ? Object.keys(tainted).length : 0;
     });
+
+    let resultsOpened = true;
 </script>
 
 {#if $selectedConfiguration}
+    <div id="configuration-results">
+        <div>
+            <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
+                    on:click={() => resultsOpened = !resultsOpened}>
+                <MdiData class="w-6 h-6 me-2 animate-spin"/>
+                <span>Risultati</span>
+                <MdiChevronRight
+                        class="w-6 h-6 ms-2 transition-transform duration-200 {resultsOpened ? 'rotate-90' : ''}"
+                        aria-hidden="true"
+                />
+            </button>
+        </div>
+
+
+        <div class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {resultsOpened ? 'max-h-[20000px]' : 'max-h-0'}">
+            {#if solutions.length > 0}
+                {#if morningSolutions.length > 0}
+                    <h3 class="border-b mb-4 pe-2 pb-1 pt-2">Commissioni Mattutine</h3>
+                    <div class="flex flex-wrap gap-4 pb-2">
+                        {#each morningSolutions as solution}
+                            <CommissionCard commission={solution} problem={$selectedProblem} />
+                        {/each}
+                    </div>
+                {/if}
+
+                {#if afternoonSolutions.length > 0}
+                    <h3 class="border-b mb-4 pe-2 pb-1 pt-2">Commissioni Pomeridiane</h3>
+                    <div class="flex flex-wrap gap-4">
+                        {#each afternoonSolutions as solution}
+                            <CommissionCard commission={solution} problem={$selectedProblem} />
+                        {/each}
+                    </div>
+                {/if}
+            {:else}
+                <div class="rounded-lg border p-4 mt-4">
+                    <h3 class="text-lg">Nessuna soluzione trovata</h3>
+                    <Separator decorative={true} class="mt-2 mb-4"/>
+                    <p class="text-lg">Non è stata trovata alcuna soluzione per questa configurazione</p>
+                </div>
+            {/if}
+        </div>
+    </div>
+
     <div id="configuration-settings">
         <div class="flex items-center justify-between">
             <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
@@ -124,11 +173,13 @@
             {#if $selectedConfiguration.run_lock || solutions.length > 0}
                 <div class="flex items-center mt-2 mb-4 text-[0.8rem] text-yellow-600 group dark:text-yellow-400">
                     <MdiReminder class="w-5 h-5"/>
+                    <!-- todo we are expecting that the optimization doesn't fail, but that could be the case sometimes -->
                     {#if solutions.length > 0}
                     <span class="flex items-center justify-start ms-2">
                         La configuratione è già stata usata per trovare una soluzione. Non è possibile modificarla.
                         Puoi sempre
                         <button class="flex ms-[2px] hover:underline">
+                            <!--todo-->
                             <MdiContentDuplicate class="h-4 w-4 me-[2px]"/> duplicarla
                         </button>
                         .
