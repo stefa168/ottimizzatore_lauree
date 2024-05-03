@@ -1,9 +1,11 @@
 import concurrent.futures.process
 import logging
+import os
 import pathlib
 import uuid
 
 import sqlalchemy.exc
+from dotenv import dotenv_values
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from http import HTTPStatus
@@ -14,6 +16,7 @@ from model.model import mapper_registry, Student, Commission, Professor, Commiss
     OptimizationConfiguration, SolutionCommission
 from model.enums import Degree, UniversityRole, SolverEnum
 from session_maker import SessionMakerSingleton
+from utils.logging import is_valid_log_level
 
 app = Flask(__name__)
 
@@ -467,7 +470,7 @@ def solve_commission(commission_id: int, config_id: int):
             # We create the configuration file
             configuration.create_dat_file(cc_path)
             logger.debug(f"Configuration file created at {cc_path}")
-            # And also the datafile
+            # And also the datafile that will be then loaded back by the optimizer
             # noinspection PyArgumentList
             commission.export_xls(cc_path)
 
@@ -526,24 +529,43 @@ def basic_authentication():
 def main():
     global executor
 
+    # Create the tables in the database. Todo migrate to alembic
     mapper_registry.metadata.create_all(SessionMakerSingleton.get_engine())
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=int(config.get("MAX_WORKERS", "4")))
     app.run(host=HOST_NAME, port=HOST_PORT, debug=True)
 
 
 if __name__ == '__main__':
     executor: concurrent.futures.process.ProcessPoolExecutor
 
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
+    config = dotenv_values(verbose=True)
 
+    sqla_log_level = config.get("DATABASE_LOGGING_LEVEL", "WARNING")
+    if not is_valid_log_level(sqla_log_level):
+        raise ValueError(f"Invalid logging level for database: {sqla_log_level}. "
+                         f"Available levels are: {list(logging.getLevelNamesMapping().keys())}")
+    logging.getLogger("sqlalchemy.engine").setLevel(sqla_log_level)
+
+    server_log_level = config.get("SERVER_LOGGING_LEVEL", "DEBUG")
+    if not is_valid_log_level(server_log_level):
+        raise ValueError(f"Invalid logging level for server: {server_log_level}. "
+                         f"Available levels are: {list(logging.getLevelNamesMapping().keys())}")
     server_logger = logging.getLogger(SERVER_PROCESS_NAME)
-    server_logger.setLevel(logging.DEBUG)
+    server_logger.setLevel(server_log_level)
     handler = logging.StreamHandler()
     handler.setFormatter(FORMATTER)
     server_logger.addHandler(handler)
 
-    SessionMakerSingleton.initialize("postgresql://user:password@localhost:5432/postgres")
+    SessionMakerSingleton.initialize(
+        sqlalchemy.URL.create(
+            "postgresql",
+            username=config["DB_USER"],
+            password=config["DB_PASSWORD"],
+            host=config["DB_HOST"],
+            port=config["DB_PORT"],
+            database=config["DB_NAME"]
+        )
+    )
 
-    CORS(app, origins=["http://localhost:5000", "http://localhost:5173",
-                       "http://192.168.0.23:5000", "http://192.168.0.23:5173"])
+    CORS(app, origins=[os.getenv("PUBLIC_API_URL"), os.getenv("PUBLIC_WEB_URL")])
     main()

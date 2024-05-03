@@ -140,6 +140,7 @@ def create_min_durata_model(dat_path: Path) -> pyo.AbstractModel:
 
     model.OBJ = pyo.Objective(rule=obj_expression, sense=pyo.minimize)
 
+    # todo
     raise NotImplementedError
 
 

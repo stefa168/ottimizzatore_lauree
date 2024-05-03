@@ -1,5 +1,6 @@
 from threading import Lock
 
+import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -10,7 +11,7 @@ class SessionMakerSingleton:
     _lock = Lock()  # To ensure thread-safety during initialization
 
     @classmethod
-    def initialize(cls, connection_string, **kwargs):
+    def initialize(cls, connection_string: str | sqlalchemy.URL, **kwargs):
         with cls._lock:
             if cls._session_maker is None:
                 cls._engine = create_engine(connection_string, **kwargs)

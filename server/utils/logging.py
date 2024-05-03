@@ -1,4 +1,9 @@
 import sys
+import logging
+
+
+def is_valid_log_level(level_name):
+    return level_name in logging.getLevelNamesMapping().keys()
 
 
 def redirect_stdout(new_target):
