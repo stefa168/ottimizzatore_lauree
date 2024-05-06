@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from watchdog.observers import Observer
 
 import optimization.models
 from model import Degree, UniversityRole, SolverEnum, Hashable, StringEnum
+from session_maker import SessionMakerSingleton
 
 from utils import FileChangeHandler
 
@@ -290,6 +292,12 @@ class OptimizationConfiguration(Hashable):
 
     run_lock: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
 
+    execution_details: List['ExecutionDetails'] = relationship(
+        "ExecutionDetails",
+        back_populates="opt_config",
+        cascade="all, delete-orphan"
+    )
+
     solution_commissions: List['SolutionCommission'] = relationship(
         "SolutionCommission",
         back_populates="opt_config",
@@ -417,6 +425,7 @@ class OptimizationConfiguration(Hashable):
         observer.schedule(solver_log_handler, str(solver_log_path.parent), recursive=False)
         observer.start()
         logger.info("Running solver...")
+        ed = ExecutionDetails(self.commission_id, self.id)
         results: SolverResults = solver.solve(
             model,
             tee=True,
@@ -435,6 +444,14 @@ class OptimizationConfiguration(Hashable):
         solver_reached_time_limit = results.solver.termination_condition == TerminationCondition.maxTimeLimit
 
         logger.debug(f"Solver status: {results.solver.status}")
+
+        ed.finished(is_solver_ok, solver_reached_optimality, solver_reached_time_limit)
+        ed.optimizer_log = solver_log_handler.read_file()
+
+        session: sqla.orm.Session
+        with SessionMakerSingleton.get_session_maker().begin() as session:
+            session.add(ed)
+            session.commit()
 
         if is_solver_ok:
             if solver_reached_optimality or solver_reached_time_limit:
@@ -575,3 +592,56 @@ class SolutionCommission:
             'professors': [prof.serialize() for prof in self.professors],
             'students': [stud.serialize() for stud in self.students]
         }
+
+
+@mapper_registry.mapped
+@dataclass
+class ExecutionDetails(Hashable):
+    __tablename__ = "execution_details"
+
+    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission: Commission = relationship("Commission")
+
+    opt_config_id: int = Column(sqla.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
+    opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
+
+    start_time: datetime = Column(sqla.DateTime, nullable=False)
+    end_time: datetime = Column(sqla.DateTime, nullable=True)
+
+    success: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
+    solver_reached_optimality: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
+    solver_time_limit_reached: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
+    error_message: str = Column(sqla.String(256), nullable=True)
+    optimizer_log: str = Column(sqla.Text, nullable=True)
+
+    def __init__(self, commission_id: int, opt_config_id: int, start_time: datetime = datetime.now()):
+        self.commission_id = commission_id
+        self.opt_config_id = opt_config_id
+        self.start_time = start_time
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'commission_id': self.commission_id,
+            'opt_config_id': self.opt_config_id,
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+            'success': self.success,
+            'error_message': self.error_message,
+            'optimizer_log': self.optimizer_log
+        }
+
+    def __repr__(self):
+        return f"ExecutionDetails({self.id=}, {self.commission_id=}, {self.opt_config_id=}, {self.start_time=}, " \
+               f"{self.end_time=}, {self.success=}, {self.error_message=})"
+
+    def hash(self):
+        return Hashable.hash_data(repr(self))
+
+    def finished(self, ok, optimality_reached, time_limit_reached):
+        self.end_time = datetime.now()
+        self.success = ok
+        self.solver_reached_optimality = optimality_reached
+        self.solver_time_limit_reached = time_limit_reached
