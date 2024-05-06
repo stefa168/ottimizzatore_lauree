@@ -406,6 +406,13 @@ class OptimizationConfiguration(Hashable):
         solver_log_path.open("w").close()
         solver_log_handler = FileChangeHandler(logger.getChild("solver"), solver_log_path)
 
+        # Small logger just to print the solver output to the main logger
+        def solver_log_observer(new_lines):
+            for line in new_lines:
+                logger.debug(line)
+
+        solver_log_handler.register_observer(solver_log_observer)
+
         observer = Observer()
         observer.schedule(solver_log_handler, str(solver_log_path.parent), recursive=False)
         observer.start()
