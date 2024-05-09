@@ -25,6 +25,20 @@ export interface OptimizationConfiguration {
     optimization_gap: number,
 
     solution_commissions: SolutionCommission[]
+    execution_details: ExecutionDetails[]
+}
+
+export interface ExecutionDetails {
+    id: number,
+    commission_id: number,
+    opt_config_id: number,
+    start_time: string,
+    end_time: string,
+    success: boolean,
+    solver_reached_optimality: boolean,
+    solver_reached_time_limit: boolean,
+    error_message: string | null,
+    optimizer_log: string | null,
 }
 
 export interface SolutionCommission {

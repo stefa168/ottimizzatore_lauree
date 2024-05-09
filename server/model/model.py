@@ -355,7 +355,8 @@ class OptimizationConfiguration(Hashable):
             'optimization_time_limit': self.optimization_time_limit,
             'optimization_gap': self.optimization_gap,
             'run_lock': self.run_lock,
-            'solution_commissions': [sol.serialize() for sol in self.solution_commissions]
+            'solution_commissions': [sol.serialize() for sol in self.solution_commissions],
+            'execution_details': [ed.serialize() for ed in self.execution_details]
         }
 
     def solver_wrapper(self, cc_path: Path, version_hash: str, logger: logging.Logger):
@@ -599,16 +600,19 @@ class SolutionCommission:
 class ExecutionDetails(Hashable):
     __tablename__ = "execution_details"
 
+    # We are using a separate ID because we want to keep track of the execution details even if the optimization
+    # configuration is run again with the override.
     id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
 
+    # todo remove this foreign key
     commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission")
 
     opt_config_id: int = Column(sqla.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
     opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
 
-    start_time: datetime = Column(sqla.DateTime, nullable=False)
-    end_time: datetime = Column(sqla.DateTime, nullable=True)
+    start_time: datetime = Column(sqla.DateTime(timezone=True), nullable=False)
+    end_time: datetime = Column(sqla.DateTime(timezone=True), nullable=True)
 
     success: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
     solver_reached_optimality: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
@@ -629,6 +633,8 @@ class ExecutionDetails(Hashable):
             'start_time': self.start_time,
             'end_time': self.end_time,
             'success': self.success,
+            'solver_reached_optimality': self.solver_reached_optimality,
+            'solver_time_limit_reached': self.solver_time_limit_reached,
             'error_message': self.error_message,
             'optimizer_log': self.optimizer_log
         }
