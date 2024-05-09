@@ -2,6 +2,8 @@
     import type {Professor} from "./commission_types";
     import {createRender, createTable, Render, Subscribe} from "svelte-headless-table";
     import {readable} from "svelte/store";
+    // noinspection TypeScriptCheckImport
+    import {env} from "$env/dynamic/public";
     import * as Table from "$lib/components/ui/table"
     import EditableProfessorRole from "./EditableProfessorRole.svelte";
     import type {UniversityRole} from "./commission_types.js";
@@ -44,7 +46,7 @@
 
         let professorId = commissionProfessors[rowId].id;
 
-        await fetch(`http://localhost:5000/professor/${professorId}`, {
+        await fetch(`${env.PUBLIC_API_URL}/professor/${professorId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
