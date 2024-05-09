@@ -3,6 +3,34 @@ import { twMerge } from "tailwind-merge";
 import { cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
 
+export function formatTime(minutes: number) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+
+    let str = "";
+    if (hours > 0) {
+        str += `${hours}`;
+        if (hours === 1) {
+            str += " ora";
+        } else {
+            str += " ore";
+        }
+    }
+    if (mins > 0) {
+        if (hours > 0) {
+            str += " e ";
+        }
+
+        str += `${mins}`;
+        if (mins === 1) {
+            str += " minuto";
+        } else {
+            str += " minuti";
+        }
+    }
+    return str;
+}
+
 // https://blog.logrocket.com/iterate-over-enums-typescript/
 export function enumKeys<O extends object, K extends keyof O = keyof O>(obj: O): K[] {
     return Object.keys(obj).filter(k => !Number.isNaN(k)) as K[]

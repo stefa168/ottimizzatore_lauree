@@ -4,6 +4,7 @@
 
     import type {SolutionCommission} from "../optimization_types";
     import type {Commission} from "../../commission_types";
+    import {formatTime} from "$lib/utils";
 
     export let problem: Commission | undefined;
     export let commission: SolutionCommission;
@@ -38,7 +39,7 @@
         <Card.Title>Commissione {commission.order + 1}</Card.Title>
         <Card.Description>
             <p>{commission.students.length} Candidati (<abbr><strong>{commissionDetails()}</strong></abbr>)</p>
-            <p>Durata: {commission.duration} minuti</p>
+            <p>Durata: {formatTime(commission.duration)}</p>
         </Card.Description>
     </Card.Header>
     <Card.Content>
