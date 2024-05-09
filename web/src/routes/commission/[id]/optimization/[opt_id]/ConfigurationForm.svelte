@@ -49,6 +49,7 @@
                             await response.json().then((data) => {
                                 console.log(data);
                             });
+                            // todo update the new data now that the fields have been updated on the server-side
                             /*await response.json().then((data) => {
                                 selectedConfiguration.update((configurations) => {
                                     const index = configurations.findIndex((c) => c.id === data.id);
@@ -163,7 +164,7 @@
                             <Switch {...attrs} bind:checked={$formData.online} class="ms-3 justify-self-end"/>
                         </div>
                     </Form.Control>
-                    <Form.Description hidden={$selectedConfiguration.run_lock}>
+                    <Form.Description class="{$selectedConfiguration.run_lock ? 'hidden' : ''}">
                         Attiva lo switch a destra se le commissioni di laurea saranno svolte online
                     </Form.Description>
                     <!-- Probably not needed -->
