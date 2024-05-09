@@ -2,6 +2,8 @@
     // Svelte
     import {selectedConfiguration, selectedProblem} from "$lib/store";
     import {derived, get, readonly, type Readable} from "svelte/store";
+    // noinspection TypeScriptCheckImport
+    import {env} from "$env/dynamic/public";
 
     // Shadcn
     import {Button} from "$lib/components/ui/button";
@@ -16,6 +18,8 @@
     import MdiContentDuplicate from '~icons/mdi/content-duplicate'
     import MdiData from '~icons/mdi/data'
     import MdiLoading from "~icons/mdi/loading";
+    import MdiCubeSend from '~icons/mdi/cube-send'
+    import MdiExclamation from '~icons/mdi/exclamation'
 
     // Components
     import CommissionCard from "./CommissionCard.svelte";
@@ -23,6 +27,7 @@
 
     // Project modules
     import type {OptimizationStatus, PossibleOptimizationStatuses} from "./types";
+    import {toast} from "svelte-sonner";
 
     let optStatus: OptimizationStatus = derived([selectedConfiguration], ([conf]) => {
         let status: PossibleOptimizationStatuses = 'not_started';
@@ -70,6 +75,42 @@
     let formComponent: ConfigurationForm;
 
     let resultsOpened = true;
+
+    function startOptimization() {
+        const problem = get(selectedProblem);
+        const configuration = get(selectedConfiguration);
+
+        if (problem === undefined || configuration === undefined) {
+            console.error('Problem or configuration not selected');
+            return;
+        }
+
+        selectedConfiguration.update(conf => {
+            if (conf === undefined) return undefined;
+
+            return {
+                ...conf,
+                run_lock: true
+            };
+        });
+
+        fetch(`${env.PUBLIC_API_URL}/commission/${problem.id}/solve/${configuration.id}`, {method: 'POST'})
+            .then(response => {
+                if (!response.ok) {
+                    // todo improve error presentation
+                    toast.error(`Errore durante l'avvio dell'ottimizzazione: ${response.statusText}`);
+                    throw new Error('Failed to start the optimization');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data);
+            })
+            .catch(error => {
+                console.error(error);
+
+            });
+    }
 </script>
 
 {#if $selectedConfiguration}
@@ -115,9 +156,15 @@
                 {/if}
             {:else}
                 <!-- We still have to start the optimization -->
-                <div class="flex items-center justify-center mt-4">
-                    <MdiData class="w-8 h-8"/>
-                    <span class="ms-2">Ottimizzazione non ancora avviata</span>
+                <div class="flex items-center flex-col">
+                    <div class="flex items-center self-center mt-4">
+                        <MdiExclamation class="w-8 h-8"/>
+                        <span>Ottimizzazione non ancora avviata</span>
+                    </div>
+                    <Button class="mt-2" on:click={startOptimization}>
+                        <MdiCubeSend class="h-4 w-4 me-2"/>
+                        <span>Avvia l'ottimizzazione</span>
+                    </Button>
                 </div>
             {/if}
         </div>
