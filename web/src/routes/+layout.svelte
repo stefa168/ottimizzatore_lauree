@@ -12,6 +12,7 @@
     import RadixIconsTrash from '~icons/radix-icons/trash'
     import RadixIconsArchive from '~icons/radix-icons/archive'
     import RadixIconsPencil2 from '~icons/radix-icons/pencil-2'
+    import MdiAccountGroup from '~icons/mdi/account-group'
 
     // Components
     import DropdownButton from "$lib/sidebar/DropdownButton.svelte";
@@ -155,10 +156,16 @@
                     {/if}
                 </DropdownButton>
             </li>
-            <li class="mt-4 pb-4 ">
-                <Button variant="ghost" class="px-3 w-full justify-start">
+            <li class="mt-4">
+                <Button variant="ghost" class="px-3 w-full justify-start" disabled>
                     <RadixIconsArchive class="me-2 h-4 w-4"/>
                     Problemi Archiviati
+                </Button>
+            </li>
+            <li class="mt-4 pb-4 ">
+                <Button variant="ghost" class="px-3 w-full justify-start" disabled>
+                    <MdiAccountGroup class="me-2 h-4 w-4"/>
+                    Elenco Docenti
                 </Button>
             </li>
         </ul>
