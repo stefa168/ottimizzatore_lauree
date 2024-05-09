@@ -12,9 +12,13 @@
     import * as Select from '$lib/components/ui/select'
     import * as Button from '$lib/components/ui/button'
 
+    import MdiFileDocumentPlusOutline from '~icons/mdi/file-document-plus-outline'
+
     import type {OptimizationConfiguration} from "./optimization_types";
 
     $: availableConfigurations = $selectedProblem?.optimization_configurations ?? [];
+
+    const newConfigMagicValue = '$$#!#$$newConfig$$!#!$$';
 
     onMount(() => {
         const problem = get(selectedProblem);
@@ -47,8 +51,21 @@
         selectedConfiguration.set(undefined);
     });
 
-    const handleConfigurationChoice = (v: Selected<number | undefined> | undefined) => {
+    const handleConfigurationChoice = (v: Selected<number | string | undefined> | undefined) => {
         if (!v) return;
+
+        if (v.value === newConfigMagicValue) {
+            fetch(`${env.PUBLIC_API_URL}/commission/${$selectedProblem?.id}/configuration`, {method: 'POST'})
+                .then(r => r.json())
+                .then((r: { new_config: OptimizationConfiguration }) => {
+                    $selectedProblem?.optimization_configurations.push(r.new_config);
+                    console.log('created new configuration', r.new_config);
+                    toast.info(`Nuova configurazione creata. Procedo ad aprirla.`);
+                    goto(`/commission/${$selectedProblem?.id}/optimization/${r.new_config.id}`);
+                });
+            return;
+        }
+
         goto(`/commission/${$page.params.id}/optimization/${v.value}`);
     }
 </script>
@@ -60,15 +77,20 @@
         }}
         onSelectedChange={handleConfigurationChoice}>
     <Select.Trigger>
-        <Select.Value placeholder="Scegliere una configurazione"/>
+        <Select.Value placeholder="Scegli o crea una configurazione"/>
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
-            <Select.Label>Configurazioni</Select.Label>
+            <Select.Label>Configurazioni disponibili</Select.Label>
             {#each availableConfigurations as config}
                 <Select.Item value={config.id} label={config.title}>{config.title}</Select.Item>
             {/each}
         </Select.Group>
+        <Select.Separator/>
+        <Select.Item value={newConfigMagicValue}>
+            <MdiFileDocumentPlusOutline class="w-4 h-4 me-2"/>
+            Crea una nuova configurazione
+        </Select.Item>
     </Select.Content>
     <Select.Input name="role"/>
 </Select.Root>
