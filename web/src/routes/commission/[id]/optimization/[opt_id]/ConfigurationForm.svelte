@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {debugEnabled} from "$lib/store";
+    import {debugEnabled, selectedProblem} from "$lib/store";
     import {enumKeys} from "$lib/utils";
     import {browser} from "$app/environment";
 
@@ -46,17 +46,24 @@
                         body: JSON.stringify(form.data)
                     }).then(async (response) => {
                         if (response.ok) {
-                            await response.json().then((data) => {
-                                console.log(data);
-                            });
                             // todo update the new data now that the fields have been updated on the server-side
-                            /*await response.json().then((data) => {
-                                selectedConfiguration.update((configurations) => {
-                                    const index = configurations.findIndex((c) => c.id === data.id);
-                                    configurations[index] = data;
-                                    return configurations;
+                            await response.json().then((data: {
+                                success: string,
+                                updated_config: OptimizationConfiguration
+                            }) => {
+                                const newConf = data.updated_config;
+
+                                console.log(newConf);
+                                selectedProblem.update((p) => {
+                                    if(!p) return undefined;
+
+                                    const index = p.optimization_configurations.findIndex((c) => c.id === newConf.id);
+                                    p.optimization_configurations[index] = newConf;
+
+                                    return p;
                                 });
-                            });*/
+                                selectedConfiguration.set(newConf);
+                            });
                         } else {
                             await response.json().then((data) => {
                                 console.error(data);
