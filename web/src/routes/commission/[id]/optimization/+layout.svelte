@@ -5,6 +5,8 @@
     import {get} from "svelte/store";
     import {selectedConfiguration, selectedProblem} from "$lib/store";
     import {toast} from "svelte-sonner";
+    // noinspection TypeScriptCheckImport
+    import {env} from "$env/dynamic/public";
 
     import type {Selected} from "bits-ui";
     import * as Select from '$lib/components/ui/select'
@@ -25,7 +27,7 @@
         // The setting of the configuration store is delegated to the +page in [opt_id].
         if (configurations.length === 0) {
             // This branch is only executed when there are no configurations available, so one is created by default
-            fetch(`http://localhost:5000/commission/${problem.id}/configuration`, {method: 'POST'})
+            fetch(`${env.PUBLIC_API_URL}/commission/${problem.id}/configuration`, {method: 'POST'})
                 .then(r => r.json())
                 .then((r: { new_config: OptimizationConfiguration }) => {
                     problem.optimization_configurations = [r.new_config];
