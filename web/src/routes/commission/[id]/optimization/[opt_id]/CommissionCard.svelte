@@ -46,7 +46,7 @@
         <ul class="list-inside list-disc">
             {#each commission.professors as professor}
                 <li class="{professor.role === 'ordinary' ? 'underline' : ''}">
-                    {professor.surname}
+                    {professor.surname} {professor.name[0]}.
                 </li>
             {/each}
         </ul>
