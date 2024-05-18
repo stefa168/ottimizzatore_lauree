@@ -1,11 +1,11 @@
-pandas~=2.2.0
-SQLAlchemy~=2.0.27
-Flask~=3.0.2
-flask-cors~=4.0.0
+pandas~=2.2.2
+SQLAlchemy~=2.0.30
+Flask~=3.0.3
+flask-cors~=4.0.1
 openpyxl~=3.1.2
 xlrd~=2.0.1
-pyarrow~=15.0.0
+pyarrow~=16.1.0
 psycopg2-binary~=2.9.9
-pyomo~=6.7.1
+pyomo~=6.7.2
 watchdog~=4.0.0
 python-dotenv~=1.0.1
