@@ -167,12 +167,12 @@
                 <Form.Field {form} name="online">
                     <Form.Control let:attrs>
                         <div class="flex items-center justify-between">
-                            <Form.Label class="text-lg">Sessione online</Form.Label>
+                            <Form.Label class="text-lg">Impostazioni aggiuntive</Form.Label>
                             <Switch {...attrs} bind:checked={$formData.online} class="ms-3 justify-self-end"/>
                         </div>
                     </Form.Control>
                     <Form.Description class="{$selectedConfiguration.run_lock ? 'hidden' : ''}">
-                        Attiva lo switch a destra se le commissioni di laurea saranno svolte online
+                        Attiva lo switch a destra per alcune impostazioni aggiuntive, normalmente usate per le sessioni online.
                     </Form.Description>
                     <!-- Probably not needed -->
                     <!-- <Form.FieldErrors style="margin-top: 0"/>-->
@@ -182,7 +182,7 @@
                     <Separator decorative={true} class="mt-2 mb-4"/>
                     <div class="flex items-center mt-2 text-[0.8rem] text-yellow-600 group dark:text-yellow-400">
                         <MdiReminder class="w-5 h-5"/>
-                        <span class="justify-start ms-2"> Se le commissioni saranno svolte online, è necessario specificare il numero minimo e massimo di professori necessari</span>
+                        <span class="justify-start ms-2"> Per utilizzare le impostazioni aggiuntive è necessario specificare il numero minimo e massimo di professori necessari</span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mt-4">

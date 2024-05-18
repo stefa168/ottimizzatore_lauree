@@ -140,8 +140,97 @@ def create_min_durata_model(dat_path: Path) -> pyo.AbstractModel:
 
     model.OBJ = pyo.Objective(rule=obj_expression, sense=pyo.minimize)
 
-    # todo
-    raise NotImplementedError
+    # 1. tutti i candidati sono assegnati a una commissione
+    def all_candidates_c(model, cand):
+        return sum(model.x[cand, com] for com in model.Commissioni) == 1
+
+    # 2. durata commissioni non deve eccedere la massima durata
+    def comm_duration_c(model, com):
+        return sum(model.x[cand, com] * model.durata[cand] for cand in model.Candidati) <= model.maxDurata * model.y[
+            com]
+
+    # 3. massimizzare la durata di ogni singola commissione (w è la minima durata di tutte le commissioni)
+    def max_min_c(model, com):
+        return sum(model.durata[cand] * model.x[cand, com] for cand in model.Candidati) >= \
+            model.w - model.maxDurata * (1 - model.y[com])
+
+    # 4. minimizzare durata di ogni commissione (w2 è la massima durata di tutte le commissioni)
+    def max_min_c2(model, com):
+        return sum(model.durata[cand] * model.x[cand, com] for cand in model.Candidati) <= \
+            model.w2 + model.maxDurata * (1 - model.y[com])
+
+    # 5. Relatori devono essere presenti per la commissione dei loro studenti
+    def prof_avail_c(model, t, com):
+        rel = model.Tesisti['Relatore'][t]
+        return model.x[t, com] <= model.disponibilita[rel, com] * model.z[rel, com]
+
+    # 6. Controrelatori devono essere presenti per la commissione dei loro studenti
+    def prof2_avail_c(model, t, com):
+        rel = model.Tesisti['Controrelatore'][t]
+        return model.x[t, com] <= model.disponibilita[rel, com] * model.z[rel, com] if pandas.notnull(
+            rel) else pyo.Constraint.Feasible
+
+    # 7. Ogni docente deve essere al massimo in una commissione
+    def prof_comm_c(model, p):
+        return sum(model.z[p, com] for com in model.Commissioni) <= 1
+
+    # 8. min_ord deve essere il minimo numero di docenti ordinari per ogni commissione
+    def prof_min_ord_c(model, com):
+        return sum(
+            model.z[p, com] * model.isOrdinario[p] for p in model.NomiDocenti) >= model.min_ord - model.max_doc * (
+                1 - model.y[com])
+
+    # 9. max_ord deve essere il massimo numero di docenti ordinari per ogni commissione
+    def prof_max_ord_c(model, com):
+        return sum(model.z[p, com] * model.isOrdinario[p] for p in model.NomiDocenti) <= model.max_ord
+
+    # 10. minDocenti deve essere il minimo numero di docenti per ogni commissione
+    def prof_min_all_c(model, com):
+        return sum(model.z[p, com] for p in model.NomiDocenti) >= model.minDocenti * model.y[com]
+
+    # 11. max_doc deve essere il massimo numero di docenti per ogni commissione
+    def prof_max_all_c(model, com):
+        return sum(model.z[p, com] for p in model.NomiDocenti) <= model.max_doc
+
+    # 12. y2 indica se la commissione è magistrale o no
+    # Se un tesista magistrale appartiene a una commissione c, c deve essere necessariamente magistrale
+    def comm_mag1(model, t, com):
+        dur = model.durata[t]
+        return model.x[t, com] * int(dur > 15) <= model.y2[com]
+
+    # 13. minDocentiMag deve essere il minimo numero di docenti per ogni commissione magistrale
+    def comm_mag2(model, com):
+        return sum(model.z[p, com] for p in model.NomiDocenti) >= \
+            model.minDocentiMag * model.y2[com]
+
+    # 14. Una commissione non puo' essere magistrale se non usata nella soluzione
+    def comm_mag3(model, com):
+        return model.y2[com] <= model.y[com]
+
+    # 15. Una commissione non puo' essere indicata come magistrale se non ci sono tesisti
+    # magistrali partecipanti a essa
+    def comm_mag4(model, com):
+        return sum(model.x[t, com] * int(model.durata[t] > 15) for t in model.Candidati) >= model.y2[com]
+
+    model.allCandCst = pyo.Constraint(model.Candidati, rule=all_candidates_c)
+    model.commDurCst = pyo.Constraint(model.Commissioni, rule=comm_duration_c)
+    model.maxMinCst = pyo.Constraint(model.Commissioni, rule=max_min_c)
+    model.maxMinCst2 = pyo.Constraint(model.Commissioni, rule=max_min_c2)
+    model.profAvailCst = pyo.Constraint(model.Candidati, model.Commissioni, rule=prof_avail_c)
+
+    model.prof2AvailCst = pyo.Constraint(model.Candidati, model.Commissioni, rule=prof2_avail_c)
+    model.profCommCst = pyo.Constraint(model.NomiDocenti, rule=prof_comm_c)
+    model.profMinOrdCst = pyo.Constraint(model.Commissioni, rule=prof_min_ord_c)
+    model.profMaxOrdCst = pyo.Constraint(model.Commissioni, rule=prof_max_ord_c)
+    model.profMinAllCst = pyo.Constraint(model.Commissioni, rule=prof_min_all_c)
+    model.profMaxAllCst = pyo.Constraint(model.Commissioni, rule=prof_max_all_c)
+
+    model.comm_mag1 = pyo.Constraint(model.Candidati, model.Commissioni, rule=comm_mag1)
+    model.comm_mag2 = pyo.Constraint(model.Commissioni, rule=comm_mag2)
+    model.comm_mag3 = pyo.Constraint(model.Commissioni, rule=comm_mag3)
+    model.comm_mag4 = pyo.Constraint(model.Commissioni, rule=comm_mag4)
+
+    return model
 
 
 # noinspection PyUnresolvedReferences
