@@ -5,7 +5,7 @@ from typing import List
 from pathlib import Path
 
 import pandas as pd
-import sqlalchemy as sqla
+import sqlalchemy as sa
 from pyomo.core import AbstractModel
 from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition, SolverResults
 from sqlalchemy import Column, ForeignKey
@@ -29,16 +29,16 @@ metadata = mapper_registry.metadata
 class Student(Hashable):
     _tablename = 'students'
 
-    __table__ = sqla.Table(
+    __table__ = sa.Table(
         _tablename,
         mapper_registry.metadata,
-        Column("id", sqla.Integer, primary_key=True, autoincrement=True, nullable=False),
-        Column("matriculation_number", sqla.Integer, nullable=False),
-        Column("name", sqla.String(128), nullable=False),
-        Column("surname", sqla.String(128), nullable=False),
-        Column("phone_number", sqla.String(32), nullable=False),
-        Column("personal_email", sqla.String(256), nullable=False),
-        Column("university_email", sqla.String(256), nullable=False)
+        Column("id", sa.Integer, primary_key=True, autoincrement=True, nullable=False),
+        Column("matriculation_number", sa.Integer, nullable=False),
+        Column("name", sa.String(128), nullable=False),
+        Column("surname", sa.String(128), nullable=False),
+        Column("phone_number", sa.String(32), nullable=False),
+        Column("personal_email", sa.String(256), nullable=False),
+        Column("university_email", sa.String(256), nullable=False)
     )
 
     id: int
@@ -86,10 +86,10 @@ class Student(Hashable):
 class Professor(Hashable):
     __tablename__ = 'professors'
 
-    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
-    name: str = Column(sqla.String(128), nullable=False)
-    surname: str = Column(sqla.String(128), nullable=False)
-    role: UniversityRole = Column(sqla.Enum(UniversityRole), nullable=False, default=UniversityRole.UNSPECIFIED)
+    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    name: str = Column(sa.String(128), nullable=False)
+    surname: str = Column(sa.String(128), nullable=False)
+    role: UniversityRole = Column(sa.Enum(UniversityRole), nullable=False, default=UniversityRole.UNSPECIFIED)
 
     def __init__(self, name: str, surname: str, role: UniversityRole = UniversityRole.UNSPECIFIED):
         self.name = name
@@ -120,8 +120,8 @@ class Professor(Hashable):
 class Commission(Hashable):
     __tablename__ = "commissions"
 
-    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
-    title: str = Column(sqla.String(256), nullable=False)
+    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    title: str = Column(sa.String(256), nullable=False)
     entries: List['CommissionEntry'] = relationship(
         "CommissionEntry",
         back_populates="commission",
@@ -202,12 +202,12 @@ class Commission(Hashable):
 class CommissionEntry(Hashable):
     __tablename__ = "commission_entries"
 
-    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
+    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
 
-    commission_id = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission_id = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission", back_populates="entries")
 
-    candidate_id: int = Column(sqla.Integer, ForeignKey('students.id'), nullable=False)
+    candidate_id: int = Column(sa.Integer, ForeignKey('students.id'), nullable=False)
     candidate: Student = relationship(
         'Student',
         foreign_keys=[candidate_id],
@@ -215,16 +215,16 @@ class CommissionEntry(Hashable):
         single_parent=True
     )
 
-    degree_level: Degree = Column(sqla.Enum(Degree), nullable=False)
+    degree_level: Degree = Column(sa.Enum(Degree), nullable=False)
 
     # Professor-Entry Relationships
-    supervisor_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=False)
+    supervisor_id: int = Column(sa.Integer, ForeignKey('professors.id'), nullable=False)
     supervisor: Professor = relationship('Professor', foreign_keys=[supervisor_id])
     # Co-relatore
-    supervisor_assistant_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=True)
+    supervisor_assistant_id: int = Column(sa.Integer, ForeignKey('professors.id'), nullable=True)
     supervisor_assistant: Professor | None = relationship('Professor', foreign_keys=[supervisor_assistant_id])
 
-    counter_supervisor_id: int = Column(sqla.Integer, ForeignKey('professors.id'), nullable=True)
+    counter_supervisor_id: int = Column(sa.Integer, ForeignKey('professors.id'), nullable=True)
     counter_supervisor: Professor | None = relationship('Professor', foreign_keys=[counter_supervisor_id])
 
     def __init__(self,
@@ -267,30 +267,30 @@ class CommissionEntry(Hashable):
 class OptimizationConfiguration(Hashable):
     __tablename__ = "optimization_configurations"
 
-    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
-    title: str = Column(sqla.String(256),
+    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    title: str = Column(sa.String(256),
                         nullable=False,
                         server_default="Nuova configurazione",
                         default="Nuova configurazione")
 
-    commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission_id: int = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission")
 
-    max_duration: int = Column(sqla.Integer, nullable=False, server_default='210', default=210)
-    max_commissions_morning: int = Column(sqla.Integer, nullable=False, server_default='6', default=6)
-    max_commissions_afternoon: int = Column(sqla.Integer, nullable=False, server_default='6', default=6)
+    max_duration: int = Column(sa.Integer, nullable=False, server_default='210', default=210)
+    max_commissions_morning: int = Column(sa.Integer, nullable=False, server_default='6', default=6)
+    max_commissions_afternoon: int = Column(sa.Integer, nullable=False, server_default='6', default=6)
 
-    online: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
-    min_professor_number: int | None = Column(sqla.Integer, nullable=True)
-    min_professor_number_masters: int | None = Column(sqla.Integer, nullable=True)
-    max_professor_numer: int | None = Column(sqla.Integer, nullable=True)
+    online: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
+    min_professor_number: int | None = Column(sa.Integer, nullable=True)
+    min_professor_number_masters: int | None = Column(sa.Integer, nullable=True)
+    max_professor_numer: int | None = Column(sa.Integer, nullable=True)
 
     solver: SolverEnum = Column(StringEnum(SolverEnum), nullable=False, default=SolverEnum.CPLEX,
                                 server_default=SolverEnum.CPLEX.value)
-    optimization_time_limit: int = Column(sqla.Integer, nullable=False, server_default='60', default=60)
-    optimization_gap: float = Column(sqla.Float, nullable=False, server_default='0.005', default=0.005)
+    optimization_time_limit: int = Column(sa.Integer, nullable=False, server_default='60', default=60)
+    optimization_gap: float = Column(sa.Float, nullable=False, server_default='0.005', default=0.005)
 
-    run_lock: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
+    run_lock: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
 
     execution_details: List['ExecutionDetails'] = relationship(
         "ExecutionDetails",
@@ -449,7 +449,7 @@ class OptimizationConfiguration(Hashable):
         ed.finished(is_solver_ok, solver_reached_optimality, solver_reached_time_limit)
         ed.optimizer_log = solver_log_handler.read_file()
 
-        session: sqla.orm.Session
+        session: sa.orm.Session
         with SessionMakerSingleton.get_session_maker().begin() as session:
             session.add(ed)
             session.commit()
@@ -478,42 +478,42 @@ class SolutionCommission:
     # So we are going to use a single primary key and just foreign keys to the other tables.
     __tablename__ = "solution_commissions"
 
-    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
+    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
 
     # The specific commission number of the commission. It is just to have some sort of order, if needed.
-    order: int = Column(sqla.Integer, nullable=False)
+    order: int = Column(sa.Integer, nullable=False)
 
-    morning: bool = Column(sqla.Boolean, nullable=False, server_default='True', default=True)
+    morning: bool = Column(sa.Boolean, nullable=False, server_default='True', default=True)
 
     # The commission that this solution is for
-    commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission_id: int = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission")
 
     # The optimization configuration that generated this solution
-    opt_config_id: int = Column(sqla.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
+    opt_config_id: int = Column(sa.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
     opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
 
-    duration: int = Column(sqla.Integer, nullable=False)
+    duration: int = Column(sa.Integer, nullable=False)
 
-    version_hash: str = Column(sqla.String(64), nullable=False)
+    version_hash: str = Column(sa.String(64), nullable=False)
 
-    _solution_commission_professors = sqla.Table(
+    _solution_commission_professors = sa.Table(
         'solution_commission_professors', metadata,
-        Column('solution_commission_id', sqla.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
-        Column('professor_id', sqla.Integer, ForeignKey('professors.id'), primary_key=True)
+        Column('solution_commission_id', sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
+        Column('professor_id', sa.Integer, ForeignKey('professors.id'), primary_key=True)
     )
 
-    _solution_commission_students = sqla.Table(
+    _solution_commission_students = sa.Table(
         'solution_commission_students', metadata,
-        Column('solution_commission_id', sqla.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
-        Column('student_id', sqla.Integer, ForeignKey('students.id'), primary_key=True)
+        Column('solution_commission_id', sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
+        Column('student_id', sa.Integer, ForeignKey('students.id'), primary_key=True)
     )
 
     professors: List['Professor'] = relationship("Professor", secondary=_solution_commission_professors)
     students: List['Student'] = relationship("Student", secondary=_solution_commission_students)
 
     __table_args__ = (
-        sqla.UniqueConstraint('commission_id', 'order', 'opt_config_id'),
+        sa.UniqueConstraint('commission_id', 'order', 'opt_config_id'),
     )
 
     def __init__(self, version_hash: str):
@@ -529,7 +529,7 @@ class SolutionCommission:
     def generate_from_model(conf: OptimizationConfiguration, model: AbstractModel, version_hash: str) \
             -> tuple[List['SolutionCommission'], List['SolutionCommission']]:
         from session_maker import SessionMakerSingleton
-        session: sqla.orm.Session
+        session: sa.orm.Session
         with SessionMakerSingleton.get_session_maker().begin() as session:
             # noinspection PyShadowingNames
             def extract_commissions(model_commissions, offset=0, morning=True):
@@ -602,23 +602,23 @@ class ExecutionDetails(Hashable):
 
     # We are using a separate ID because we want to keep track of the execution details even if the optimization
     # configuration is run again with the override.
-    id: int = Column(sqla.Integer, primary_key=True, autoincrement=True, nullable=False)
+    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
 
     # todo remove this foreign key
-    commission_id: int = Column(sqla.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission_id: int = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Commission = relationship("Commission")
 
-    opt_config_id: int = Column(sqla.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
+    opt_config_id: int = Column(sa.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
     opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
 
-    start_time: datetime = Column(sqla.DateTime(timezone=True), nullable=False)
-    end_time: datetime = Column(sqla.DateTime(timezone=True), nullable=True)
+    start_time: datetime = Column(sa.DateTime(timezone=True), nullable=False)
+    end_time: datetime = Column(sa.DateTime(timezone=True), nullable=True)
 
-    success: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
-    solver_reached_optimality: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
-    solver_time_limit_reached: bool = Column(sqla.Boolean, nullable=False, server_default='False', default=False)
-    error_message: str = Column(sqla.String(256), nullable=True)
-    optimizer_log: str = Column(sqla.Text, nullable=True)
+    success: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
+    solver_reached_optimality: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
+    solver_time_limit_reached: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
+    error_message: str = Column(sa.String(256), nullable=True)
+    optimizer_log: str = Column(sa.Text, nullable=True)
 
     def __init__(self, commission_id: int, opt_config_id: int, start_time: datetime = datetime.now()):
         self.commission_id = commission_id
