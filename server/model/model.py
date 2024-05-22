@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from pyomo.core import AbstractModel
 from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition, SolverResults
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relationship, registry
+from sqlalchemy.orm import relationship, registry, declarative_base, Mapped, mapped_column
 from watchdog.observers import Observer
 
 import optimization.models
@@ -18,39 +18,29 @@ from session_maker import SessionMakerSingleton
 
 from utils import FileChangeHandler
 
-mapper_registry = registry()
-metadata = mapper_registry.metadata
+# mapper_registry = registry()
+# metadata = mapper_registry.metadata
+
+Base = declarative_base()
 
 
 # The annotation is needed to avoid having to declare a boilerplate class...
 # https://docs.sqlalchemy.org/en/20/orm/declarative_styles.html#declarative-mapping-using-a-decorator-no-declarative-base
-@mapper_registry.mapped
 @dataclass
-class Student(Hashable):
-    _tablename = 'students'
+class Student(Base, Hashable):
+    __tablename__ = 'students'
 
-    __table__ = sa.Table(
-        _tablename,
-        mapper_registry.metadata,
-        Column("id", sa.Integer, primary_key=True, autoincrement=True, nullable=False),
-        Column("matriculation_number", sa.Integer, nullable=False),
-        Column("name", sa.String(128), nullable=False),
-        Column("surname", sa.String(128), nullable=False),
-        Column("phone_number", sa.String(32), nullable=False),
-        Column("personal_email", sa.String(256), nullable=False),
-        Column("university_email", sa.String(256), nullable=False)
-    )
-
-    id: int
-    matriculation_number: int
-    name: str
-    surname: str
-    phone_number: str
-    personal_email: str
-    university_email: str
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    matriculation_number = mapped_column(sa.Integer, nullable=False)
+    name = mapped_column(sa.String(128), nullable=False)
+    surname = mapped_column(sa.String(128), nullable=False)
+    phone_number = mapped_column(sa.String(32), nullable=False)
+    personal_email = mapped_column(sa.String(256), nullable=False)
+    university_email = mapped_column(sa.String(256), nullable=False)
 
     def __init__(self, matriculation_number: int, name: str, surname: str, phone_number: str, personal_email: str,
                  university_email: str):
+        super().__init__()
         self.matriculation_number = matriculation_number
         self.name = name
         self.surname = surname
@@ -81,17 +71,18 @@ class Student(Hashable):
         return Hashable.hash_data(repr(self))
 
 
-@mapper_registry.mapped
 @dataclass
-class Professor(Hashable):
+class Professor(Base, Hashable):
     __tablename__ = 'professors'
 
-    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
-    name: str = Column(sa.String(128), nullable=False)
-    surname: str = Column(sa.String(128), nullable=False)
-    role: UniversityRole = Column(sa.Enum(UniversityRole), nullable=False, default=UniversityRole.UNSPECIFIED)
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = mapped_column(sa.String(128), nullable=False)
+    surname = mapped_column(sa.String(128), nullable=False)
+    role: Mapped[UniversityRole] = mapped_column(sa.Enum(UniversityRole), nullable=False,
+                                                 default=UniversityRole.UNSPECIFIED)
 
     def __init__(self, name: str, surname: str, role: UniversityRole = UniversityRole.UNSPECIFIED):
+        super().__init__()
         self.name = name
         self.surname = surname
         self.role = role
@@ -115,25 +106,25 @@ class Professor(Hashable):
         return Hashable.hash_data(repr(self))
 
 
-@mapper_registry.mapped
 @dataclass
-class Commission(Hashable):
+class Commission(Base, Hashable):
     __tablename__ = "commissions"
 
-    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
-    title: str = Column(sa.String(256), nullable=False)
-    entries: List['CommissionEntry'] = relationship(
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    title = mapped_column(sa.String(256), nullable=False)
+    entries: Mapped[List['CommissionEntry']] = relationship(
         "CommissionEntry",
         back_populates="commission",
         cascade="all, delete-orphan"
     )
-    optimization_configurations: List['OptimizationConfiguration'] = relationship(
+    optimization_configurations: Mapped[List['OptimizationConfiguration']] = relationship(
         "OptimizationConfiguration",
         back_populates="commission",
         cascade="all, delete-orphan"
     )
 
     def __init__(self, title: str):
+        super().__init__()
         self.title = title
         self.entries = []
 
@@ -197,35 +188,34 @@ class Commission(Hashable):
         return Hashable.hash_data(repr(self) + "".join([entry.hash() for entry in self.entries]))
 
 
-@mapper_registry.mapped
 @dataclass
-class CommissionEntry(Hashable):
+class CommissionEntry(Base, Hashable):
     __tablename__ = "commission_entries"
 
-    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
 
-    commission_id = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission", back_populates="entries")
+    commission_id = mapped_column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission: Mapped[Commission] = relationship("Commission", back_populates="entries")
 
-    candidate_id: int = Column(sa.Integer, ForeignKey('students.id'), nullable=False)
-    candidate: Student = relationship(
+    candidate_id = mapped_column(sa.Integer, ForeignKey('students.id'), nullable=False)
+    candidate: Mapped[Student] = relationship(
         'Student',
         foreign_keys=[candidate_id],
         cascade="all, delete-orphan",
         single_parent=True
     )
 
-    degree_level: Degree = Column(sa.Enum(Degree), nullable=False)
+    degree_level: Mapped[Degree] = mapped_column(sa.Enum(Degree), nullable=False)
 
     # Professor-Entry Relationships
-    supervisor_id: int = Column(sa.Integer, ForeignKey('professors.id'), nullable=False)
-    supervisor: Professor = relationship('Professor', foreign_keys=[supervisor_id])
+    supervisor_id = mapped_column(sa.Integer, ForeignKey('professors.id'), nullable=False)
+    supervisor: Mapped[Professor] = relationship('Professor', foreign_keys=[supervisor_id])
     # Co-relatore
-    supervisor_assistant_id: int = Column(sa.Integer, ForeignKey('professors.id'), nullable=True)
-    supervisor_assistant: Professor | None = relationship('Professor', foreign_keys=[supervisor_assistant_id])
+    supervisor_assistant_id = mapped_column(sa.Integer, ForeignKey('professors.id'), nullable=True)
+    supervisor_assistant: Mapped[Professor | None] = relationship('Professor', foreign_keys=[supervisor_assistant_id])
 
-    counter_supervisor_id: int = Column(sa.Integer, ForeignKey('professors.id'), nullable=True)
-    counter_supervisor: Professor | None = relationship('Professor', foreign_keys=[counter_supervisor_id])
+    counter_supervisor_id = mapped_column(sa.Integer, ForeignKey('professors.id'), nullable=True)
+    counter_supervisor: Mapped[Professor | None] = relationship('Professor', foreign_keys=[counter_supervisor_id])
 
     def __init__(self,
                  candidate: Student,
@@ -233,6 +223,7 @@ class CommissionEntry(Hashable):
                  supervisor: Professor,
                  supervisor_assistant: Professor = None,
                  counter_supervisor: Professor = None):
+        super().__init__()
         self.candidate = candidate
         self.degree_level = degree_level
         self.supervisor = supervisor
@@ -262,49 +253,49 @@ class CommissionEntry(Hashable):
         return Hashable.hash_data(repr(self))
 
 
-@mapper_registry.mapped
 @dataclass
-class OptimizationConfiguration(Hashable):
+class OptimizationConfiguration(Base, Hashable):
     __tablename__ = "optimization_configurations"
 
-    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
-    title: str = Column(sa.String(256),
-                        nullable=False,
-                        server_default="Nuova configurazione",
-                        default="Nuova configurazione")
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    title = mapped_column(sa.String(256),
+                               nullable=False,
+                               server_default="Nuova configurazione",
+                               default="Nuova configurazione")
 
-    commission_id: int = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission")
+    commission_id = mapped_column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission: Mapped[Commission] = relationship("Commission")
 
-    max_duration: int = Column(sa.Integer, nullable=False, server_default='210', default=210)
-    max_commissions_morning: int = Column(sa.Integer, nullable=False, server_default='6', default=6)
-    max_commissions_afternoon: int = Column(sa.Integer, nullable=False, server_default='6', default=6)
+    max_duration = mapped_column(sa.Integer, nullable=False, server_default='210', default=210)
+    max_commissions_morning = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
+    max_commissions_afternoon = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
 
-    online: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
-    min_professor_number: int | None = Column(sa.Integer, nullable=True)
-    min_professor_number_masters: int | None = Column(sa.Integer, nullable=True)
-    max_professor_numer: int | None = Column(sa.Integer, nullable=True)
+    online = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    min_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
+    min_professor_number_masters: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
+    max_professor_numer: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
 
-    solver: SolverEnum = Column(StringEnum(SolverEnum), nullable=False, default=SolverEnum.CPLEX,
-                                server_default=SolverEnum.CPLEX.value)
-    optimization_time_limit: int = Column(sa.Integer, nullable=False, server_default='60', default=60)
-    optimization_gap: float = Column(sa.Float, nullable=False, server_default='0.005', default=0.005)
+    solver: Mapped[SolverEnum] = mapped_column(StringEnum(SolverEnum), nullable=False, default=SolverEnum.CPLEX,
+                                       server_default=SolverEnum.CPLEX.value)
+    optimization_time_limit = mapped_column(sa.Integer, nullable=False, server_default='60', default=60)
+    optimization_gap = mapped_column(sa.Float, nullable=False, server_default='0.005', default=0.005)
 
-    run_lock: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
+    run_lock = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
 
-    execution_details: List['ExecutionDetails'] = relationship(
+    execution_details: Mapped[List['ExecutionDetails']] = relationship(
         "ExecutionDetails",
         back_populates="opt_config",
         cascade="all, delete-orphan"
     )
 
-    solution_commissions: List['SolutionCommission'] = relationship(
+    solution_commissions: Mapped[List['SolutionCommission']] = relationship(
         "SolutionCommission",
         back_populates="opt_config",
         cascade="all, delete-orphan"
     )
 
     def __init__(self, commission_id: int, title: str):
+        super().__init__()
         self.commission_id = commission_id
         self.title = title
 
@@ -471,52 +462,52 @@ class OptimizationConfiguration(Hashable):
         return Hashable.hash_data(repr(self))
 
 
-@mapper_registry.mapped
 @dataclass
-class SolutionCommission:
+class SolutionCommission(Base):
     # Originally it was intended to have a composite primary key, but it is bringing more problems than it solves.
     # So we are going to use a single primary key and just foreign keys to the other tables.
     __tablename__ = "solution_commissions"
 
-    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
 
     # The specific commission number of the commission. It is just to have some sort of order, if needed.
-    order: int = Column(sa.Integer, nullable=False)
+    order = mapped_column(sa.Integer, nullable=False)
 
-    morning: bool = Column(sa.Boolean, nullable=False, server_default='True', default=True)
+    morning = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
 
     # The commission that this solution is for
-    commission_id: int = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission")
+    commission_id = mapped_column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission: Mapped[Commission] = relationship("Commission")
 
     # The optimization configuration that generated this solution
-    opt_config_id: int = Column(sa.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
-    opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
+    opt_config_id = mapped_column(sa.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
+    opt_config: Mapped[OptimizationConfiguration] = relationship("OptimizationConfiguration")
 
-    duration: int = Column(sa.Integer, nullable=False)
+    duration = mapped_column(sa.Integer, nullable=False)
 
-    version_hash: str = Column(sa.String(64), nullable=False)
+    version_hash = mapped_column(sa.String(64), nullable=False)
 
-    _solution_commission_professors = sa.Table(
-        'solution_commission_professors', metadata,
-        Column('solution_commission_id', sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
-        Column('professor_id', sa.Integer, ForeignKey('professors.id'), primary_key=True)
-    )
+    # _solution_commission_professors = sa.Table(
+    #     'solution_commission_professors', metadata,
+    #     Column('solution_commission_id', sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
+    #     Column('professor_id', sa.Integer, ForeignKey('professors.id'), primary_key=True)
+    # )
+    #
+    # _solution_commission_students = sa.Table(
+    #     'solution_commission_students', metadata,
+    #     Column('solution_commission_id', sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
+    #     Column('student_id', sa.Integer, ForeignKey('students.id'), primary_key=True)
+    # )
 
-    _solution_commission_students = sa.Table(
-        'solution_commission_students', metadata,
-        Column('solution_commission_id', sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True),
-        Column('student_id', sa.Integer, ForeignKey('students.id'), primary_key=True)
-    )
-
-    professors: List['Professor'] = relationship("Professor", secondary=_solution_commission_professors)
-    students: List['Student'] = relationship("Student", secondary=_solution_commission_students)
+    professors: Mapped[List['Professor']] = relationship("Professor", secondary="solution_commission_professors")
+    students: Mapped[List['Student']] = relationship("Student", secondary="solution_commission_students")
 
     __table_args__ = (
         sa.UniqueConstraint('commission_id', 'order', 'opt_config_id'),
     )
 
     def __init__(self, version_hash: str):
+        super().__init__()
         self.duration = 0
         self.professors = []
         self.students = []
@@ -595,32 +586,44 @@ class SolutionCommission:
         }
 
 
-@mapper_registry.mapped
+class SolutionCommissionProfessor(Base):
+    __tablename__ = 'solution_commission_professors'
+    solution_commission_id = mapped_column(sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True)
+    professor_id = mapped_column(sa.Integer, ForeignKey('professors.id'), primary_key=True)
+
+
+class SolutionCommissionStudent(Base):
+    __tablename__ = 'solution_commission_students'
+    solution_commission_id = mapped_column(sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True)
+    student_id = mapped_column(sa.Integer, ForeignKey('students.id'), primary_key=True)
+
+
 @dataclass
-class ExecutionDetails(Hashable):
+class ExecutionDetails(Base, Hashable):
     __tablename__ = "execution_details"
 
     # We are using a separate ID because we want to keep track of the execution details even if the optimization
     # configuration is run again with the override.
-    id: int = Column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
 
     # todo remove this foreign key
-    commission_id: int = Column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
-    commission: Commission = relationship("Commission")
+    commission_id = mapped_column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
+    commission: Mapped[Commission] = relationship("Commission")
 
-    opt_config_id: int = Column(sa.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
-    opt_config: OptimizationConfiguration = relationship("OptimizationConfiguration")
+    opt_config_id = mapped_column(sa.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
+    opt_config: Mapped[OptimizationConfiguration] = relationship("OptimizationConfiguration")
 
-    start_time: datetime = Column(sa.DateTime(timezone=True), nullable=False)
-    end_time: datetime = Column(sa.DateTime(timezone=True), nullable=True)
+    start_time = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    end_time = mapped_column(sa.DateTime(timezone=True), nullable=True)
 
-    success: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
-    solver_reached_optimality: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
-    solver_time_limit_reached: bool = Column(sa.Boolean, nullable=False, server_default='False', default=False)
-    error_message: str = Column(sa.String(256), nullable=True)
-    optimizer_log: str = Column(sa.Text, nullable=True)
+    success = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    solver_reached_optimality = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    solver_time_limit_reached = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    error_message = mapped_column(sa.String(256), nullable=True)
+    optimizer_log = mapped_column(sa.Text, nullable=True)
 
     def __init__(self, commission_id: int, opt_config_id: int, start_time: datetime = datetime.now()):
+        super().__init__()
         self.commission_id = commission_id
         self.opt_config_id = opt_config_id
         self.start_time = start_time

@@ -10,6 +10,7 @@ src/commission/model.lp
 keys.json
 cplex*.bin
 venv
+db_data
 
 # Copilot
 .idea/copilot

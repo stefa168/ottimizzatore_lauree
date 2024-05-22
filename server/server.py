@@ -12,7 +12,7 @@ from http import HTTPStatus
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from model.model import mapper_registry, Student, Commission, Professor, CommissionEntry, \
+from model.model import Student, Commission, Professor, CommissionEntry, \
     OptimizationConfiguration, SolutionCommission
 from model.enums import Degree, UniversityRole, SolverEnum
 from session_maker import SessionMakerSingleton
@@ -529,8 +529,6 @@ def basic_authentication():
 def main():
     global executor
 
-    # Create the tables in the database. Todo migrate to alembic
-    mapper_registry.metadata.create_all(SessionMakerSingleton.get_engine())
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=int(config.get("MAX_WORKERS", "4")))
     app.run(host=HOST_NAME, port=HOST_PORT, debug=True)
 

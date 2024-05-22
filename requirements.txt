@@ -9,3 +9,4 @@ psycopg2-binary~=2.9.9
 pyomo~=6.7.2
 watchdog~=4.0.0
 python-dotenv~=1.0.1
+alembic~=1.13.1
