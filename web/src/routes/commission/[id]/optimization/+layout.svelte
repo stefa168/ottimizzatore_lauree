@@ -80,17 +80,17 @@
         <Select.Value placeholder="Scegli o crea una configurazione"/>
     </Select.Trigger>
     <Select.Content>
+        <Select.Item value={newConfigMagicValue}>
+            <MdiFileDocumentPlusOutline class="w-4 h-4 me-2"/>
+            Crea una nuova configurazione
+        </Select.Item>
+        <Select.Separator/>
         <Select.Group>
             <Select.Label>Configurazioni disponibili</Select.Label>
             {#each availableConfigurations as config}
                 <Select.Item value={config.id} label={config.title}>{config.title}</Select.Item>
             {/each}
         </Select.Group>
-        <Select.Separator/>
-        <Select.Item value={newConfigMagicValue}>
-            <MdiFileDocumentPlusOutline class="w-4 h-4 me-2"/>
-            Crea una nuova configurazione
-        </Select.Item>
     </Select.Content>
     <Select.Input name="role"/>
 </Select.Root>
