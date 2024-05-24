@@ -34,7 +34,7 @@
     };
 </script>
 
-<Card.Root class="w-fit">
+<Card.Root class="w-fit transition-all duration-300 hover:shadow-lg dark:hover:bg-primary-foreground">
     <Card.Header class="pb-1.5">
         <Card.Title>Commissione {commission.order + 1}</Card.Title>
         <Card.Description>
