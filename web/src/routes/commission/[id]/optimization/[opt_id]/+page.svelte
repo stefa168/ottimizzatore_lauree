@@ -28,10 +28,13 @@
     // Project modules
     import {getOptimizationStatus, type OptimizationStatus} from "./types";
     import {toast} from "svelte-sonner";
-    import {onDestroy} from "svelte";
+    import {onDestroy, onMount} from "svelte";
     import type {OptimizationConfiguration} from "../optimization_types";
     import {Poller} from "$lib/Poller";
     import {browser} from "$app/environment";
+    import {invalidateAll} from "$app/navigation";
+    import {page} from "$app/stores";
+    import {error} from "@sveltejs/kit";
 
     let optStatus: OptimizationStatus = derived([selectedConfiguration], ([conf]) => getOptimizationStatus(conf));
 
@@ -81,6 +84,13 @@
 
     let pollingInstance: Poller<OptimizationConfiguration> | null = null;
 
+    onMount(() => {
+        // Fix for some weird bug that happens when the page is not reloaded and the section changes
+        const opt_id = Number($page.params.opt_id);
+        const configuration = $selectedProblem!!.optimization_configurations.find((c) => Number(c.id) == opt_id);
+        selectedConfiguration.set(configuration);
+    });
+
     // Listener for the optimization status
     optStatus.subscribe(({status}) => {
         if (!browser) return;
@@ -102,7 +112,7 @@
                     if (status.status === 'ended') {
                         console.log("Optimization ended", data)
                         // todo check if this creates a new object or updates the existing one. might be a problem if it creates a new object
-                        selectedConfiguration.update(() => data);
+                        selectedConfiguration.set(data);
                         selectedProblem.update(p => {
                             if (p === undefined) return undefined;
                             // We update the configuration in the problem to reflect the found solution.
@@ -111,6 +121,7 @@
 
                             return {...p, optimization_configurations: new_c};
                         });
+                        invalidateAll();
                     }
                 },
                 (error) => {
