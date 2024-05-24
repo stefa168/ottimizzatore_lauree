@@ -12,11 +12,13 @@ export async function load({params, parent}) {
     if (problem === undefined) {
         throw error(500, "No problem selected");
     }
+    // console.log("LOG PAGE.TS", problem);
 
-    const configuration = problem.optimization_configurations.find((c) => c.id === opt_id);
+    const configuration = problem.optimization_configurations.find((c) => Number(c.id) == opt_id);
     if (configuration === undefined) {
         throw error(404, "Configuration not found");
     }
+    // console.log("LOG PAGE.TS", configuration);
 
     selectedConfiguration.set(configuration);
 }
