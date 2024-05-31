@@ -1,17 +1,19 @@
 <script lang="ts">
-    import type {Commission} from "./commission_types";
-    import {createTable, Subscribe, Render} from "svelte-headless-table";
+    import type {Commission} from "../commission_types";
+    import {createTable, Subscribe, Render, createRender} from "svelte-headless-table";
     import {readable} from "svelte/store";
     import * as Table from "$lib/components/ui/table"
+    import StyledFullName from "../StyledFullName.svelte";
 
     export let commission: Commission;
     const table = createTable(readable(commission.entries));
 
     function getFullNameIfPresent(value: { name: string, surname: string } | null) {
-        if (value === null)
-            return "$-$";
-        else
-            return `${value.name} ${value.surname}`;
+        if (value === null) {
+            return createRender(StyledFullName, {name: null, surname: null})
+        } else {
+            return createRender(StyledFullName, {name: value.name, surname: value.surname})
+        }
     }
 
     const columns = table.createColumns([
