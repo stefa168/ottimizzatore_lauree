@@ -17,4 +17,6 @@ export async function load({params, parent}) {
     if (configuration === undefined) {
         throw error(404, "Configuration not found");
     }
+
+    selectedConfiguration.set(configuration);
 }
