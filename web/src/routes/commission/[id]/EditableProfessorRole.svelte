@@ -6,7 +6,7 @@
 
     export let row: BodyRow<Professor>;
     export let column: DataColumn<Professor>;
-    export let value: UniversityRole;
+    export let value: UniversityRole | string;
     export let onUpdateValue: (rowDataId: string, columnId: string, newValue: UniversityRole) => void;
 
     const UniversityRoles = [
@@ -17,18 +17,22 @@
         {value: 'unspecified', label: 'Non Specificato', disabled: true}
     ];
 
+    $: selected = UniversityRoles.find(role => role.value === value)
+
     const handleSubmit = (v: Selected<string> | undefined) => {
         if (row.isData()) {
             onUpdateValue(row.dataId, column.id, (v?.value ?? 'unspecified') as UniversityRole);
         }
+        console.log(value);
+        value = v?.value ?? 'unspecified';
+        console.log(value);
     }
 
-    $: selected = UniversityRoles.find(role => role.value === value)
 </script>
 
 <Select.Root {selected} onSelectedChange={handleSubmit}>
     <Select.Trigger>
-        <Select.Value placeholder="Indicare il ruolo"/>
+        <Select.Value class="{value === 'unspecified' ? 'text-red-600' : ''}" placeholder="Indicare il ruolo"/>
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
