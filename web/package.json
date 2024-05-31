@@ -12,6 +12,7 @@
 		"cloc": "cloc --exclude-dir=node_modules,public,.git,package-lock.json ."
 	},
 	"devDependencies": {
+		"@iconify-json/ic": "^1.1.17",
 		"@iconify-json/mage": "^1.1.0",
 		"@iconify-json/material-symbols": "^1.1.76",
 		"@iconify-json/mdi": "^1.1.64",

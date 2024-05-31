@@ -32,7 +32,7 @@
 
 <Select.Root {selected} onSelectedChange={handleSubmit}>
     <Select.Trigger>
-        <Select.Value class="{value === 'unspecified' ? 'text-red-600' : ''}" placeholder="Indicare il ruolo"/>
+        <Select.Value class="{value === 'unspecified' ? 'text-destructive' : ''}" placeholder="Indicare il ruolo"/>
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
