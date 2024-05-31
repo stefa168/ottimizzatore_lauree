@@ -13,6 +13,8 @@
         return professors;
     }).filter((professor, index, self) => {
         return index === self.findIndex((p) => p.id === professor.id);
+    }).sort((a, b) => {
+        return a.surname.localeCompare(b.surname);
     }) ?? [];
 </script>
 

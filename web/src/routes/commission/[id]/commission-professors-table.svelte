@@ -8,18 +8,21 @@
     import EditableProfessorRole from "./EditableProfessorRole.svelte";
     import type {UniversityRole} from "./commission_types.js";
     import {toast} from "svelte-sonner";
+    import StyledFullName from "./StyledFullName.svelte";
 
     export let commissionProfessors: Professor[];
     const table = createTable(readable(commissionProfessors));
 
     const columns = table.createColumns([
         table.column({
-            accessor: 'name',
-            header: 'Nome'
+            accessor: 'surname',
+            header: 'Cognome',
+            cell: ({value}) => createRender(StyledFullName, {surname: value, applyStyle: false})
         }),
         table.column({
-            accessor: 'surname',
-            header: 'Cognome'
+            accessor: 'name',
+            header: 'Nome',
+            cell: ({value}) => createRender(StyledFullName, {name: value, applyStyle: false})
         }),
         table.column({
             accessor: 'role',
@@ -29,9 +32,7 @@
                     row,
                     column,
                     value,
-                    onUpdateValue(rowDataId, columnId, newValue) {
-                        updateData(rowDataId, columnId, newValue);
-                    },
+                    onUpdateValue: updateData
                 })
             }
         })
@@ -42,6 +43,7 @@
     async function updateData(rowDataId: string, columnId: string, newValue: UniversityRole) {
         // convert the row id to a number
         const rowId = parseInt(rowDataId);
+        const oldValue = commissionProfessors[rowId].role;
         commissionProfessors[rowId].role = newValue;
 
         let professorId = commissionProfessors[rowId].id;
@@ -57,10 +59,12 @@
                 console.log(`Ruolo del professore aggiornato correttamente`);
                 toast.success('Ruolo del professore aggiornato correttamente');
             } else {
-                toast.error(`Errore durante l'aggiornamento del ruolo del professore`);
+                // toast.error(`Errore durante l'aggiornamento del ruolo del professore (${response.statusText})`);
+                throw new Error(`Errore durante l'aggiornamento del ruolo del professore (${response.statusText})`);
             }
         }).catch(error => {
             toast.error(`Errore durante l'aggiornamento del ruolo del professore: ${error}`);
+            commissionProfessors[rowId].role = oldValue;
         });
     }
 </script>
