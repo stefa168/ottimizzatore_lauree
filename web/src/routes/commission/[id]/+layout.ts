@@ -14,7 +14,7 @@ export async function load({fetch, params}) {
         switch (response.status) {
             case 404: {
                 throw error(404,
-                    `La commissione con ID ${params.id} non esiste. 
+                    `La Sessione di Laurea con ID ${params.id} non esiste. 
                      Dettagli: ${await response.text()}`
                 );
             }

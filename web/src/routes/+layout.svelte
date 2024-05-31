@@ -53,7 +53,7 @@
             // todo catch potential errors
             deleteCommission(commissionToBeDeleted).then(() => {
                 onDeletionAlertStateChange(false);
-                toast.success("La commissione è stata eliminata correttamente.");
+                toast.success("La sessione è stata eliminata correttamente.");
                 // todo redirect only if the currently opened commission is the one that has been deleted
                 // todo redirect eagerly to avoid potential issues
                 goto('/');
@@ -89,7 +89,7 @@
                 <NewCommissionDialog/>
             </li>
             <li>
-                <DropdownButton buttonText="Problemi Attivi"
+                <DropdownButton buttonText="Sessioni Attive"
                                 childCount={$commissionsPreview.length}
                                 loaded={$commissionsPreviewLoaded}
                                 open={true}>
@@ -151,7 +151,7 @@
                     {:else}
                         <li class="flex items-center mx-2 ps-4 p-2 text-yellow-600 group dark:text-yellow-400">
                             <MdiAlertCircleOutline class="w-5 h-5"/>
-                            <span class="ms-2 text-sm font-medium">Nessun problema disponibile</span>
+                            <span class="ms-2 text-sm font-medium">Nessuna sessione di laurea disponibile</span>
                         </li>
                     {/if}
                 </DropdownButton>
@@ -159,7 +159,7 @@
             <li class="mt-4">
                 <Button variant="ghost" class="px-3 w-full justify-start" disabled>
                     <RadixIconsArchive class="me-2 h-4 w-4"/>
-                    Problemi Archiviati
+                    Sessioni Archiviate
                 </Button>
             </li>
             <li class="mt-4 pb-4 ">

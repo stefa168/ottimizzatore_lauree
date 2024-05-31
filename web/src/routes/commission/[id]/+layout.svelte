@@ -44,7 +44,7 @@
     const sections: Section[] = [
         {label: 'Informazioni', name: 'info', path: '', icon: MdiInformationVariantBoxOutline},
         {label: 'Studenti Candidati', name: 'candidates', icon: NimbusUniversity},
-        {label: 'Docenti della Commissione', name: 'professors', icon: MaterialSymbolsPersonPin},
+        {label: 'Docenti della Sessione', name: 'professors', icon: MaterialSymbolsPersonPin},
         {label: 'Ottimizzazione', name: 'optimization', icon: MageRobotUwuFill},
     ];
 </script>

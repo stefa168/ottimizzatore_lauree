@@ -90,7 +90,7 @@
         variant="ghost"
         class="px-3 w-full justify-start">
     <MdiCalendarPlusOutline class="me-2 h-4 w-4"/>
-    Nuovo Problema
+    Nuova Sessione di Laurea
 </Button>
 
 <Dialog.Root

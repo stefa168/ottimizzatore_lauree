@@ -8,6 +8,8 @@ export interface FormOptConf {
     max_duration: number,
     max_commissions_morning: number,
     max_commissions_afternoon: number,
+    // Some settings were only available for "Online" sessions, however now they are treated as "additional settings".
+    // That's why they're called "online" settings in this file, instead of "additional settings".
     online: boolean,
 
     min_professor_number: number | null,
@@ -60,19 +62,19 @@ export const optimizationConfigurationSchema = z.object({
     // If online, then the minimum number of professors must be defined
     return data.online ? data.min_professor_number !== null : true;
 }, {
-    message: "Il numero minimo di professori deve essere definito se la commissione è online",
+    message: "Il numero minimo di professori deve essere definito se sono abilitate le impostazioni aggiuntive",
     path: ["min_professor_number"]
 }).refine((data) => {
     // If online, then the minimum number of professors for the master's degree must be defined
     return data.online ? data.min_professor_number_masters !== null : true;
 }, {
-    message: "Il numero minimo di professori per il corso di laurea magistrale deve essere definito se la commissione è online",
+    message: "Il numero minimo di professori per il corso di laurea magistrale deve essere definito se sono abilitate le impostazioni aggiuntive",
     path: ["min_professor_number_masters"]
 }).refine((data) => {
     // If online, then the maximum number of professors must be defined
     return data.online ? data.max_professor_number !== null : true;
 }, {
-    message: "Il numero massimo di professori deve essere definito se la commissione è online",
+    message: "Il numero massimo di professori deve essere definito se sono abilitate le impostazioni aggiuntive",
     path: ["max_professor_number"]
 }).refine((data) => {
     // If online, then the minimum number of professors must be less than or equal to the maximum number of professors
@@ -82,7 +84,7 @@ export const optimizationConfigurationSchema = z.object({
         return true;
     }
 }, {
-    message: "Il numero minimo di professori deve essere minore o uguale al numero massimo di professori se la commissione è online",
+    message: "Il numero minimo di professori deve essere minore o uguale al numero massimo di professori se sono abilitate le impostazioni aggiuntive",
     path: ["min_professor_number", "max_professor_number"]
 }).refine((data) => {
     // If online, then the minimum number of professors must be less than or equal to the maximum number of professors
@@ -92,7 +94,7 @@ export const optimizationConfigurationSchema = z.object({
         return true;
     }
 }, {
-    message: "Il numero minimo di professori deve essere minore o uguale al numero massimo di professori se la commissione è online",
+    message: "Il numero minimo di professori deve essere minore o uguale al numero massimo di professori se sono abilitate le impostazioni aggiuntive",
     path: ["min_professor_number_masters", "max_professor_number"]
 }).refine((data) => {
     // If online, then the minimum number of professors for the master's degree must be less than or equal to the maximum number of professors
