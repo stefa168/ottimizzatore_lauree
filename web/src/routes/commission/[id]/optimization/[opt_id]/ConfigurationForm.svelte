@@ -5,13 +5,14 @@
 
     import {type OptimizationConfiguration, SolverType} from "../optimization_types";
 
+    import * as Alert from "$lib/components/ui/alert";
     import * as Form from "$lib/components/ui/form";
     import * as Select from "$lib/components/ui/select";
     import {Input} from "$lib/components/ui/input";
     import {Switch} from "$lib/components/ui/switch";
     import {Separator} from "$lib/components/ui/separator";
 
-    import SuperDebug, {defaults, superForm} from "sveltekit-superforms";
+    import SuperDebug, {defaults, superForm, type SuperValidated} from "sveltekit-superforms";
     import {generateForForm, optimizationConfigurationSchema} from "./schema";
     import {zod} from "sveltekit-superforms/adapters";
     import {derived, type Writable} from "svelte/store";
@@ -22,9 +23,13 @@
 
     // Icons
     import MdiReminder from '~icons/mdi/reminder'
+    import IcBaselineErrorOutline from '~icons/ic/baseline-error-outline'
+    import {toast} from "svelte-sonner";
 
     export let optStatus: OptimizationStatus;
     export let selectedConfiguration: Writable<OptimizationConfiguration | undefined>;
+
+    let errorMessage: { preamble: string, error: string } | string | null = null;
 
     let submitting = false;
     console.log("Loading form");
@@ -33,6 +38,7 @@
             validationMethod: "oninput",
             validators: zod(optimizationConfigurationSchema),
             taintedMessage: "La configurazione è stata modificata. Confermi di voler perdere le modifiche non salvate?",
+            autoFocusOnError: true,
             async onUpdate({form, cancel}) {
                 submitting = true;
                 if (form.valid) {
@@ -55,7 +61,7 @@
 
                                 console.log(newConf);
                                 selectedProblem.update((p) => {
-                                    if(!p) return undefined;
+                                    if (!p) return undefined;
 
                                     const index = p.optimization_configurations.findIndex((c) => c.id === newConf.id);
                                     p.optimization_configurations[index] = newConf;
@@ -65,14 +71,20 @@
                                 selectedConfiguration.set(newConf);
                             });
                         } else {
-                            await response.json().then((data) => {
-                                console.error(data);
+                            await response.json().then((e: { state: string, error: string }) => {
+                                console.error(e);
                                 cancel();
-                                // todo show error message
+                                errorMessage = {
+                                    preamble: "Si è verificato un errore durante il salvataggio della configurazione",
+                                    error: e.error
+                                }
+                                toast.error(`${errorMessage.preamble}\n${errorMessage.error}`);
                             });
                         }
                     }).catch((error) => {
                         console.error(error);
+                        toast.error("Errore durante il salvataggio della configurazione");
+                        errorMessage = String(error);
                     }).finally(() => {
                         submitting = false;
                     });
@@ -82,7 +94,7 @@
             }
         }
     )
-    const {form: formData, enhance} = form;
+    const {form: formData, enhance, validateForm} = form;
 
     // the right way to use superform/formsnap with bits-ui is this:
     // https://formsnap.dev/docs/recipes/bits-ui-select#setup-the-form
@@ -97,13 +109,35 @@
     });
 
     export function reset() {
+        errorMessage = null;
         form.reset();
     }
 
     export function submit() {
         form.submit();
     }
+
+    export async function isFormValid(): Promise<boolean> {
+        return await validateForm({focusOnError: true}).then(v => v.valid);
+    }
 </script>
+
+{#if errorMessage !== null}
+    <div class="flex justify-center">
+        <Alert.Root class="mb-2 w-fit" variant="destructive">
+            <IcBaselineErrorOutline class="w-4 h-4"/>
+            <Alert.Title>Errore</Alert.Title>
+            <Alert.Description>
+                {#if typeof errorMessage === "string"}
+                    {errorMessage}
+                {:else}
+                    <p>{errorMessage.preamble}</p>
+                    <p class="font-mono">{errorMessage.error}</p>
+                {/if}
+            </Alert.Description>
+        </Alert.Root>
+    </div>
+{/if}
 
 {#if $selectedConfiguration !== undefined}
     <form id="optimizationDetailsEditor"
@@ -172,7 +206,8 @@
                         </div>
                     </Form.Control>
                     <Form.Description class="{$selectedConfiguration.run_lock ? 'hidden' : ''}">
-                        Attiva lo switch a destra per alcune impostazioni aggiuntive, normalmente usate per le sessioni online.
+                        Attiva lo switch a destra per alcune impostazioni aggiuntive, normalmente usate per le sessioni
+                        online.
                     </Form.Description>
                     <!-- Probably not needed -->
                     <!-- <Form.FieldErrors style="margin-top: 0"/>-->

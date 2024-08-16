@@ -6,6 +6,7 @@
     import {env} from "$env/dynamic/public";
 
     // Shadcn
+    import * as Alert from "$lib/components/ui/alert";
     import {Button} from "$lib/components/ui/button";
     import {Separator} from "$lib/components/ui/separator";
 
@@ -44,12 +45,21 @@
 
     let resultsOpened = true;
 
+    let errorMessage: string | null = null;
+
     async function startOptimization() {
+        errorMessage = null;
         const problem = get(selectedProblem);
         const configuration = get(selectedConfiguration);
 
         if (problem === undefined || configuration === undefined) {
             console.error('Problem or configuration not selected');
+            return;
+        }
+
+        if (!await formComponent.isFormValid()) {
+            errorMessage = "Errore nei parametri dell'ottimizzatore, controlla che tutti i campi siano validi e correttamente compilati.";
+            toast.error(errorMessage);
             return;
         }
 
@@ -78,7 +88,8 @@
             })
             .catch(error => {
                 console.error(error);
-
+                errorMessage = JSON.stringify(error);
+                toast.error(`Errore durante l'avvio dell'ottimizzazione: ${error}`);
             });
     }
 
@@ -188,6 +199,12 @@
                     </div>
                 {/if}
             {:else}
+                {#if errorMessage !== null}
+                    <Alert.Root variant="destructive">
+                        <Alert.Title>Attenzione</Alert.Title>
+                        <Alert.Description>{errorMessage}</Alert.Description>
+                    </Alert.Root>
+                {/if}
                 <!-- We still have to start the optimization -->
                 <div class="flex items-center flex-col">
                     <div class="flex items-center self-center mt-4">
@@ -208,7 +225,7 @@
             <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
                     on:click={() => settingsOpen = !settingsOpen}>
                 <MdiCogPlayOutline class="w-6 h-6 me-2"/>
-                <span>Impostazioni</span>
+                <span>Parametri dell'Ottimizzatore</span>
                 <MdiChevronRight
                         class="w-6 h-6 ms-2 transition-transform duration-200 {settingsOpen ? 'rotate-90' : ''}"
                         aria-hidden="true"

@@ -82,7 +82,7 @@
     <Select.Content>
         <Select.Item value={newConfigMagicValue}>
             <MdiFileDocumentPlusOutline class="w-4 h-4 me-2"/>
-            Crea una nuova configurazione
+            Crea una nuova configurazione dei parametri
         </Select.Item>
         <Select.Separator/>
         <Select.Group>
