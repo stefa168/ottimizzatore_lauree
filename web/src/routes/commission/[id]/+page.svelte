@@ -1,6 +1,6 @@
 <script lang="ts">
     import IcOutlineChecklist from '~icons/ic/outline-checklist'
-    import IcRoundReportProblem from '~icons/ic/round-report-problem'
+    import IcOutlineReportProblem from '~icons/ic/outline-report-problem'
     import IcBaselineInfo from '~icons/ic/baseline-info'
     import IcOutlineKeyboardDoubleArrowRight from '~icons/ic/outline-keyboard-double-arrow-right'
 
@@ -59,7 +59,7 @@
 <div>
     <h2 class="text-2xl border-b-2 mt-6 mb-4 flex items-center">
         {#if problemsPresent}
-            <IcRoundReportProblem class="text-destructive"/>
+            <IcOutlineReportProblem class="text-destructive"/>
         {:else}
             <IcOutlineChecklist class="text"/>
         {/if}
