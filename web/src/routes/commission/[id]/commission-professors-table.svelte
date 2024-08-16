@@ -58,6 +58,8 @@
                 // toast.error(`Errore durante l'aggiornamento del ruolo del professore (${response.statusText})`);
                 throw new Error(`Errore durante l'aggiornamento del ruolo del professore (${response.statusText})`);
             }
+
+            commissionProfessors.update(p => p)
         }).catch(error => {
             toast.error(`Errore durante l'aggiornamento del ruolo del professore: ${error}`);
             professor.role = oldValue;
