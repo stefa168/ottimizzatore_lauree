@@ -1,8 +1,12 @@
 <script lang="ts">
-    import ProfessorsTable from "../commission-professors-table.svelte";
+    import * as Alert from "$lib/components/ui/alert";
+
+    import {writable} from "svelte/store";
     import {selectedProblem} from "$lib/store";
-    import { writable } from "svelte/store";
+    import {capitalizeProfessor} from "$lib/utils";
     import type {Professor} from "../commission_types";
+    import ProfessorsTable from "../commission-professors-table.svelte";
+    import IcOutlineReportProblem from '~icons/ic/outline-report-problem'
 
     export let commissionProfessors = writable<Professor[]>(
         $selectedProblem?.entries.flatMap((student) => {
@@ -20,6 +24,37 @@
             return a.surname.localeCompare(b.surname);
         }) ?? []
     );
+
+    $: professorsWithoutRole = $commissionProfessors?.filter((professor) => {
+        return professor.role === 'unspecified';
+    }) ?? [];
+
 </script>
+
+<Alert.Root variant="destructive" class="mb-4">
+    <Alert.Title>
+        <h3 class="text-lg flex items-center">
+                <IcOutlineReportProblem class="text-destructive"/>
+            <span class="ms-2">Rilevati problemi con i Docenti della sessione</span>
+        </h3>
+    </Alert.Title>
+    <Alert.Description>
+        <ul class="list-disc list-outside ms-4">
+            <li hidden={professorsWithoutRole.length <= 0}>
+                {#if professorsWithoutRole.length === 1}
+                    <span class="font-bold"> {capitalizeProfessor(professorsWithoutRole[0])} </span>
+                    non ha un ruolo didattico assegnato.
+                {:else}
+                    <span>I seguenti Docenti non hanno un ruolo didattico assegnato:</span>
+                    <ul class="list-disc list-outside ms-4">
+                        {#each professorsWithoutRole as p}
+                            <li class="font-bold">{capitalizeProfessor(p)}</li>
+                        {/each}
+                    </ul>
+                {/if}
+            </li>
+        </ul>
+    </Alert.Description>
+</Alert.Root>
 
 <ProfessorsTable {commissionProfessors}/>
