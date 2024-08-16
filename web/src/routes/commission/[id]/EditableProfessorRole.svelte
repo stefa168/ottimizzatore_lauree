@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {BodyRow, DataColumn} from "svelte-headless-table";
+    import {BodyRow, type DataBodyRow, DataColumn} from "svelte-headless-table";
     import type {Professor, UniversityRole} from "./commission_types";
     import * as Select from '$lib/components/ui/select'
     import type {Selected} from "bits-ui";
@@ -7,7 +7,7 @@
     export let row: BodyRow<Professor>;
     export let column: DataColumn<Professor>;
     export let value: UniversityRole | string;
-    export let onUpdateValue: (rowDataId: string, columnId: string, newValue: UniversityRole) => void;
+    export let onUpdateValue: (rowDataId: Professor, columnId: string, newValue: UniversityRole) => void;
 
     const UniversityRoles = [
         {value: 'ordinary', label: 'Professore Ordinario'},
@@ -21,20 +21,18 @@
 
     const handleSubmit = (v: Selected<string> | undefined) => {
         if (row.isData()) {
-            onUpdateValue(row.dataId, column.id, (v?.value ?? 'unspecified') as UniversityRole);
+            onUpdateValue(row.original, column.id, (v?.value ?? 'unspecified') as UniversityRole);
         }
-        console.log(value);
         value = v?.value ?? 'unspecified';
-        console.log(value);
     }
 
 </script>
 
 <Select.Root {selected} onSelectedChange={handleSubmit}>
-    <Select.Trigger>
+    <Select.Trigger class="{value === 'unspecified' ? 'bg-destructive/25' : ''}">
         <Select.Value class="{value === 'unspecified' ? 'text-destructive' : ''}" placeholder="Indicare il ruolo"/>
     </Select.Trigger>
-    <Select.Content>
+    <Select.Content >
         <Select.Group>
             <Select.Label>Ruoli</Select.Label>
             {#each UniversityRoles as role}

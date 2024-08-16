@@ -1,7 +1,7 @@
 <script lang="ts">
     import type {Professor} from "./commission_types";
     import {createRender, createTable, Render, Subscribe} from "svelte-headless-table";
-    import {readable} from "svelte/store";
+    import {writable} from "svelte/store";
     // noinspection TypeScriptCheckImport
     import {env} from "$env/dynamic/public";
     import * as Table from "$lib/components/ui/table"
@@ -10,8 +10,8 @@
     import {toast} from "svelte-sonner";
     import StyledFullName from "./StyledFullName.svelte";
 
-    export let commissionProfessors: Professor[];
-    const table = createTable(readable(commissionProfessors));
+    export let commissionProfessors = writable<Professor[]>([]);
+    const table = createTable(commissionProfessors);
 
     const columns = table.createColumns([
         table.column({
@@ -40,15 +40,11 @@
 
     const {headerRows, pageRows, tableAttrs, tableBodyAttrs} = table.createViewModel(columns);
 
-    async function updateData(rowDataId: string, columnId: string, newValue: UniversityRole) {
-        // convert the row id to a number
-        const rowId = parseInt(rowDataId);
-        const oldValue = commissionProfessors[rowId].role;
-        commissionProfessors[rowId].role = newValue;
+    async function updateData(professor: Professor, columnId: string, newValue: UniversityRole) {
+        const oldValue = professor.role;
+        professor.role = newValue;
 
-        let professorId = commissionProfessors[rowId].id;
-
-        await fetch(`${env.PUBLIC_API_URL}/professor/${professorId}`, {
+        await fetch(`${env.PUBLIC_API_URL}/professor/${professor.id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -64,7 +60,7 @@
             }
         }).catch(error => {
             toast.error(`Errore durante l'aggiornamento del ruolo del professore: ${error}`);
-            commissionProfessors[rowId].role = oldValue;
+            professor.role = oldValue;
         });
     }
 </script>
