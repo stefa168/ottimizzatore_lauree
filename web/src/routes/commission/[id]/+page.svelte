@@ -2,8 +2,10 @@
     import IcOutlineChecklist from '~icons/ic/outline-checklist'
     import IcRoundReportProblem from '~icons/ic/round-report-problem'
     import IcBaselineInfo from '~icons/ic/baseline-info'
+    import IcOutlineKeyboardDoubleArrowRight from '~icons/ic/outline-keyboard-double-arrow-right'
 
     import {selectedProblem} from "$lib/store.js";
+    import {goto} from "$app/navigation";
 
     $: commissionProfessors = $selectedProblem?.entries.flatMap((student) => {
         let professors = [student.supervisor];
@@ -66,8 +68,18 @@
     {#if problemsPresent}
         <ul class="list-disc list-outside ms-4">
             <li hidden={professorsWithoutRole.length <= 0}>
-                Attenzione: <span class="text-destructive">{professorsWithoutRole.length} docenti</span> non hanno un
-                ruolo didattico assegnato.
+                {#if professorsWithoutRole.length === 1}
+                    <span class="text-destructive"> {professorsWithoutRole.length} docente </span> non ha un ruolo
+                    didattico assegnato.
+                {:else}
+                    <span class="text-destructive"> {professorsWithoutRole.length} docenti </span> non hanno un ruolo
+                    didattico assegnato.
+                {/if}
+                <button class="inline-flex items-center justify-center text-blue-500 hover:underline"
+                        on:click={() => goto(`/commission/${$selectedProblem?.id}/professors/`)}>
+                    Vai alla sezione
+                    <IcOutlineKeyboardDoubleArrowRight/>
+                </button>
             </li>
         </ul>
     {:else}
