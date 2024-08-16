@@ -270,7 +270,7 @@ class OptimizationConfiguration(Base, Hashable):
     max_commissions_morning = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
     max_commissions_afternoon = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
 
-    online = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    online = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
     min_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     min_professor_number_masters: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     max_professor_numer: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
