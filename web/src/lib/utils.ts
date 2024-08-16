@@ -2,6 +2,10 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
+import type {Professor} from "../routes/commission/[id]/commission_types";
+
+export const capitalizeProfessor = (p: Professor) => capitalize(`${p.name} ${p.surname}`);
+export const capitalize = (s: string) => s.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
 export function formatTime(minutes: number) {
     const hours = Math.floor(minutes / 60);

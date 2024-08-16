@@ -1,9 +1,9 @@
 <script lang="ts">
+    import {capitalize} from "$lib/utils";
+
     export let name: string | null = null;
     export let surname: string | null = null;
     export let applyStyle: boolean = true;
-
-    const capitalize = (s: string) => s.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
 </script>
 <div>
