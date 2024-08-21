@@ -34,7 +34,7 @@
 <Alert.Root variant="destructive" class="mb-4">
     <Alert.Title>
         <h3 class="text-lg flex items-center">
-                <IcOutlineReportProblem class="text-destructive"/>
+            <IcOutlineReportProblem class="text-destructive"/>
             <span class="ms-2">Rilevati problemi con i Docenti della sessione</span>
         </h3>
     </Alert.Title>

@@ -1,4 +1,6 @@
 import type {OptimizationConfiguration} from "./optimization/optimization_types";
+import {selectedProblem} from "$lib/store";
+import {get} from "svelte/store";
 
 interface Commission {
     id: number,
@@ -37,4 +39,25 @@ interface Professor {
     role: UniversityRole
 }
 
-export type {Commission, CommissionEntry, DegreeLevel, Professor, Student, UniversityRole};
+interface ProfessorBurden {
+    asSupervisor: number,
+    asCounterSupervisor: number
+}
+
+export function getProfessorBurden(p: Professor): ProfessorBurden {
+    let entries = get(selectedProblem)?.entries ?? [];
+    let asSupervisor = 0, asCounterSupervisor = 0;
+
+    for (const e of entries) {
+        if (e.supervisor == p) {
+            asSupervisor += 1;
+        }
+        if (e.counter_supervisor == p) {
+            asCounterSupervisor += 1;
+        }
+    }
+
+    return {asSupervisor, asCounterSupervisor}
+}
+
+export type {Commission, CommissionEntry, DegreeLevel, Professor, ProfessorBurden, Student, UniversityRole};

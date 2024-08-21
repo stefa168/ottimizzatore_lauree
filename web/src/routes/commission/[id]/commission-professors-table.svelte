@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type {Professor} from "./commission_types";
+    import {getProfessorBurden, type Professor} from "./commission_types";
     import {createRender, createTable, Render, Subscribe} from "svelte-headless-table";
     import {writable} from "svelte/store";
     // noinspection TypeScriptCheckImport
@@ -9,6 +9,7 @@
     import type {UniversityRole} from "./commission_types.js";
     import {toast} from "svelte-sonner";
     import StyledFullName from "./StyledFullName.svelte";
+    import ProfessorBurden from "./professors/ProfessorBurden.svelte";
 
     export let commissionProfessors = writable<Professor[]>([]);
     const table = createTable(commissionProfessors);
@@ -34,6 +35,13 @@
                     value,
                     onUpdateValue: updateData
                 })
+            }
+        }),
+        table.column({
+            accessor: (p: Professor) => getProfessorBurden(p),
+            header: 'Carico',
+            cell: ({row, column, value}) => {
+                return createRender(ProfessorBurden, {burden: value})
             }
         })
     ]);
