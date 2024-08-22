@@ -31,30 +31,34 @@
 
 </script>
 
-<Alert.Root variant="destructive" class="mb-4">
-    <Alert.Title>
-        <h3 class="text-lg flex items-center">
-            <IcOutlineReportProblem class="text-destructive"/>
-            <span class="ms-2">Rilevati problemi con i Docenti della sessione</span>
-        </h3>
-    </Alert.Title>
-    <Alert.Description>
-        <ul class="list-disc list-outside ms-4">
-            <li hidden={professorsWithoutRole.length <= 0}>
-                {#if professorsWithoutRole.length === 1}
-                    <span class="font-bold"> {capitalizeProfessor(professorsWithoutRole[0])} </span>
-                    non ha un ruolo didattico assegnato.
-                {:else}
-                    <span>I seguenti Docenti non hanno un ruolo didattico assegnato:</span>
-                    <ul class="list-disc list-outside ms-4">
-                        {#each professorsWithoutRole as p}
-                            <li class="font-bold">{capitalizeProfessor(p)}</li>
-                        {/each}
-                    </ul>
+{#if professorsWithoutRole.length > 0}
+    <Alert.Root variant="destructive" class="mb-4">
+        <Alert.Title>
+            <h3 class="text-lg flex items-center">
+                <IcOutlineReportProblem class="text-destructive"/>
+                <span class="ms-2">Rilevati problemi con i Docenti della sessione</span>
+            </h3>
+        </Alert.Title>
+        <Alert.Description>
+            <ul class="list-disc list-outside ms-4">
+                {#if professorsWithoutRole.length > 0}
+                    <li>
+                        {#if professorsWithoutRole.length === 1}
+                            <span class="font-bold"> {capitalizeProfessor(professorsWithoutRole[0])} </span>
+                            non ha un ruolo didattico assegnato.
+                        {:else}
+                            <span>I seguenti Docenti non hanno un ruolo didattico assegnato:</span>
+                            <ul class="list-disc list-outside ms-4">
+                                {#each professorsWithoutRole as p}
+                                    <li class="font-bold">{capitalizeProfessor(p)}</li>
+                                {/each}
+                            </ul>
+                        {/if}
+                    </li>
                 {/if}
-            </li>
-        </ul>
-    </Alert.Description>
-</Alert.Root>
+            </ul>
+        </Alert.Description>
+    </Alert.Root>
+{/if}
 
 <ProfessorsTable {commissionProfessors}/>

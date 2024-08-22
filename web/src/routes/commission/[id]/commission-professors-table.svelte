@@ -10,6 +10,7 @@
     import {toast} from "svelte-sonner";
     import StyledFullName from "./StyledFullName.svelte";
     import ProfessorBurden from "./professors/ProfessorBurden.svelte";
+    import EditableProfessorAvailability from "./professors/EditableProfessorAvailability.svelte";
 
     export let commissionProfessors = writable<Professor[]>([]);
     const table = createTable(commissionProfessors);
@@ -18,7 +19,7 @@
         table.column({
             accessor: 'surname',
             header: 'Cognome',
-            cell: ({value}) => createRender(StyledFullName, {surname: value, applyStyle: false})
+            cell: ({value}) => createRender(StyledFullName, {surname: value, applyStyle: true})
         }),
         table.column({
             accessor: 'name',
@@ -38,9 +39,16 @@
             }
         }),
         table.column({
+            accessor: (item: any) => {return 0},
+            header: "Disponibilità",
+            cell: ({value}) => {
+                return createRender(EditableProfessorAvailability)
+            }
+        }),
+        table.column({
             accessor: (p: Professor) => getProfessorBurden(p),
             header: 'Carico',
-            cell: ({row, column, value}) => {
+            cell: ({value}) => {
                 return createRender(ProfessorBurden, {burden: value})
             }
         })
