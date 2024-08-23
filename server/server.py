@@ -427,8 +427,6 @@ def solve_commission(commission_id: int, config_id: int):
     logger.info(f"Received request to solve commission {commission_id} with configuration {config_id}")
     session_maker = SessionMakerSingleton.get_session_maker()
 
-    # retrieve the Commission data from the database
-    # for now we don't have a configuration data model, so we just ignore the config_id
     try:
         with session_maker.begin() as session:
             logger.debug(f"Retrieving commission {commission_id} and configuration {config_id}")
@@ -554,16 +552,30 @@ if __name__ == '__main__':
     handler.setFormatter(FORMATTER)
     server_logger.addHandler(handler)
 
-    SessionMakerSingleton.initialize(
-        sqlalchemy.URL.create(
-            "postgresql",
-            username=config["DB_USER"],
-            password=config["DB_PASSWORD"],
-            host=config["DB_HOST"],
-            port=config["DB_PORT"],
-            database=config["DB_NAME"]
-        )
-    )
+    db_url = sqlalchemy.URL.create("postgresql",
+                                   username=config["DB_USER"],
+                                   password=config["DB_PASSWORD"],
+                                   host=config["DB_HOST"],
+                                   port=config["DB_PORT"],
+                                   database=config["DB_NAME"])
+
+    def run_migrations(url: sqlalchemy.engine.url.URL):
+        from alembic import command
+        from alembic.config import Config
+
+        logger = logging.getLogger(SERVER_PROCESS_NAME)
+
+        logger.info("Running database migrations")
+        # preload the configuration file for the migrations, we have to adjust the database url.
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", url.render_as_string(hide_password=False))
+        logger.debug("alembic.ini loaded")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations applied")
+
+    run_migrations(db_url)
+
+    SessionMakerSingleton.initialize(db_url)
 
     CORS(app, origins=[os.getenv("PUBLIC_API_URL"), os.getenv("PUBLIC_WEB_URL")])
     main()

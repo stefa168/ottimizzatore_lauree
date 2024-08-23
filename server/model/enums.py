@@ -32,18 +32,18 @@ class UniversityRole(Hashable, enum.Enum):
         return Hashable.hash_data(self.value)
 
 
-class TimeAvaliability(Hashable, enum.Enum):
+class TimeAvailability(Hashable, enum.Enum):
     MORNING = "morning"
     AFTERNOON = "afternoon"
     ALWAYS = "always"
 
     @property
     def available_morning(self):
-        return self == TimeAvaliability.MORNING or self == TimeAvaliability.ALWAYS
+        return self == TimeAvailability.MORNING or self == TimeAvailability.ALWAYS
 
     @property
     def available_afternoon(self):
-        return self == TimeAvaliability.AFTERNOON or self == TimeAvaliability.ALWAYS
+        return self == TimeAvailability.AFTERNOON or self == TimeAvailability.ALWAYS
 
     def hash(self):
         return Hashable.hash_data(self.value)
