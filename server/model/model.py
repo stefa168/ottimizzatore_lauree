@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship, registry, declarative_base, Mapped, map
 from watchdog.observers import Observer
 
 import optimization.models
-from model import Degree, UniversityRole, SolverEnum, Hashable, StringEnum
+from model import Degree, UniversityRole, SolverEnum, Hashable, StringEnum, TimeAvailability
 from session_maker import SessionMakerSingleton
 
 from utils import FileChangeHandler
@@ -80,19 +80,24 @@ class Professor(Base, Hashable):
     surname = mapped_column(sa.String(128), nullable=False)
     role: Mapped[UniversityRole] = mapped_column(sa.Enum(UniversityRole), nullable=False,
                                                  default=UniversityRole.UNSPECIFIED)
+    availability: Mapped[TimeAvailability] = mapped_column(sa.Enum(TimeAvailability), nullable=False,
+                                                           default=TimeAvailability.ALWAYS)
 
-    def __init__(self, name: str, surname: str, role: UniversityRole = UniversityRole.UNSPECIFIED):
+    def __init__(self, name: str, surname: str, role: UniversityRole = UniversityRole.UNSPECIFIED,
+                 availability=TimeAvailability.ALWAYS):
         super().__init__()
         self.name = name
         self.surname = surname
         self.role = role
+        self.availability = TimeAvailability.ALWAYS
 
     def serialize(self):
         return {
             'id': self.id,
             'name': self.name,
             'surname': self.surname,
-            'role': self.role.value
+            'role': self.role.value,
+            'availability': self.availability.value
         }
 
     @property
@@ -139,31 +144,36 @@ class Commission(Base, Hashable):
     def export_xls(self, base_path: Path):
         xls_path = base_path / "val.xls"
 
+        def si_no(yes: bool) -> str:
+            return 'SI' if yes else 'NO'
+
         entries = []
         for entry in self.entries:
             try:
+                supervisor = entry.supervisor
                 entity = [
                     entry.candidate.id,
                     entry.candidate.surname,
                     entry.candidate.name,
                     entry.duration,
-                    entry.supervisor.id,
-                    entry.supervisor.full_name,
-                    entry.supervisor.role.abbr,
-                    'SI',
-                    'SI'
+                    supervisor.id,
+                    supervisor.full_name,
+                    supervisor.role.abbr,
+                    si_no(supervisor.availability.available_morning),  # mattina
+                    si_no(supervisor.availability.available_afternoon)   # pomeriggio
                 ]
             except ValueError as e:
                 raise ValueError(f"Professor '{entry.supervisor.full_name}' doesn't have a role") from e
 
             if entry.counter_supervisor is not None:
+                cs = entry.counter_supervisor
                 try:
                     entity.extend([
-                        entry.counter_supervisor.id,
-                        entry.counter_supervisor.full_name,
-                        entry.counter_supervisor.role.abbr,
-                        'SI',
-                        'SI'
+                        cs.id,
+                        cs.full_name,
+                        cs.role.abbr,
+                        si_no(cs.availability.available_morning),  # mattina
+                        si_no(cs.availability.available_afternoon)   # pomeriggio
                     ])
                 except ValueError as e:
                     raise ValueError(f"Professor '{entry.counter_supervisor.full_name}' doesn't have a role") from e
@@ -259,9 +269,9 @@ class OptimizationConfiguration(Base, Hashable):
 
     id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
     title = mapped_column(sa.String(256),
-                               nullable=False,
-                               server_default="Nuova configurazione",
-                               default="Nuova configurazione")
+                          nullable=False,
+                          server_default="Nuova configurazione",
+                          default="Nuova configurazione")
 
     commission_id = mapped_column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Mapped[Commission] = relationship("Commission")
@@ -276,7 +286,7 @@ class OptimizationConfiguration(Base, Hashable):
     max_professor_numer: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
 
     solver: Mapped[SolverEnum] = mapped_column(StringEnum(SolverEnum), nullable=False, default=SolverEnum.CPLEX,
-                                       server_default=SolverEnum.CPLEX.value)
+                                               server_default=SolverEnum.CPLEX.value)
     optimization_time_limit = mapped_column(sa.Integer, nullable=False, server_default='60', default=60)
     optimization_gap = mapped_column(sa.Float, nullable=False, server_default='0.005', default=0.005)
 

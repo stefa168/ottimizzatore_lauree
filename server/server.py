@@ -12,6 +12,7 @@ from http import HTTPStatus
 import pandas as pd
 from sqlalchemy.orm import Session
 
+from model import TimeAvailability
 from model.model import Student, Commission, Professor, CommissionEntry, \
     OptimizationConfiguration, SolutionCommission
 from model.enums import Degree, UniversityRole, SolverEnum
@@ -379,13 +380,24 @@ def update_professor(pid: int):
             if professor is None:
                 return jsonify({'error': f'Professor with ID {pid} not found'}), HTTPStatus.NOT_FOUND
 
-            new_role = request.json.get('role')
-            if new_role is None or new_role == "":
-                return jsonify({'error': 'No role specified'}), HTTPStatus.BAD_REQUEST
+            new_role: str = request.json.get('role')
+            if new_role is not None:
+                if new_role == "":
+                    return jsonify({'error': 'No role specified'}), HTTPStatus.BAD_REQUEST
 
-            professor.role = UniversityRole(new_role)
+                professor.role = UniversityRole(new_role)
 
-            return jsonify(f"Role for professor {professor.name} {professor.surname} ({pid}) updated"), HTTPStatus.OK
+            new_availability: str = request.json.get('availability')
+            if new_availability is not None:
+                if new_role == "":
+                    return jsonify({'error': 'No availability specified'}), HTTPStatus.BAD_REQUEST
+
+                professor.availability = TimeAvailability(new_availability)
+
+            return jsonify({
+                'professor': professor.serialize(),
+                'response': f"Professor {professor.name} {professor.surname} ({pid}) updated"
+            }), HTTPStatus.OK
 
     except Exception as e:
         print(e)
@@ -559,6 +571,7 @@ if __name__ == '__main__':
                                    port=config["DB_PORT"],
                                    database=config["DB_NAME"])
 
+
     def run_migrations(url: sqlalchemy.engine.url.URL):
         from alembic import command
         from alembic.config import Config
@@ -572,6 +585,7 @@ if __name__ == '__main__':
         logger.debug("alembic.ini loaded")
         command.upgrade(alembic_cfg, "head")
         logger.info("Database migrations applied")
+
 
     run_migrations(db_url)
 

@@ -29,21 +29,16 @@
         table.column({
             accessor: 'role',
             header: 'Ruolo Universitario',
-            cell: ({row, column, value}) => {
-                return createRender(EditableProfessorRole, {
-                    row,
-                    column,
-                    value,
-                    onUpdateValue: updateData
-                })
-            }
+            cell: ({row, value}) => createRender(EditableProfessorRole, {
+                row, value, onUpdateValue: updateProfessorField
+            })
         }),
         table.column({
-            accessor: (item: any) => {return 0},
+            accessor: 'availability',
             header: "Disponibilità",
-            cell: ({value}) => {
-                return createRender(EditableProfessorAvailability)
-            }
+            cell: ({row, value}) => createRender(EditableProfessorAvailability, {
+                row, value, onUpdateValue: updateProfessorField
+            })
         }),
         table.column({
             accessor: (p: Professor) => getProfessorBurden(p),
@@ -55,6 +50,37 @@
     ]);
 
     const {headerRows, pageRows, tableAttrs, tableBodyAttrs} = table.createViewModel(columns);
+
+    async function updateProfessorField<T extends keyof Professor>(professor: Professor, field: T, newValue: Professor[T]): Promise<boolean> {
+        return await fetch(`${env.PUBLIC_API_URL}/professor/${professor.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({[field]: newValue})
+        }).then(async (response) => {
+            if (response.ok) {
+                let data: { professor: Professor, response: string; } = await response.json();
+
+                commissionProfessors.update(professors => {
+                    const index = professors.findIndex(p => p.id === professor.id);
+                    if (index !== -1) {
+                        professors[index] = data.professor;
+                    }
+                    return professors;
+                });
+
+                console.log(`Dettagli del professore aggiornati correttamente`);
+                toast.success('Dettagli del professore aggiornati correttamente');
+                return true;
+            } else {
+                throw new Error(`Errore durante l'aggiornamento del campo ${field} del professore (${response.statusText})`);
+            }
+        }).catch(error => {
+            toast.error(`Errore durante l'aggiornamento del ruolo del professore: ${error}`);
+            return false;
+        });
+    }
 
     async function updateData(professor: Professor, columnId: string, newValue: UniversityRole) {
         const oldValue = professor.role;

@@ -5,9 +5,8 @@
     import type {Selected} from "bits-ui";
 
     export let row: BodyRow<Professor>;
-    export let column: DataColumn<Professor>;
     export let value: UniversityRole | string;
-    export let onUpdateValue: (rowDataId: Professor, columnId: string, newValue: UniversityRole) => void;
+    export let onUpdateValue: <T extends keyof Professor>(p: Professor, field: T, newValue: Professor[T]) => void;
 
     const UniversityRoles = [
         {value: 'ordinary', label: 'Professore Ordinario'},
@@ -21,7 +20,7 @@
 
     const handleSubmit = (v: Selected<string> | undefined) => {
         if (row.isData()) {
-            onUpdateValue(row.original, column.id, (v?.value ?? 'unspecified') as UniversityRole);
+            onUpdateValue(row.original, "role", (v?.value ?? 'unspecified') as UniversityRole);
         }
         value = v?.value ?? 'unspecified';
     }

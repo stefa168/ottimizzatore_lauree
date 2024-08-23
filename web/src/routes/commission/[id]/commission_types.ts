@@ -31,12 +31,14 @@ interface Student {
 }
 
 type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
+type ProfessorAvailability = 'always' | 'morning' | 'afternoon'
 
 interface Professor {
     id: number,
     name: string,
     surname: string,
-    role: UniversityRole
+    role: UniversityRole,
+    availability: ProfessorAvailability
 }
 
 interface ProfessorBurden {
@@ -60,4 +62,4 @@ export function getProfessorBurden(p: Professor): ProfessorBurden {
     return {asSupervisor, asCounterSupervisor}
 }
 
-export type {Commission, CommissionEntry, DegreeLevel, Professor, ProfessorBurden, Student, UniversityRole};
+export type {Commission, CommissionEntry, DegreeLevel, Professor, ProfessorBurden, Student, UniversityRole, ProfessorAvailability};
