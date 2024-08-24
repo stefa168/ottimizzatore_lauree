@@ -36,14 +36,15 @@ class TimeAvailability(Hashable, enum.Enum):
     MORNING = "morning"
     AFTERNOON = "afternoon"
     ALWAYS = "always"
+    SPLIT = 'split'
 
     @property
     def available_morning(self):
-        return self == TimeAvailability.MORNING or self == TimeAvailability.ALWAYS
+        return self not in [TimeAvailability.AFTERNOON]
 
     @property
     def available_afternoon(self):
-        return self == TimeAvailability.AFTERNOON or self == TimeAvailability.ALWAYS
+        return self not in [TimeAvailability.MORNING]
 
     def hash(self):
         return Hashable.hash_data(self.value)

@@ -31,7 +31,7 @@ interface Student {
 }
 
 type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
-type ProfessorAvailability = 'always' | 'morning' | 'afternoon'
+type ProfessorAvailability = 'always' | 'morning' | 'afternoon' | 'split'
 
 interface Professor {
     id: number,

@@ -14,6 +14,7 @@
         {value: 'always', label: 'Tutto il giorno'},
         {value: 'morning', label: 'Solo la Mattina'},
         {value: 'afternoon', label: 'Solo il Pomeriggio'},
+        {value: 'split', label: 'Sdoppia il docente'},
     ];
 
     function getSelectedOption(s: ProfessorAvailability | string, options: Selectable[]): Selectable {

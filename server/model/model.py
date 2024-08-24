@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 from pathlib import Path
+from zoneinfo import available_timezones
 
 import pandas as pd
 import sqlalchemy as sa
@@ -89,7 +90,7 @@ class Professor(Base, Hashable):
         self.name = name
         self.surname = surname
         self.role = role
-        self.availability = TimeAvailability.ALWAYS
+        self.availability = availability
 
     def serialize(self):
         return {
@@ -147,40 +148,73 @@ class Commission(Base, Hashable):
         def si_no(yes: bool) -> str:
             return 'SI' if yes else 'NO'
 
-        entries = []
+        # There is a specific possibility that has been intentionally omitted:
+        # It might happen that we have a professor that has to be split, however he/she also is a counter-supervisor.
+        # This could cause the problem to be unsolvable.
+        # A better solution has to be discussed.
+        students_by_professor: dict[Professor, list[CommissionEntry]] = {}
         for entry in self.entries:
-            try:
+            p = entry.supervisor
+            if p not in students_by_professor:
+                students_by_professor[p] = []
+
+            students_by_professor[p].append(entry)
+
+        entries = []
+
+        for p in students_by_professor:
+            pe = students_by_professor[p]
+            should_split = p.availability == TimeAvailability.SPLIT
+
+            for index, entry, in enumerate(pe):
+                morning_supervisor_availability: bool
+                afternoon_supervisor_availability: bool
+
                 supervisor = entry.supervisor
-                entity = [
-                    entry.candidate.id,
-                    entry.candidate.surname,
-                    entry.candidate.name,
-                    entry.duration,
-                    supervisor.id,
-                    supervisor.full_name,
-                    supervisor.role.abbr,
-                    si_no(supervisor.availability.available_morning),  # mattina
-                    si_no(supervisor.availability.available_afternoon)   # pomeriggio
-                ]
-            except ValueError as e:
-                raise ValueError(f"Professor '{entry.supervisor.full_name}' doesn't have a role") from e
 
-            if entry.counter_supervisor is not None:
-                cs = entry.counter_supervisor
+                if should_split:
+                    if index <= (len(pe) / 2):
+                        morning_supervisor_availability = True
+                        afternoon_supervisor_availability = False
+                    else:
+                        morning_supervisor_availability = False
+                        afternoon_supervisor_availability = True
+                else:
+                    morning_supervisor_availability = supervisor.availability.available_morning
+                    afternoon_supervisor_availability = supervisor.availability.available_afternoon
+
                 try:
-                    entity.extend([
-                        cs.id,
-                        cs.full_name,
-                        cs.role.abbr,
-                        si_no(cs.availability.available_morning),  # mattina
-                        si_no(cs.availability.available_afternoon)   # pomeriggio
-                    ])
+                    supervisor = entry.supervisor
+                    entity = [
+                        entry.candidate.id,
+                        entry.candidate.surname,
+                        entry.candidate.name,
+                        entry.duration,
+                        supervisor.id,
+                        supervisor.full_name,
+                        supervisor.role.abbr,
+                        si_no(morning_supervisor_availability),  # mattina
+                        si_no(afternoon_supervisor_availability)  # pomeriggio
+                    ]
                 except ValueError as e:
-                    raise ValueError(f"Professor '{entry.counter_supervisor.full_name}' doesn't have a role") from e
+                    raise ValueError(f"Professor '{entry.supervisor.full_name}' doesn't have a role") from e
 
-            # todo do the same for the supervisor assistant
+                if entry.counter_supervisor is not None:
+                    cs = entry.counter_supervisor
+                    try:
+                        entity.extend([
+                            cs.id,
+                            cs.full_name,
+                            cs.role.abbr,
+                            si_no(cs.availability.available_morning),  # mattina
+                            si_no(cs.availability.available_afternoon)  # pomeriggio
+                        ])
+                    except ValueError as e:
+                        raise ValueError(f"Professor '{entry.counter_supervisor.full_name}' doesn't have a role") from e
 
-            entries.append(entity)
+                # todo do the same for the supervisor assistant
+
+                entries.append(entity)
 
         df = pd.DataFrame(
             entries,
