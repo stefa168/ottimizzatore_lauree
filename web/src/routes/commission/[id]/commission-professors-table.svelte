@@ -81,32 +81,6 @@
             return false;
         });
     }
-
-    async function updateData(professor: Professor, columnId: string, newValue: UniversityRole) {
-        const oldValue = professor.role;
-        professor.role = newValue;
-
-        await fetch(`${env.PUBLIC_API_URL}/professor/${professor.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({role: newValue})
-        }).then(response => {
-            if (response.ok) {
-                console.log(`Ruolo del professore aggiornato correttamente`);
-                toast.success('Ruolo del professore aggiornato correttamente');
-            } else {
-                // toast.error(`Errore durante l'aggiornamento del ruolo del professore (${response.statusText})`);
-                throw new Error(`Errore durante l'aggiornamento del ruolo del professore (${response.statusText})`);
-            }
-
-            commissionProfessors.update(p => p)
-        }).catch(error => {
-            toast.error(`Errore durante l'aggiornamento del ruolo del professore: ${error}`);
-            professor.role = oldValue;
-        });
-    }
 </script>
 
 <div class="rounded-md border">

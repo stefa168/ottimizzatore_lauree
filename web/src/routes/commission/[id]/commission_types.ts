@@ -50,16 +50,26 @@ export function getProfessorBurden(p: Professor): ProfessorBurden {
     let entries = get(selectedProblem)?.entries ?? [];
     let asSupervisor = 0, asCounterSupervisor = 0;
 
-    for (const e of entries) {
-        if (e.supervisor == p) {
+    for (let e of entries) {
+        if (e.supervisor.id === p.id) {
             asSupervisor += 1;
         }
-        if (e.counter_supervisor == p) {
+        if (e.counter_supervisor?.id === p.id) {
             asCounterSupervisor += 1;
         }
     }
+    console.log(p, asSupervisor, asCounterSupervisor);
 
     return {asSupervisor, asCounterSupervisor}
 }
 
-export type {Commission, CommissionEntry, DegreeLevel, Professor, ProfessorBurden, Student, UniversityRole, ProfessorAvailability};
+export type {
+    Commission,
+    CommissionEntry,
+    DegreeLevel,
+    Professor,
+    ProfessorBurden,
+    Student,
+    UniversityRole,
+    ProfessorAvailability
+};
