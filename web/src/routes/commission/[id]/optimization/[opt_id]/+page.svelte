@@ -38,6 +38,7 @@
     import {error} from "@sveltejs/kit";
 
     let optStatus: OptimizationStatus = derived([selectedConfiguration], ([conf]) => getOptimizationStatus(conf));
+    let executionDetails = $selectedConfiguration?.execution_details ?? []
 
     let settingsOpen = false;
     let tainted_fields_count: Readable<number>;
@@ -155,6 +156,34 @@
             pollingInstance = null;
         }
     });
+
+    function calculateTimeDifference(date1: string, date2: string): string {
+        const d1 = new Date(date1);
+        const d2 = new Date(date2);
+
+        const diffMs = Math.abs(d2.getTime() - d1.getTime());
+        const diffSecs = Math.floor(diffMs / 1000);
+        const diffMins = Math.floor(diffSecs / 60);
+        const remainingSecs = diffSecs % 60;
+
+        let text = "";
+
+        if (diffMins > 0) {
+            text += `${diffMins} minuti`;
+        }
+
+        if (remainingSecs > 0) {
+            if (diffMins > 0) {
+                text += " e ";
+            }
+
+            text += `${remainingSecs} secondi`
+        }
+
+        return text;
+    }
+
+    let log_expanded = false;
 </script>
 
 {#if $selectedConfiguration}
@@ -181,6 +210,35 @@
                     <span class="ms-2">Ottimizzazione in corso</span>
                 </div>
             {:else if $optStatus.status === 'ended'}
+                <h3 class="border-b mb-4 pe-2 pb-1 pt-2">Dettagli dell'esecuzione</h3>
+                <div>
+                    <ul class="list-inside list-disc">
+                        <li>L'ottimizzatore {executionDetails[0].solver_reached_optimality ? '' : 'non'} ha trovato una
+                            soluzione ottimale.
+                        </li>
+                        <li>L'ottimizzatore ha terminato
+                            {!executionDetails[0].solver_reached_time_limit ? 'prima del' : 'raggiungendo il'}
+                            tempo limite di esecuzione.
+                        </li>
+                        <li>L'ottimizzazione ha richiesto
+                            {calculateTimeDifference(executionDetails[0].start_time, executionDetails[0].end_time)}.
+                        </li>
+                        {#if executionDetails[0].error_message !== null}
+                            <li>Errore: {executionDetails[0].error_message}.</li>
+                        {/if}
+                        <li>Log dell'ottimizzatore:
+                            <button on:click={() => log_expanded = !log_expanded}>
+                                {log_expanded ? 'Nascondi' : 'Mostra'}
+                            </button>
+                            <pre class="bg-gray-100 p-4 rounded" hidden={log_expanded}>
+                                <code class="text-sm font-mono">
+                                    {executionDetails[0].optimizer_log?.trim()?.replace(/^\s+|\s+$/g, '')}
+                                </code>
+                            </pre>
+                        </li>
+                    </ul>
+                </div>
+
                 {#if $optStatus.solutions.morning.length > 0}
                     <h3 class="border-b mb-4 pe-2 pb-1 pt-2">Commissioni Mattutine</h3>
                     <div class="flex flex-wrap gap-4 pb-2">
