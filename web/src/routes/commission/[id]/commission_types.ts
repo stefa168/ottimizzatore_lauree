@@ -58,7 +58,6 @@ export function getProfessorBurden(p: Professor): ProfessorBurden {
             asCounterSupervisor += 1;
         }
     }
-    console.log(p, asSupervisor, asCounterSupervisor);
 
     return {asSupervisor, asCounterSupervisor}
 }
