@@ -114,6 +114,7 @@
               enctype="multipart/form-data"
               use:enhance>
             <fieldset disabled={submitting}>
+                <!-- Alert in case of upload errors -->
                 {#if upload_error}
                     <Alert.Root variant='destructive' class="mb-4">
                         <MdiAlertOutline class="me-2 h-4 w-4"/>
@@ -133,6 +134,7 @@
                         </Alert.Description>
                     </Alert.Root>
                 {/if}
+                <!-- Commission Title Field -->
                 <Form.Field {form} name="title">
                     <Form.Control let:attrs>
                         <Form.Label>Titolo</Form.Label>
@@ -141,6 +143,7 @@
                     <Form.Description>Il nome che vuoi assegnare alla commissione.</Form.Description>
                     <Form.FieldErrors/>
                 </Form.Field>
+                <!-- Commission students file -->
                 <Form.Field {form} name="excel">
                     <Form.Control let:attrs>
                         <Form.Label>File</Form.Label>
