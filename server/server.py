@@ -3,37 +3,122 @@ import logging
 import os
 import pathlib
 import uuid
+from functools import lru_cache
 from typing import Annotated, TypedDict
 from contextlib import asynccontextmanager
+from concurrent.futures import ProcessPoolExecutor
 
+import pydantic.networks
 import sqlalchemy.exc
-from dotenv import dotenv_values
-# from flask import Flask, request, jsonify, Response
-# from flask_cors import CORS
 from fastapi import FastAPI, File, status, UploadFile, HTTPException, Form, Path
 from fastapi.middleware.cors import CORSMiddleware
-# from fastapi.responses import JSONResponse
-# from http import HTTPStatus
 from pydantic import BaseModel
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import pandas as pd
 from sqlalchemy.orm import Session
 
 from model import TimeAvailability
-from model.model import Student, Commission, Professor, CommissionEntry, \
-    OptimizationConfiguration, SolutionCommission
+from model.model import Student, Commission, Professor, CommissionEntry, OptimizationConfiguration, SolutionCommission
 from model.enums import Degree, UniversityRole, SolverEnum
 from session_maker import SessionMakerSingleton
 from utils.logging import is_valid_log_level
 
-app = FastAPI()
-
-app.secret_key = 'key'
-
-HOST_NAME = "0.0.0.0"
-HOST_PORT = 5000
-
 SERVER_PROCESS_NAME = "server"
 FORMATTER = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
+class Settings(BaseSettings):
+    public_api_url: Annotated[str, pydantic.networks.HttpUrl]
+    public_web_url: Annotated[str, pydantic.networks.HttpUrl]
+
+    database_logging_level: str = "WARNING"
+    server_logging_level: str = "INFO"
+
+    db_url: Annotated[sqlalchemy.engine.url.URL, pydantic.networks.PostgresDsn]
+
+    max_workers: int = 4
+
+    model_config = SettingsConfigDict(env_file=".env")
+
+    def get_origins(self) -> list[str]:
+        return [self.public_api_url, self.public_web_url]
+
+
+@lru_cache
+def get_settings():
+    return Settings()
+
+
+class ServerState:
+    executor: ProcessPoolExecutor
+
+    def __init__(self, executor: ProcessPoolExecutor):
+        self.executor = executor
+
+
+server_state: ServerState | None = None
+
+
+def run_migrations(url: sqlalchemy.engine.url.URL):
+    from alembic import command
+    from alembic.config import Config
+    # https://stackoverflow.com/questions/77170361/running-alembic-migrations-on-fastapi-startup
+
+    logger = logging.getLogger(SERVER_PROCESS_NAME)
+
+    logger.info("Running database migrations")
+    # preload the configuration file for the migrations, we have to adjust the database url.
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", url.render_as_string(hide_password=False))
+    logger.debug("alembic.ini loaded")
+    command.upgrade(alembic_cfg, "head")
+    logger.info("Database migrations applied")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+
+    executor = ProcessPoolExecutor(max_workers=settings.max_workers)
+
+    # todo migrate to new logging structure https://www.restack.io/p/fastapi-answer-logger-dependency
+    if not is_valid_log_level(settings.database_logging_level):
+        raise ValueError(f"Invalid logging level for database: {settings.database_logging_level}. "
+                         f"Available levels are: {list(logging.getLevelNamesMapping().keys())}")
+    logging.getLogger("sqlalchemy.engine").setLevel(settings.database_logging_level)
+
+    if not is_valid_log_level(settings.server_logging_level):
+        raise ValueError(f"Invalid logging level for server: {settings.server_logging_level}. "
+                         f"Available levels are: {list(logging.getLevelNamesMapping().keys())}")
+    server_logger = logging.getLogger(SERVER_PROCESS_NAME)
+    server_logger.setLevel(settings.server_logging_level)
+    handler = logging.StreamHandler()
+    handler.setFormatter(FORMATTER)
+    server_logger.addHandler(handler)
+
+    SessionMakerSingleton.initialize(settings.db_url)
+    run_migrations(settings.db_url)
+
+    # noinspection PyTypeChecker
+    app.add_middleware(
+        # https://github.com/fastapi/fastapi/discussions/10968
+        CORSMiddleware,
+        allow_origins=settings.get_origins(),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    global server_state
+    server_state = ServerState(executor)
+
+    yield
+
+    server_logger.info("Shutting down")
+    server_state.executor.shutdown(wait=True, cancel_futures=True)
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post('/upload', status_code=status.HTTP_201_CREATED)
@@ -531,7 +616,6 @@ def solve_commission(commission_id: int, config_id: int):
             version_hash = configuration.hash()
             session.expunge(configuration)
 
-            global executor
             # We start the optimization
             # todo save the future object in a dictionary to be able to interact with it later
             process_uuid = uuid.uuid4()
@@ -545,7 +629,7 @@ def solve_commission(commission_id: int, config_id: int):
             process_logger.addHandler(file_handler)
             # todo add socket/database handler
 
-            future: concurrent.futures.Future = executor.submit(
+            future: concurrent.futures.Future = server_state.executor.submit(
                 configuration.solver_wrapper,
                 cc_path,
                 version_hash,
@@ -570,74 +654,3 @@ def solve_commission(commission_id: int, config_id: int):
             'error': 'Error starting the optimization',
             'details': str(e)
         })
-
-
-# # Needed to fix Preflight Checks for CORS.
-# # https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
-# @app.before_request
-# def basic_authentication():
-#     if request.method.upper() == 'OPTIONS':
-#         return Response()
-
-
-# def main():
-#     global executor
-#
-#     executor = concurrent.futures.ProcessPoolExecutor(max_workers=int(config.get("MAX_WORKERS", "4")))
-#     app.run(host=HOST_NAME, port=HOST_PORT, debug=True)
-
-
-if __name__ == '__main__':
-    executor: concurrent.futures.process.ProcessPoolExecutor
-
-    # todo migrate to new configuration structure https://fastapi.tiangolo.com/advanced/settings/#reading-a-env-file
-    config = dotenv_values(verbose=True)
-
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=int(config.get("MAX_WORKERS", "4")))
-
-    # todo migrate to new logging structure https://www.restack.io/p/fastapi-answer-logger-dependency
-    sqla_log_level = config.get("DATABASE_LOGGING_LEVEL", "WARNING")
-    if not is_valid_log_level(sqla_log_level):
-        raise ValueError(f"Invalid logging level for database: {sqla_log_level}. "
-                         f"Available levels are: {list(logging.getLevelNamesMapping().keys())}")
-    logging.getLogger("sqlalchemy.engine").setLevel(sqla_log_level)
-
-    server_log_level = config.get("SERVER_LOGGING_LEVEL", "DEBUG")
-    if not is_valid_log_level(server_log_level):
-        raise ValueError(f"Invalid logging level for server: {server_log_level}. "
-                         f"Available levels are: {list(logging.getLevelNamesMapping().keys())}")
-    server_logger = logging.getLogger(SERVER_PROCESS_NAME)
-    server_logger.setLevel(server_log_level)
-    handler = logging.StreamHandler()
-    handler.setFormatter(FORMATTER)
-    server_logger.addHandler(handler)
-
-    db_url = sqlalchemy.URL.create("postgresql",
-                                   username=config["DB_USER"],
-                                   password=config["DB_PASSWORD"],
-                                   host=config["DB_HOST"],
-                                   port=config["DB_PORT"],
-                                   database=config["DB_NAME"])
-
-    # todo https://stackoverflow.com/questions/77170361/running-alembic-migrations-on-fastapi-startup
-    def run_migrations(url: sqlalchemy.engine.url.URL):
-        from alembic import command
-        from alembic.config import Config
-
-        logger = logging.getLogger(SERVER_PROCESS_NAME)
-
-        logger.info("Running database migrations")
-        # preload the configuration file for the migrations, we have to adjust the database url.
-        alembic_cfg = Config("alembic.ini")
-        alembic_cfg.set_main_option("sqlalchemy.url", url.render_as_string(hide_password=False))
-        logger.debug("alembic.ini loaded")
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations applied")
-
-
-    run_migrations(db_url)
-
-    SessionMakerSingleton.initialize(db_url)
-
-    # CORS(app, origins=[os.getenv("PUBLIC_API_URL"), os.getenv("PUBLIC_WEB_URL")])
-    # main()
