@@ -302,29 +302,29 @@ class OptimizationConfiguration(Base, Hashable):
     __tablename__ = "optimization_configurations"
 
     id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, nullable=False)
-    title = mapped_column(sa.String(256),
-                          nullable=False,
-                          server_default="Nuova configurazione",
-                          default="Nuova configurazione")
+    title: str = mapped_column(sa.String(256),
+                               nullable=False,
+                               server_default="Nuova configurazione",
+                               default="Nuova configurazione")
 
     commission_id = mapped_column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
     commission: Mapped[Commission] = relationship("Commission")
 
-    max_duration = mapped_column(sa.Integer, nullable=False, server_default='210', default=210)
-    max_commissions_morning = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
-    max_commissions_afternoon = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
+    max_duration: int = mapped_column(sa.Integer, nullable=False, server_default='210', default=210)
+    max_commissions_morning: int = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
+    max_commissions_afternoon: int = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
 
-    online = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
+    online: bool = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
     min_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     min_professor_number_masters: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     max_professor_numer: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
 
     solver: Mapped[SolverEnum] = mapped_column(StringEnum(SolverEnum), nullable=False, default=SolverEnum.CPLEX,
                                                server_default=SolverEnum.CPLEX.value)
-    optimization_time_limit = mapped_column(sa.Integer, nullable=False, server_default='60', default=60)
-    optimization_gap = mapped_column(sa.Float, nullable=False, server_default='0.005', default=0.005)
+    optimization_time_limit: int = mapped_column(sa.Integer, nullable=False, server_default='60', default=60)
+    optimization_gap: float = mapped_column(sa.Float, nullable=False, server_default='0.005', default=0.005)
 
-    run_lock = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    run_lock: bool = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
 
     execution_details: Mapped[List['ExecutionDetails']] = relationship(
         "ExecutionDetails",
@@ -517,7 +517,7 @@ class SolutionCommission(Base):
     # The specific commission number of the commission. It is just to have some sort of order, if needed.
     order = mapped_column(sa.Integer, nullable=False)
 
-    morning = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
+    morning: bool = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
 
     # The commission that this solution is for
     commission_id = mapped_column(sa.Integer, ForeignKey('commissions.id'), nullable=False)
@@ -660,9 +660,9 @@ class ExecutionDetails(Base, Hashable):
     start_time = mapped_column(sa.DateTime(timezone=True), nullable=False)
     end_time = mapped_column(sa.DateTime(timezone=True), nullable=True)
 
-    success = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
-    solver_reached_optimality = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
-    solver_time_limit_reached = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    success: bool = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    solver_reached_optimality: bool = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    solver_time_limit_reached: bool = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
     error_message = mapped_column(sa.String(256), nullable=True)
     optimizer_log = mapped_column(sa.Text, nullable=True)
 
