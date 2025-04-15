@@ -3,12 +3,18 @@ import logging
 import os
 import pathlib
 import uuid
+from typing import Annotated, TypedDict
+from contextlib import asynccontextmanager
 
 import sqlalchemy.exc
 from dotenv import dotenv_values
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
-from http import HTTPStatus
+# from flask import Flask, request, jsonify, Response
+# from flask_cors import CORS
+from fastapi import FastAPI, File, status, UploadFile, HTTPException, Form, Path
+from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.responses import JSONResponse
+# from http import HTTPStatus
+from pydantic import BaseModel
 import pandas as pd
 from sqlalchemy.orm import Session
 
@@ -19,7 +25,7 @@ from model.enums import Degree, UniversityRole, SolverEnum
 from session_maker import SessionMakerSingleton
 from utils.logging import is_valid_log_level
 
-app = Flask(__name__)
+app = FastAPI()
 
 app.secret_key = 'key'
 
@@ -30,17 +36,18 @@ SERVER_PROCESS_NAME = "server"
 FORMATTER = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'details': "Nessun file specificato"}), HTTPStatus.BAD_REQUEST
-
-    file = request.files['file']
+@app.post('/upload', status_code=status.HTTP_201_CREATED)
+def upload_file(file: Annotated[UploadFile, File(description="Source Spreadsheet file for the graduation")],
+                title: Annotated[str | None, Form(description="Title for the graduation commission")]) -> Commission:
+    # if 'file' not in request.files:
+    #     return jsonify({'details': "Nessun file specificato"}), HTTPStatus.BAD_REQUEST
+    #
+    # file = request.files['file']
 
     # If the user does not select a file, the browser submits an empty file without a filename.
     # Because of this, we need to check if the filename is empty to avoid errors.
     if file.filename == '':
-        return jsonify({'details': 'No selected file'}), HTTPStatus.BAD_REQUEST
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No selected file")
 
     try:
         excel = pd.read_excel(file).fillna('None')
@@ -53,14 +60,15 @@ def upload_file():
         missing_columns = expected_columns - actual_columns
 
         if len(missing_columns) > 0:
-            return jsonify({
-                'error': 'Some expected columns are missing',
-                'missing_columns': list(missing_columns)
-            }), HTTPStatus.UNPROCESSABLE_ENTITY
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail={
+                                    'error': 'Some expected columns are missing',
+                                    'missing_columns': list(missing_columns)
+                                })
 
         # The actual processing of the file, creating the objects and adding them to the database
         session_maker = SessionMakerSingleton.get_session_maker()
-        commission_name = request.form.get('title') or file.filename.removesuffix(".xlsx").removesuffix(".xls")
+        commission_name = title or file.filename.removesuffix(".xlsx").removesuffix(".xls")
 
         def get_or_create_professor(ext_session: Session, name: str, surname: str):
             """
@@ -140,40 +148,48 @@ def upload_file():
 
             session.flush()
 
-            return jsonify({
-                'success': 'File processed successfully',
-                'commission': {
-                    'id': commission.id,
-                    'title': commission.title
-                }
-            }), HTTPStatus.CREATED
+            return commission
 
     except Exception as e:
         print(e)
-        return jsonify({'error': 'Error processing the file', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={
+                                'error': 'Error processing the file',
+                                'details': str(e)
+                            })
 
 
-@app.route('/commissions', methods=['GET'])
-def get_commissions():
+@app.get('/commissions')
+def get_commissions() -> list[Commission]:
     session_maker = SessionMakerSingleton.get_session_maker()
 
     try:
         session: Session
         with session_maker.begin() as session:
             commissions = session.query(Commission).all()
-            return jsonify([c.serialize() for c in commissions]), HTTPStatus.OK
+            return commissions
 
     except Exception as e:
         print(e)
-        return jsonify({
-            'error': 'Error retrieving the commissions',
-            'details': str(e)
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={
+                                'error': 'Error retrieving the commissions',
+                                'details': str(e)
+                            })
 
 
-@app.route('/commission', defaults={'cid': None}, methods=['GET'])
-@app.route('/commission/<cid>', methods=['GET'])
-def get_commission(cid: int | None):
+class BasicCommissionDetails:
+    id: int
+    title: str
+
+    def __init__(self, id: int, title: str):
+        self.id = id
+        self.title = title
+
+
+# @app.get('/commission', defaults={'cid': None})
+@app.get('/commission/{cid}')
+def get_commission(cid: Annotated[int | None, Path()]) -> Commission | list[BasicCommissionDetails]:
     session_maker = SessionMakerSingleton.get_session_maker()
 
     try:
@@ -182,39 +198,40 @@ def get_commission(cid: int | None):
             if cid is None:
                 # No ID provided, return all commissions
                 commissions = session.query(Commission.id, Commission.title).all()
-                return jsonify([{'id': cid, 'title': title} for cid, title in commissions]), HTTPStatus.OK
+                return [BasicCommissionDetails(cid, title) for cid, title in commissions]
             else:
                 # ID provided, return specific commission
                 commission = session.query(Commission).filter_by(id=cid).first()
                 if commission is None:
-                    return jsonify({'error': 'Commission not found'}), HTTPStatus.NOT_FOUND
+                    raise HTTPException(status.HTTP_404_NOT_FOUND)
                 else:
-                    # noinspection PyArgumentList
-                    return jsonify(commission.serialize()), HTTPStatus.OK
+                    return commission
 
     except Exception as e:
         print(e)
-        return jsonify({
-            'error': 'Error retrieving the commission',
-            'details': str(e)
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={
+                                'error': 'Error retrieving the commission',
+                                'details': str(e)
+                            })
 
 
-@app.route('/commission/<cid>/configuration', defaults={'config_id': None}, methods=['GET'])
-@app.route('/commission/<cid>/configuration/<config_id>', methods=['GET'])
-def get_configuration(cid: int, config_id: int | None):
+@app.get('/commission/{cid}/configuration/{config_id}')
+def get_configuration(cid: Annotated[int, Path()],
+                      config_id: Annotated[int | None, Path()],
+                      ) -> OptimizationConfiguration | list[OptimizationConfiguration]:
     session_maker = SessionMakerSingleton.get_session_maker()
 
     try:
         with session_maker.begin() as session:
             if config_id is None:
                 # No ID provided, return all configurations for the commission
-                configurations: list[OptimizationConfiguration] = (
+                configurations = (
                     session.query(OptimizationConfiguration)
                     .filter_by(commission_id=cid)
                     .all()
                 )
-                return jsonify([c.serialize() for c in configurations]), HTTPStatus.OK
+                return configurations
             else:
                 # ID provided, return specific configuration
                 configuration = (
@@ -223,20 +240,34 @@ def get_configuration(cid: int, config_id: int | None):
                     .first()
                 )
                 if configuration is None:
-                    return jsonify({'error': 'Configuration not found'}), HTTPStatus.NOT_FOUND
+                    raise HTTPException(status.HTTP_404_NOT_FOUND)
                 else:
-                    return jsonify(configuration.serialize()), HTTPStatus.OK
+                    return configuration
 
     except Exception as e:
         print(e)
-        return jsonify({
-            'error': 'Error retrieving the configuration',
-            'details': str(e)
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={
+                                'error': 'Error retrieving the commission',
+                                'details': str(e)
+                            })
 
 
-@app.route('/commission/<cid>/configuration', methods=['POST'])
-def create_configuration(cid: int):
+class CommissionCreationSuccess:
+    success: str
+    id: int
+    title: str
+    new_config: OptimizationConfiguration
+
+    def __init__(self, commission_id: int, title: str, config: OptimizationConfiguration):
+        self.success = 'Configuration created'
+        self.id = commission_id
+        self.title = title
+        self.new_config = config
+
+
+@app.post('/commission/{cid}/configuration', status_code=status.HTTP_201_CREATED)
+def create_configuration(cid: Annotated[int, Path()]) -> CommissionCreationSuccess:
     session_maker = SessionMakerSingleton.get_session_maker()
 
     try:
@@ -255,23 +286,40 @@ def create_configuration(cid: int):
             configuration.title = title
             # session.commit()
 
-            return jsonify({
-                'success': 'Configuration created',
-                'id': configuration.id,
-                'title': title,
-                'new_config': configuration.serialize()
-            }), HTTPStatus.CREATED
+            return CommissionCreationSuccess(configuration.id, title, configuration)
 
     except Exception as e:
         print(e)
-        return jsonify({
-            'error': 'Error creating the configuration',
-            'details': str(e)
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={
+                                'error': 'Error creating the configuration',
+                                'details': str(e)
+                            })
 
 
-@app.route('/commission/<cid>/configuration/<config_id>', methods=['PUT'])
-def update_configuration(cid: int, config_id: int):
+# todo add pydantic checks to the fields!
+class OptimizationConfigurationUpdateParams(BaseModel):
+    title: str | None
+
+    max_duration: int | None
+    max_commissions_morning: int | None
+    max_commissions_afternoon: int | None
+
+    online: bool | None
+    min_professor_number: int | None
+    min_professor_number_masters: int | None
+    max_professor_numer: int | None
+
+    solver: SolverEnum | None
+
+    optimization_time_limit: int | None
+    optimization_gap: float | None
+
+
+@app.put('/commission/{cid}/configuration/{config_id}')
+def update_configuration(cid: Annotated[int, Path()],
+                         config_id: Annotated[int, Path()],
+                         new_config: OptimizationConfigurationUpdateParams):
     logger = logging.getLogger(SERVER_PROCESS_NAME)
     session_maker = SessionMakerSingleton.get_session_maker()
 
@@ -283,23 +331,23 @@ def update_configuration(cid: int, config_id: int):
             configuration = session.query(OptimizationConfiguration).filter_by(id=config_id, commission_id=cid).first()
             if configuration is None:
                 logger.error(f"Configuration with ID {config_id} not found")
-                return jsonify({'error': 'Configuration not found'}), HTTPStatus.NOT_FOUND
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={'error': 'Configuration not found'})
 
             if configuration.run_lock:
                 if session.query(SolutionCommission).filter_by(opt_config_id=config_id).count() > 0:
                     logger.error(f"Configuration with ID {config_id} already solved")
-                    return jsonify({
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={
                         'error': 'Configuration already solved',
                         'state': 'solved'
-                    }), HTTPStatus.CONFLICT
+                    })
                 else:
                     logger.error(f"Configuration with ID {config_id} is currently being solved")
-                    return jsonify({
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={
                         'error': 'Configuration is currently being solved',
                         'state': 'solving'
-                    }), HTTPStatus.CONFLICT
+                    })
 
-            new_config: dict = request.get_json()
+            # new_config: dict = request.get_json()
 
             configuration.title = new_config.get('title', configuration.title)
             configuration.max_duration = new_config.get('max_duration', configuration.max_duration)
@@ -318,24 +366,25 @@ def update_configuration(cid: int, config_id: int):
                 configuration.min_professor_number_masters = new_config.get('min_professor_number_masters',
                                                                             configuration.min_professor_number_masters)
 
-                if (configuration.min_professor_number is None or
-                        configuration.max_professor_number is None or
-                        configuration.min_professor_number_masters is None):
-                    session.rollback()
-                    return jsonify({
-                        'error': 'min_professor_number, max_professor_number and min_professor_number_masters must be '
-                                 'specified'
-                    }), HTTPStatus.BAD_REQUEST
-                elif configuration.min_professor_number > configuration.max_professor_number:
-                    session.rollback()
-                    return jsonify({
-                        'error': 'min_professor_number must be less than or equal to max_professor_number'
-                    }), HTTPStatus.BAD_REQUEST
-                elif configuration.min_professor_number_masters > configuration.max_professor_number:
-                    session.rollback()
-                    return jsonify({
-                        'error': 'min_professor_number_masters must be less than or equal to max_professor_number'
-                    }), HTTPStatus.BAD_REQUEST
+                # todo remove these checks since the "online" configuration structure will be the only one available.
+                # if (configuration.min_professor_number is None or
+                #         configuration.max_professor_number is None or
+                #         configuration.min_professor_number_masters is None):
+                #     session.rollback()
+                #     return jsonify({
+                #         'error': 'min_professor_number, max_professor_number and min_professor_number_masters must be '
+                #                  'specified'
+                #     }), HTTPStatus.BAD_REQUEST
+                # elif configuration.min_professor_number > configuration.max_professor_number:
+                #     session.rollback()
+                #     return jsonify({
+                #         'error': 'min_professor_number must be less than or equal to max_professor_number'
+                #     }), HTTPStatus.BAD_REQUEST
+                # elif configuration.min_professor_number_masters > configuration.max_professor_number:
+                #     session.rollback()
+                #     return jsonify({
+                #         'error': 'min_professor_number_masters must be less than or equal to max_professor_number'
+                #     }), HTTPStatus.BAD_REQUEST
             else:
                 configuration.min_professor_number = None
                 configuration.max_professor_number = None
@@ -347,30 +396,30 @@ def update_configuration(cid: int, config_id: int):
                     configuration.solver = SolverEnum[solver_str.upper()]
                 except KeyError:
                     session.rollback()
-                    return jsonify({
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={
                         'error': 'Invalid solver specified',
                         'valid_solvers': [solver.name for solver in SolverEnum]
-                    }), HTTPStatus.BAD_REQUEST
+                    })
 
             configuration.optimization_time_limit = new_config.get('optimization_time_limit',
                                                                    configuration.optimization_time_limit)
             configuration.optimization_gap = new_config.get('optimization_gap', configuration.optimization_gap)
 
-            return jsonify({
-                'success': 'Configuration updated',
-                'updated_config': configuration.serialize()
-            }), HTTPStatus.OK
+            return configuration
 
     except Exception as e:
         logger.exception("Error updating the configuration", exc_info=e)
-        return jsonify({
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={
             'error': 'Error updating the configuration',
             'details': str(e)
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        })
 
 
-@app.route('/professor/<pid>', methods=['PUT'])
-def update_professor(pid: int):
+@app.put('/professor/{pid}')
+def update_professor(pid: Annotated[int, Path()],
+                     role: UniversityRole | None,
+                     availability: TimeAvailability | None) -> Professor:
+    logger = logging.getLogger(SERVER_PROCESS_NAME)
     session_maker = SessionMakerSingleton.get_session_maker()
 
     professor: Professor | None = None
@@ -378,49 +427,44 @@ def update_professor(pid: int):
         with session_maker.begin() as session:
             professor = session.query(Professor).filter_by(id=pid).first()
             if professor is None:
-                return jsonify({'error': f'Professor with ID {pid} not found'}), HTTPStatus.NOT_FOUND
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail=f'Professor with ID {pid} not found')
 
-            new_role: str = request.json.get('role')
-            if new_role is not None:
-                if new_role == "":
-                    return jsonify({'error': 'No role specified'}), HTTPStatus.BAD_REQUEST
+            if role is not None:
+                professor.role = UniversityRole(role)
 
-                professor.role = UniversityRole(new_role)
+            if availability is not None:
+                professor.availability = availability
 
-            new_availability: str = request.json.get('availability')
-            if new_availability is not None:
-                if new_role == "":
-                    return jsonify({'error': 'No availability specified'}), HTTPStatus.BAD_REQUEST
-
-                professor.availability = TimeAvailability(new_availability)
-
-            return jsonify({
-                'professor': professor.serialize(),
-                'response': f"Professor {professor.name} {professor.surname} ({pid}) updated"
-            }), HTTPStatus.OK
+            return professor
 
     except Exception as e:
-        print(e)
-        return jsonify({'error': 'Error updating the professor', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+        logger.exception("Error updating the professor", exc_info=e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={
+            'error': 'Error updating the professor',
+            'details': str(e)
+        })
 
 
-@app.route('/commission/<cid>', methods=['DELETE'])
+@app.delete('/commission/{cid}')
 def delete_commission(cid: int):
+    logger = logging.getLogger(SERVER_PROCESS_NAME)
     session_maker = SessionMakerSingleton.get_session_maker()
 
     try:
         with session_maker.begin() as session:
             commission = session.query(Commission).filter_by(id=cid).first()
             if commission is None:
-                return jsonify({'error': f'Commission with ID {cid} not found'}), HTTPStatus.NOT_FOUND
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Commission with ID {cid} not found')
 
             session.delete(commission)
 
-            return jsonify(f"Commission {cid} deleted"), HTTPStatus.OK
-
     except Exception as e:
-        print(e)
-        return jsonify({'error': 'Error deleting the commission', 'details': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+        logger.exception("Error updating the professor", exc_info=e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={
+            'error': 'Error deleting the commission',
+            'details': str(e)
+        })
 
 
 # Path to the directories that hold the datfiles and solutions produced.
@@ -432,7 +476,7 @@ def delete_commission(cid: int):
 OPT_TMP_DIR = ".temp/"
 
 
-@app.route('/commission/<commission_id>/solve/<config_id>', methods=['POST'])
+@app.post('/commission/{commission_id}/solve/{config_id}', status_code=status.HTTP_202_ACCEPTED)
 def solve_commission(commission_id: int, config_id: int):
     logger = logging.getLogger(SERVER_PROCESS_NAME)
 
@@ -442,32 +486,32 @@ def solve_commission(commission_id: int, config_id: int):
     try:
         with session_maker.begin() as session:
             logger.debug(f"Retrieving commission {commission_id} and configuration {config_id}")
-            commission: Commission = session.query(Commission).filter_by(id=commission_id).first()
+            commission = session.query(Commission).filter_by(id=commission_id).first()
             if commission is None:
                 logger.error(f"Commission with ID {commission_id} not found")
-                return jsonify({'error': f'Commission with ID {commission_id} not found'}), HTTPStatus.NOT_FOUND
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail=f'Commission with ID {commission_id} not found')
 
-            configuration: OptimizationConfiguration = (
-                session.query(OptimizationConfiguration)
-                .filter_by(id=config_id)
-                .first()
-            )
+            configuration = session.query(OptimizationConfiguration).filter_by(id=config_id).first()
 
             if configuration is None:
                 logger.error(f"Configuration with ID {config_id} not found")
-                return jsonify({'error': f'Configuration with ID {config_id} not found'}), HTTPStatus.NOT_FOUND
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail=f'Configuration with ID {config_id} not found')
 
             # First we check if the configuration has already been solved
             if session.query(SolutionCommission).filter_by(opt_config_id=config_id).count() > 0:
                 logger.error(f"Configuration with ID {config_id} already solved")
-                return jsonify({'error': f'Configuration with ID {config_id} already solved'}), HTTPStatus.CONFLICT
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                    detail=f'Configuration with ID {config_id} already solved')
 
             # Then we check if the configuration is already running. If we're here, we're sure that we haven't saved a
             # solution yet.
             # todo we should return another kind of error if the lock is set but there is no future currently running
             if configuration.run_lock:
                 logger.error(f"Configuration with ID {config_id} is already running")
-                return jsonify({'error': f'Configuration with ID {config_id} is already running'}), HTTPStatus.CONFLICT
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                    detail=f'Configuration with ID {config_id} is already running')
 
             logger.debug(f"Locking the configuration {config_id}")
             configuration.run_lock = True
@@ -509,12 +553,12 @@ def solve_commission(commission_id: int, config_id: int):
             )
             logger.info(f"Optimization process started for commission {commission_id} and configuration {config_id}")
 
-            return jsonify({
+            return {
                 'success': 'Optimization started',
                 'future_id': id(future),
                 'uuid': process_uuid,
                 'version_hash': version_hash
-            }), HTTPStatus.ACCEPTED
+            }
 
     except Exception as e:
         logger.exception(
@@ -522,32 +566,36 @@ def solve_commission(commission_id: int, config_id: int):
             exc_info=e
         )
 
-        return jsonify({
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={
             'error': 'Error starting the optimization',
             'details': str(e)
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        })
 
 
-# Needed to fix Preflight Checks for CORS.
-# https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
-@app.before_request
-def basic_authentication():
-    if request.method.upper() == 'OPTIONS':
-        return Response()
+# # Needed to fix Preflight Checks for CORS.
+# # https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
+# @app.before_request
+# def basic_authentication():
+#     if request.method.upper() == 'OPTIONS':
+#         return Response()
 
 
-def main():
-    global executor
-
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=int(config.get("MAX_WORKERS", "4")))
-    app.run(host=HOST_NAME, port=HOST_PORT, debug=True)
+# def main():
+#     global executor
+#
+#     executor = concurrent.futures.ProcessPoolExecutor(max_workers=int(config.get("MAX_WORKERS", "4")))
+#     app.run(host=HOST_NAME, port=HOST_PORT, debug=True)
 
 
 if __name__ == '__main__':
     executor: concurrent.futures.process.ProcessPoolExecutor
 
+    # todo migrate to new configuration structure https://fastapi.tiangolo.com/advanced/settings/#reading-a-env-file
     config = dotenv_values(verbose=True)
 
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=int(config.get("MAX_WORKERS", "4")))
+
+    # todo migrate to new logging structure https://www.restack.io/p/fastapi-answer-logger-dependency
     sqla_log_level = config.get("DATABASE_LOGGING_LEVEL", "WARNING")
     if not is_valid_log_level(sqla_log_level):
         raise ValueError(f"Invalid logging level for database: {sqla_log_level}. "
@@ -571,7 +619,7 @@ if __name__ == '__main__':
                                    port=config["DB_PORT"],
                                    database=config["DB_NAME"])
 
-
+    # todo https://stackoverflow.com/questions/77170361/running-alembic-migrations-on-fastapi-startup
     def run_migrations(url: sqlalchemy.engine.url.URL):
         from alembic import command
         from alembic.config import Config
@@ -591,5 +639,5 @@ if __name__ == '__main__':
 
     SessionMakerSingleton.initialize(db_url)
 
-    CORS(app, origins=[os.getenv("PUBLIC_API_URL"), os.getenv("PUBLIC_WEB_URL")])
-    main()
+    # CORS(app, origins=[os.getenv("PUBLIC_API_URL"), os.getenv("PUBLIC_WEB_URL")])
+    # main()
