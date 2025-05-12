@@ -1,10 +1,13 @@
+import binascii
 import logging
+import os
 import sys
 from functools import lru_cache
 from typing import Any
 
 import structlog
 from litestar import Litestar, get
+from litestar.config.cors import CORSConfig
 from litestar.serialization import decode_json, encode_json
 from litestar.plugins.sqlalchemy import (
     SQLAlchemyAsyncConfig,
@@ -21,16 +24,42 @@ from litestar.logging.config import (
     default_structlog_standard_lib_processors,
 )
 from litestar.plugins.structlog import StructlogConfig, StructlogPlugin
-from pydantic import BaseModel, PostgresDsn
+from pydantic import BaseModel, PostgresDsn, Field
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import NullPool
+from advanced_alchemy.utils.text import slugify
 
 
 @get("/")
 async def hello_world() -> dict[str, str]:
     """Handler function that returns a greeting dictionary."""
     return {"hello": "world"}
+
+
+class ServerSettings(BaseModel):
+    host: str = "0.0.0.0"  # noqa: S104
+    port: int = 8000
+    keepalive: int = 65
+    reload: bool = False
+    reload_dirs: list[str] = ["app"]
+
+
+class AppSettings(BaseModel):
+    # app_loc: str = "v2.asgi:create_app"
+    url: str = "http://localhost:8000"
+    debug: bool = False
+    secret_key: str = Field(default_factory=lambda: binascii.hexlify(os.urandom(32)).decode(encoding="utf-8"))
+    name: str = "app"
+    allowed_cors_origins: list[str] = ["*"]
+
+    # csrf_cookie_name: str = "XSRF-TOKEN"
+    # csrf_cookie_secure: bool = False
+
+    @property
+    def slug(self) -> str:
+        """Return a slugified name."""
+        return slugify(self.name)
 
 
 class DatabaseSettings(BaseModel):
@@ -130,6 +159,19 @@ class DatabaseSettings(BaseModel):
         return self._engine_instance
 
 
+def sql_config_factory(settings: DatabaseSettings) -> SQLAlchemyAsyncConfig:
+    return SQLAlchemyAsyncConfig(
+        engine_instance=settings.get_engine(),
+        before_send_handler="autocommit",
+        session_config=AsyncSessionConfig(expire_on_commit=False),
+        alembic_config=AlembicAsyncConfig(
+            version_table_name=settings.migration_ddl_version_table,
+            script_config=settings.migration_config,
+            script_location=settings.migration_path
+        )
+    )
+
+
 class LogSettings(BaseModel):
     """Logger configuration"""
 
@@ -197,7 +239,7 @@ def _is_tty() -> bool:
     return bool(sys.stderr.isatty() or sys.stdout.isatty())
 
 
-def configure_logging(settings: LogSettings) -> StructlogConfig:
+def logging_config_factory(settings: LogSettings) -> StructlogConfig:
     _render_as_json = not _is_tty()
     _structlog_default_processors = default_structlog_processors(as_json=_render_as_json)
     _structlog_default_processors.insert(1, structlog.processors.EventRenamer("message"))
@@ -244,22 +286,17 @@ def create_app() -> Litestar:
     db_settings = DatabaseSettings(url=PostgresDsn("postgresql+psycopg://user:password@localhost:5432/postgres"))
     log_settings = LogSettings()
 
-    structlog_plugin = StructlogPlugin(config=configure_logging(log_settings))
+    structlog_plugin = StructlogPlugin(config=logging_config_factory(log_settings))
 
-    alchemy_plugin = SQLAlchemyPlugin(config=SQLAlchemyAsyncConfig(
-        engine_instance=db_settings.get_engine(),
-        before_send_handler="autocommit",
-        session_config=AsyncSessionConfig(expire_on_commit=False),
-        alembic_config=AlembicAsyncConfig(
-            version_table_name=db_settings.migration_ddl_version_table,
-            script_config=db_settings.migration_config,
-            script_location=db_settings.migration_path
-        )
-    ))
+    alchemy_plugin = SQLAlchemyPlugin(config=sql_config_factory(db_settings))
+
+    app_settings = AppSettings()
+    cors_config = CORSConfig(allow_origins=app_settings.allowed_cors_origins)
 
     app = Litestar(
         route_handlers=[hello_world],
-        plugins=[structlog_plugin, alchemy_plugin]
+        cors_config=cors_config,
+        plugins=[structlog_plugin, alchemy_plugin],
     )
 
     return app
