@@ -80,40 +80,40 @@ class DatabaseSettings(BaseModel):
             poolclass=NullPool if self.pool_disabled else None,
         )
 
-        @event.listens_for(engine.sync_engine, "connect")
-        def _sqla_on_connect(dbapi_connection: Any, _: Any) -> Any:  # pragma: no cover
-            """Using msgspec for serialization of the json column values means that the
-            output is binary, not `str` like `json.dumps` would output.
-            SQLAlchemy expects that the json serializer returns `str` and calls `.encode()` on the value to
-            turn it to bytes before writing to the JSONB column. I'd need to either wrap `serialization.to_json` to
-            return a `str` so that SQLAlchemy could then convert it to binary, or do the following, which
-            changes the behaviour of the dialect to expect a binary value from the serializer.
-            """
-
-            def encoder(bin_value: bytes) -> bytes:
-                return b"\x01" + encode_json(bin_value)
-
-            def decoder(bin_value: bytes) -> Any:
-                return decode_json(bin_value[1:])
-
-            dbapi_connection.await_(
-                dbapi_connection.driver_connection.set_type_codec(
-                    "jsonb",
-                    encoder=encoder,
-                    decoder=decoder,
-                    schema="pg_catalog",
-                    format="binary",
-                ),
-            )
-            dbapi_connection.await_(
-                dbapi_connection.driver_connection.set_type_codec(
-                    "json",
-                    encoder=encoder,
-                    decoder=decoder,
-                    schema="pg_catalog",
-                    format="binary",
-                ),
-            )
+        # @event.listens_for(engine.sync_engine, "connect")
+        # def _sqla_on_connect(dbapi_connection: Any, _: Any) -> Any:  # pragma: no cover
+        #     """Using msgspec for serialization of the json column values means that the
+        #     output is binary, not `str` like `json.dumps` would output.
+        #     SQLAlchemy expects that the json serializer returns `str` and calls `.encode()` on the value to
+        #     turn it to bytes before writing to the JSONB column. I'd need to either wrap `serialization.to_json` to
+        #     return a `str` so that SQLAlchemy could then convert it to binary, or do the following, which
+        #     changes the behaviour of the dialect to expect a binary value from the serializer.
+        #     """
+        #
+        #     def encoder(bin_value: bytes) -> bytes:
+        #         return b"\x01" + encode_json(bin_value)
+        #
+        #     def decoder(bin_value: bytes) -> Any:
+        #         return decode_json(bin_value[1:])
+        #
+        #     dbapi_connection.await_(
+        #         dbapi_connection.driver_connection.set_type_codec(
+        #             "jsonb",
+        #             encoder=encoder,
+        #             decoder=decoder,
+        #             schema="pg_catalog",
+        #             format="binary",
+        #         ),
+        #     )
+        #     dbapi_connection.await_(
+        #         dbapi_connection.driver_connection.set_type_codec(
+        #             "json",
+        #             encoder=encoder,
+        #             decoder=decoder,
+        #             schema="pg_catalog",
+        #             format="binary",
+        #         ),
+        #     )
 
         self._engine_instance = engine
 

@@ -36,7 +36,7 @@ class TimeAvailability(Hashable, enum.Enum):
     MORNING = "morning"
     AFTERNOON = "afternoon"
     ALWAYS = "always"
-    SPLIT = 'split'
+    SPLIT = "split"
 
     @property
     def available_morning(self):
