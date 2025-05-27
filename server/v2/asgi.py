@@ -1,4 +1,4 @@
-from __future__ import annotations
+# from __future__ import annotations
 
 import io
 import os
@@ -43,7 +43,7 @@ class Student(IdentityAuditBase):
 
     Attributes:
         matriculation_number: A unique number assigned to the student by the university.
-        name: The first name of the student.
+        first_name: The first name of the student.
         surname: The surname of the student.
         phone_number: The student's phone number. This is optional.
         personal_email: The student's personal email address. This is optional.
@@ -52,7 +52,7 @@ class Student(IdentityAuditBase):
     __tablename__ = "students"
 
     matriculation_number: Mapped[int] = mapped_column(sa.BigInteger, unique=False, nullable=False)
-    name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
+    first_name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     surname: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     phone_number: Mapped[str | None] = mapped_column(sa.String(128), nullable=False)
     personal_email: Mapped[str | None] = mapped_column(sa.String(128), nullable=False)
@@ -60,10 +60,10 @@ class Student(IdentityAuditBase):
 
     @property
     def full_name(self):
-        return f"{self.surname} {self.name}"
+        return f"{self.surname} {self.first_name}"
 
     def __repr__(self):
-        return f"Student({self.id=}, {self.matriculation_number=}, {self.name=}, {self.surname=}, " \
+        return f"Student({self.id=}, {self.matriculation_number=}, {self.first_name=}, {self.surname=}, " \
                f"{self.phone_number=}, {self.personal_email=}, {self.university_email=})"
 
 
@@ -73,17 +73,17 @@ class Professor(IdentityAuditBase):
     Professor model with auto-incrementing ID and audit fields.
 
     Attributes:
-        name: The first name of the professor.
+        first_name: The first name of the professor.
         surname: The surname of the professor.
         role: The professor's role in the university. By default, this is set to "UNSPECIFIED".
     """
     __tablename__ = "professors"
 
     __table_args__ = (
-        sa.Index("idx_professors_name_surname_unique", "name", "surname", unique=True),
+        sa.Index("idx_professors_name_surname_unique", "first_name", "surname", unique=True),
     )
 
-    name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
+    first_name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     surname: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     role: Mapped[UniversityRole] = mapped_column(sa.Enum(UniversityRole),
                                                  nullable=False,
@@ -92,26 +92,28 @@ class Professor(IdentityAuditBase):
 
     @property
     def full_name(self):
-        return f"{self.surname} {self.name}"
+        return f"{self.surname} {self.first_name}"
 
     def __repr__(self):
-        return f"Professor({self.id=}, {self.name=}, {self.surname=}, {self.role=})"
+        return f"Professor({self.id=}, {self.first_name=}, {self.surname=}, {self.role=})"
 
 
 @dataclass
-class Session(IdentityAuditBase):
+class GradSession(IdentityAuditBase):
     __tablename__ = "sessions"
 
     title: Mapped[str] = mapped_column(sa.String(256), nullable=False)
     # date
-    entries: Mapped[list[SessionEntry]] = relationship(
+    entries: Mapped[list['SessionEntry']] = relationship(
         "SessionEntry",
         back_populates="session",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="subquery"
     )
-    availabilities: Mapped[list[ProfessorAvailability]] = relationship(
+    availabilities: Mapped[list['ProfessorAvailability']] = relationship(
         "ProfessorAvailability",
         back_populates="session",
+        lazy="subquery"
     )
 
     # configurations
@@ -172,7 +174,7 @@ class Session(IdentityAuditBase):
                     entity = [
                         entry.candidate.id,
                         entry.candidate.surname,
-                        entry.candidate.name,
+                        entry.candidate.first_name,
                         entry.get_duration(),
                         current_supervisor.id,
                         current_supervisor.full_name,
@@ -226,15 +228,15 @@ class ProfessorAvailability(IdentityAuditBase):
     __tablename__ = "professor_availabilities"
 
     professor_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("professors.id"), nullable=False)
-    professor: Mapped[Professor] = relationship("Professor")
+    professor: Mapped[Professor] = relationship("Professor", lazy="joined")
 
     session_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("sessions.id"), nullable=False)
-    session: Mapped[Session] = relationship(
-        "Session",
+    session: Mapped[GradSession] = relationship(
+        "GradSession",
         back_populates="availabilities",
         cascade="all, delete-orphan",
         single_parent=True,
-        info=dto_field("private"),
+        lazy="selectin"
     )
 
     availability: Mapped[TimeAvailability] = mapped_column(sa.Enum(TimeAvailability), nullable=False)
@@ -246,8 +248,7 @@ class SessionEntry(IdentityAuditBase):
 
     # Session Foreign Key
     session_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("sessions.id"), nullable=False)
-    session: Mapped[Session] = relationship("Session", back_populates="entries", info=dto_field("private"),
-                                            viewonly=True)
+    session: Mapped[GradSession] = relationship("GradSession", back_populates="entries", lazy="selectin")
 
     # Student Foreign Key
     candidate_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("students.id"), nullable=False)
@@ -256,7 +257,7 @@ class SessionEntry(IdentityAuditBase):
         foreign_keys=[candidate_id],
         cascade="all, delete-orphan",
         single_parent=True,
-        lazy="selectin"
+        lazy="joined"
     )
 
     degree_level: Mapped[Degree] = mapped_column(sa.Enum(Degree), nullable=False)
@@ -293,52 +294,53 @@ class ProfessorRepository(SQLAlchemyAsyncRepository[Professor]):
     model_type = Professor
 
     @classmethod
-    async def provide(cls, db_session: AsyncSession) -> ProfessorRepository:
+    async def provide(cls, db_session: AsyncSession) -> 'ProfessorRepository':
         return cls(session=db_session)
 
 
-class SessionRepository(SQLAlchemyAsyncRepository[Session]):
-    model_type = Session
+class GradSessionRepository(SQLAlchemyAsyncRepository[GradSession]):
+    model_type = GradSession
 
     @classmethod
-    async def provide(cls, db_session: AsyncSession) -> SessionRepository:
+    async def provide(cls, db_session: AsyncSession) -> 'GradSessionRepository':
         return cls(session=db_session)
 
 
-MISSING = {None, '', 'None'}
+MISSING: Final = {None, '', 'None'}
 
 
 def is_missing(v: Any) -> bool:
     return v in MISSING
 
 
-class SessionReadDTO(SQLAlchemyDTO[Session]):
+class SessionReadDTO(SQLAlchemyDTO[GradSession]):
     config = DTOConfig(
-        exclude={"entries.0.session", "availabilities.0.session"},
+        max_nested_depth=0
     )
 
 
 @get("/",
      dependencies={
-         "session_repository": Provide(SessionRepository.provide)
+         "session_repository": Provide(GradSessionRepository.provide),
      },
      return_dto=SessionReadDTO)
-async def get_sessions(session_repository: SessionRepository) -> list[Session]:
-    sessions_db = await session_repository.list(load=[Session.availabilities])
+async def get_sessions(session_repository: GradSessionRepository) -> list[GradSession]:
+    sessions_db = await session_repository.list()
     return sessions_db
 
 
 @post("/upload",
       dependencies={
           "professor_repository": Provide(ProfessorRepository.provide),
-          "session_repository": Provide(SessionRepository.provide)
-      })
+          "grad_session_repository": Provide(GradSessionRepository.provide)
+      },
+      return_dto=SessionReadDTO)
 async def new_session(
         data: Annotated[NewCommissionForm, Body(media_type=RequestEncodingType.MULTI_PART)],
         professor_repository: ProfessorRepository,
-        session_repository: SessionRepository,
+        grad_session_repository: GradSessionRepository,
         db_session: AsyncSession
-) -> Session:
+) -> GradSession:
     file = data.file
     file_data = await file.read()
 
@@ -380,19 +382,19 @@ async def new_session(
             return None
 
         return await professor_repository.upsert(
-            Professor(name=name, surname=surname),
+            Professor(first_name=name, surname=surname),
             match_fields=['surname', 'name'],
             auto_commit=False
         )
 
     txn: AsyncSessionTransaction
     async with db_session.begin():
-        grad_session = Session(title=session_name)
+        grad_session = GradSession(title=session_name)
 
         for index, row in excel.iterrows():
             student = Student(
                 matriculation_number=int(row['MATRICOLA']),
-                name=row['NOME'],
+                first_name=row['NOME'],
                 surname=row['COGNOME'],
                 phone_number=row['CELLULARE'],
                 personal_email=row['EMAIL'],
@@ -424,7 +426,7 @@ async def new_session(
 
             grad_session.entries.append(entry)
 
-        await session_repository.add(grad_session)
+        await grad_session_repository.add(grad_session)
 
         return grad_session
 
