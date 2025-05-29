@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from model import TimeAvailability
 from model.model import Student, Commission, Professor, CommissionEntry, \
     OptimizationConfiguration, SolutionCommission
-from model.enums import Degree, UniversityRole, SolverEnum
+from v2.db.models.enums import Degree, UniversityRole, SolverEnum
 from session_maker import SessionMakerSingleton
 from utils.logging import is_valid_log_level
 
