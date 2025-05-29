@@ -3,10 +3,15 @@
 import os
 from pathlib import Path
 
-from litestar import Litestar
+from litestar import Litestar, Router
 
 from v2.config.settings import Settings
 from v2.domain.grad_sessions.controllers import GraduationSessionController
+
+base_router = Router(
+    path="/api/v1",
+    route_handlers=[GraduationSessionController],
+)
 
 
 def create_app() -> Litestar:
@@ -17,7 +22,7 @@ def create_app() -> Litestar:
         dependencies={
             # "logger": Provide(provide_logger)
         },
-        route_handlers=[GraduationSessionController],
+        route_handlers=[base_router],
         cors_config=settings.cors_config,
         plugins=[
             settings.log.structlog_plugin,

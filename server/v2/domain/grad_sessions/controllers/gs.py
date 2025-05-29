@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSessionTransaction
 from v2.db.models import Student, Professor, Degree, SessionEntry, GradSession
 from v2.domain.grad_sessions.deps import ProfessorRepository, GradSessionRepository
 from v2.domain.grad_sessions.schemas import NewCommissionForm
+from v2.domain.grad_sessions import urls
 
 EXCEL_MEDIA_TYPES: Final[list[str]] = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -48,12 +49,18 @@ class GraduationSessionController(Controller):
         "professor_repository": Provide(ProfessorRepository.provide),
     }
 
-    @get("/", return_dto=SessionReadDTO)
+    @get(urls.GRAD_SESSIONS_LIST, return_dto=SessionReadDTO)
     async def get_sessions(self, grad_session_repository: GradSessionRepository) -> list[GradSession]:
         sessions_db = await grad_session_repository.list()
         return sessions_db
 
-    @post("/upload", return_dto=SessionReadDTO)
+    @get("/session/{sid:int}", return_dto=SessionReadDTO)
+    async def get_session(self, sid: int, grad_session_repository: GradSessionRepository) -> GradSession:
+        session_db = await grad_session_repository.get(sid)
+        # todo fix not found
+        return session_db
+
+    @post(urls.GRAD_SESSIONS_UPLOAD_EXCEL, return_dto=SessionReadDTO)
     async def new_session(
             self,
             data: Annotated[NewCommissionForm, Body(media_type=RequestEncodingType.MULTI_PART)],
@@ -98,7 +105,7 @@ class GraduationSessionController(Controller):
 
         session_name = data.title or file.filename.removesuffix(".xlsx").removesuffix(".xls")
 
-        async def get_or_create_professor(name: str | None, surname: str | None) -> Professor | None:
+        async def get_or_create_professor(surname: str | None, name: str | None) -> Professor | None:
             if is_missing(name) or is_missing(surname):
                 return None
 
