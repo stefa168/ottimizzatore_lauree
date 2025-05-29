@@ -1,0 +1,347 @@
+{
+  "$defs": {
+    "AppSettings": {
+      "properties": {
+        "url": {
+          "default": "http://localhost:8000",
+          "title": "Url",
+          "type": "string"
+        },
+        "debug": {
+          "default": false,
+          "title": "Debug",
+          "type": "boolean"
+        },
+        "secret_key": {
+          "title": "Secret Key",
+          "type": "string"
+        },
+        "name": {
+          "default": "app",
+          "title": "Name",
+          "type": "string"
+        },
+        "allowed_cors_origins": {
+          "default": [
+            "*"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Cors Origins",
+          "type": "array"
+        }
+      },
+      "title": "AppSettings",
+      "type": "object"
+    },
+    "DatabaseSettings": {
+      "properties": {
+        "echo": {
+          "default": false,
+          "title": "Echo",
+          "type": "boolean"
+        },
+        "echo_pool": {
+          "default": false,
+          "title": "Echo Pool",
+          "type": "boolean"
+        },
+        "pool_disabled": {
+          "default": false,
+          "title": "Pool Disabled",
+          "type": "boolean"
+        },
+        "pool_max_overflow": {
+          "default": 10,
+          "title": "Pool Max Overflow",
+          "type": "integer"
+        },
+        "pool_size": {
+          "default": 5,
+          "title": "Pool Size",
+          "type": "integer"
+        },
+        "pool_timeout": {
+          "default": 30,
+          "title": "Pool Timeout",
+          "type": "integer"
+        },
+        "pool_recycle": {
+          "default": 300,
+          "title": "Pool Recycle",
+          "type": "integer"
+        },
+        "pool_pre_ping": {
+          "default": false,
+          "title": "Pool Pre Ping",
+          "type": "boolean"
+        },
+        "url": {
+          "format": "multi-host-uri",
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "migration_config": {
+          "default": "db/migrations/alembic.ini",
+          "title": "Migration Config",
+          "type": "string"
+        },
+        "migration_path": {
+          "default": "db/migrations",
+          "title": "Migration Path",
+          "type": "string"
+        },
+        "migration_ddl_version_table": {
+          "default": "ddl_version",
+          "title": "Migration Ddl Version Table",
+          "type": "string"
+        },
+        "fixture_path": {
+          "default": "db/fixtures",
+          "title": "Fixture Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "DatabaseSettings",
+      "type": "object"
+    },
+    "LogSettings": {
+      "description": "Logger configuration",
+      "properties": {
+        "exclude_paths": {
+          "default": "\\A(?!x)x",
+          "title": "Exclude Paths",
+          "type": "string"
+        },
+        "http_event": {
+          "default": "HTTP",
+          "title": "Http Event",
+          "type": "string"
+        },
+        "include_compressed_body": {
+          "default": false,
+          "title": "Include Compressed Body",
+          "type": "boolean"
+        },
+        "level": {
+          "default": 30,
+          "title": "Level",
+          "type": "integer"
+        },
+        "obfuscate_cookies": {
+          "default": [
+            "XSRF-TOKEN",
+            "session"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Obfuscate Cookies",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "obfuscate_headers": {
+          "default": [
+            "X-API-KEY",
+            "X-XSRF-TOKEN",
+            "Authorization"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Obfuscate Headers",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "job_fields": {
+          "default": [
+            "function",
+            "kwargs",
+            "key",
+            "scheduled",
+            "attempts",
+            "completed",
+            "queued",
+            "started",
+            "result",
+            "error"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Job Fields",
+          "type": "array"
+        },
+        "request_fields": {
+          "default": [
+            "path",
+            "method",
+            "query",
+            "path_params"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Fields",
+          "type": "array"
+        },
+        "response_fields": {
+          "default": [
+            "status_code"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Response Fields",
+          "type": "array"
+        },
+        "worker_event": {
+          "default": "Worker",
+          "title": "Worker Event",
+          "type": "string"
+        },
+        "saq_level": {
+          "default": 50,
+          "title": "Saq Level",
+          "type": "integer"
+        },
+        "sqlalchemy_level": {
+          "default": 30,
+          "title": "Sqlalchemy Level",
+          "type": "integer"
+        },
+        "asgi_access_level": {
+          "default": 30,
+          "title": "Asgi Access Level",
+          "type": "integer"
+        },
+        "asgi_error_level": {
+          "default": 30,
+          "title": "Asgi Error Level",
+          "type": "integer"
+        }
+      },
+      "title": "LogSettings",
+      "type": "object"
+    },
+    "ServerSettings": {
+      "properties": {
+        "host": {
+          "default": "0.0.0.0",
+          "title": "Host",
+          "type": "string"
+        },
+        "port": {
+          "default": 8000,
+          "title": "Port",
+          "type": "integer"
+        },
+        "keepalive": {
+          "default": 65,
+          "title": "Keepalive",
+          "type": "integer"
+        },
+        "reload": {
+          "default": false,
+          "title": "Reload",
+          "type": "boolean"
+        },
+        "reload_dirs": {
+          "default": [
+            "app"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reload Dirs",
+          "type": "array"
+        }
+      },
+      "title": "ServerSettings",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "app": {
+      "$ref": "#/$defs/AppSettings",
+      "default": {
+        "url": "http://localhost:8000",
+        "debug": false,
+        "secret_key": "ff07fa3078fa87c6e2b9020365ebf97a2b9a4abf9f787e3e2bb3ad02895f6e3f",
+        "name": "app",
+        "allowed_cors_origins": [
+          "*"
+        ]
+      }
+    },
+    "db": {
+      "$ref": "#/$defs/DatabaseSettings"
+    },
+    "server": {
+      "$ref": "#/$defs/ServerSettings",
+      "default": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "keepalive": 65,
+        "reload": false,
+        "reload_dirs": [
+          "app"
+        ]
+      }
+    },
+    "log": {
+      "$ref": "#/$defs/LogSettings",
+      "default": {
+        "exclude_paths": "\\A(?!x)x",
+        "http_event": "HTTP",
+        "include_compressed_body": false,
+        "level": 30,
+        "obfuscate_cookies": [
+          "XSRF-TOKEN",
+          "session"
+        ],
+        "obfuscate_headers": [
+          "X-API-KEY",
+          "X-XSRF-TOKEN",
+          "Authorization"
+        ],
+        "job_fields": [
+          "function",
+          "kwargs",
+          "key",
+          "scheduled",
+          "attempts",
+          "completed",
+          "queued",
+          "started",
+          "result",
+          "error"
+        ],
+        "request_fields": [
+          "path",
+          "method",
+          "query",
+          "path_params"
+        ],
+        "response_fields": [
+          "status_code"
+        ],
+        "worker_event": "Worker",
+        "saq_level": 50,
+        "sqlalchemy_level": 30,
+        "asgi_access_level": 30,
+        "asgi_error_level": 30
+      }
+    }
+  },
+  "required": [
+    "db"
+  ],
+  "title": "Settings",
+  "type": "object"
+}
