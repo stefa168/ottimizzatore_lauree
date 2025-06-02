@@ -1,0 +1,15 @@
+meta {
+  name: Get Students for a session
+  type: http
+  seq: 1
+}
+
+get {
+  url: 127.0.0.1:8000/api/v1/sessions/:sid/students
+  body: none
+  auth: inherit
+}
+
+params:path {
+  sid: 1
+}
