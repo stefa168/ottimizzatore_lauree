@@ -7,10 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from v2.db.models import Professor, GradSession, SessionEntry
 
-T = TypeVar('T', bound=SQLAlchemyAsyncRepository)
 
-
-class ProvideRepositoryMixin:
+class ProvideRepositoryMixin[T: SQLAlchemyAsyncRepository]:
     @classmethod
     async def provide(cls: Type[T], db_session: AsyncSession) -> T:
         return cls(session=db_session)
