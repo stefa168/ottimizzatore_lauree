@@ -28,21 +28,27 @@ purposes.
     npm install
     ```
 
-3. Install Python dependencies
+3. Install Python dependencies: This project uses the [uv project manager](https://docs.astral.sh/uv/), so the only 
+   command needed is
     ```bash
-    cd ottimizzatore_lauree/server
-    pip install -r requirements.txt
+    uv sync
     ```
 
 ## Running the Application
 
-1. Start the backend server
+1. Apply the database migrations
+   ```bash
+   cd server
+   litestar --app=v2.asgi:create_app database upgrade
+   ```
+
+2. Start the backend server
     ```bash
-    cd ottimizzatore_lauree/server
-    python server.py
+    cd server
+   litestar --app=v2.asgi:create_app run
     ```
 
-2. Start the frontend server
+3. Start the frontend server
     ```bash
     cd ottimizzatore_lauree/web
     npm run dev
