@@ -54,10 +54,9 @@ class GraduationSessionController(Controller):
         sessions_db = await grad_session_repository.list()
         return sessions_db
 
-    @get("/session/{sid:int}", return_dto=SessionReadDTO)
+    @get(urls.GRAD_SESSION_RETRIEVE, return_dto=SessionReadDTO)
     async def get_session(self, sid: int, grad_session_repository: GradSessionRepository) -> GradSession:
         session_db = await grad_session_repository.get(sid)
-        # todo fix not found
         return session_db
 
     @post(urls.GRAD_SESSIONS_UPLOAD_EXCEL, return_dto=SessionReadDTO)
