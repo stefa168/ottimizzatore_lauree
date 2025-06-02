@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 
 from litestar import Litestar, Router
+from litestar.openapi.config import OpenAPIConfig
+from litestar.openapi.plugins import SwaggerRenderPlugin
 
 from v2.config.settings import Settings
 from v2.domain.grad_sessions.controllers import GraduationSessionController
@@ -28,6 +30,11 @@ def create_app() -> Litestar:
             settings.log.structlog_plugin,
             settings.db.alchemy_plugin
         ],
+        openapi_config=OpenAPIConfig(
+            title="Graduation Session Optimizer",
+            version="0.1",
+            render_plugins=[SwaggerRenderPlugin()]
+        )
     )
 
     return app
