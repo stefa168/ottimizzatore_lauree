@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import sqlalchemy as sa
 from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy.orm import Mapped, mapped_column
+from litestar.dto import dto_field
 
 
 @dataclass
@@ -25,8 +26,8 @@ class Student(IdentityAuditBase):
     matriculation_number: Mapped[int] = mapped_column(sa.BigInteger, unique=False, nullable=False)
     first_name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     surname: Mapped[str] = mapped_column(sa.String(128), nullable=False)
-    phone_number: Mapped[str | None] = mapped_column(sa.String(128), nullable=False)
-    personal_email: Mapped[str | None] = mapped_column(sa.String(128), nullable=False)
+    phone_number: Mapped[str | None] = mapped_column(sa.String(128), nullable=False, info=dto_field("private"))
+    personal_email: Mapped[str | None] = mapped_column(sa.String(128), nullable=False, info=dto_field("private"))
     university_email: Mapped[str | None] = mapped_column(sa.String(128), nullable=False)
 
     @property
