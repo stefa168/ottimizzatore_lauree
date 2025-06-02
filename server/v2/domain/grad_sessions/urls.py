@@ -4,3 +4,6 @@ from __future__ import annotations
 GRAD_SESSIONS_LIST = '/sessions'
 GRAD_SESSIONS_UPLOAD_EXCEL = '/sessions/upload'
 GRAD_SESSION_RETRIEVE = "/sessions/{sid:int}"
+
+# Grad Session Student Urls
+GRAD_SESSION_STUDENTS_LIST = "/sessions/{sid:int}/students"
