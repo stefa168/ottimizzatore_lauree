@@ -43,8 +43,12 @@ class StudentController(Controller):
         "session_entry_repository": Provide(SessionEntryRepository.provide),
     }
 
-    @get(urls.GRAD_SESSION_STUDENTS_LIST, return_dto=StudentEntryReadDTO)
-    async def get_session_students(self, sid: int, session_entry_repository: SessionEntryRepository) -> list[SessionEntry]:
+    @get(urls.GRAD_SESSION_ENTRY_LIST, return_dto=StudentEntryReadDTO)
+    async def get_session_entries(
+            self,
+            sid: int,
+            session_entry_repository: SessionEntryRepository
+    ) -> list[SessionEntry]:
         session_entries = await session_entry_repository.list(
             SessionEntry.session_id == sid
         )

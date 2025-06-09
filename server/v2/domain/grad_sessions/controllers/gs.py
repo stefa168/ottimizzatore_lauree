@@ -60,7 +60,7 @@ class GraduationSessionController(Controller):
         return session_db
 
     @post(urls.GRAD_SESSIONS_UPLOAD_EXCEL, return_dto=SessionReadDTO)
-    async def new_session(
+    async def upload_xls(
             self,
             data: Annotated[NewCommissionForm, Body(media_type=RequestEncodingType.MULTI_PART)],
             professor_repository: ProfessorRepository,
