@@ -1,4 +1,4 @@
 db:
-  url: "postgresql+psycopg://user:password@192.168.0.8:5432/postgres"
+  url: "postgresql+psycopg://user:password@192.168.0.9:5432/postgres"
   migration_config: "v2/db/migrations/alembic.ini"
   migration_path: "v2/db/migrations"
