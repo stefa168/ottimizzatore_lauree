@@ -25,7 +25,11 @@ class StudentEntryReadDTO(SQLAlchemyDTO[SessionEntry]):
             "supervisor",
             "supervisor2",
             "supervisor_assistant",
-            "counter_supervisor"
+            "counter_supervisor",
+            "created_at",
+            "updated_at",
+            "candidate.created_at",
+            "candidate.updated_at"
         }
         # max_nested_depth=0
     )
