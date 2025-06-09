@@ -38,3 +38,9 @@ class Professor(IdentityAuditBase):
 
     def __repr__(self):
         return f"Professor({self.id=}, {self.first_name=}, {self.surname=}, {self.role=})"
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return isinstance(other, Professor) and self.id == other.id

@@ -5,6 +5,7 @@ import pandas as pd
 import sqlalchemy as sa
 from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from v2.db.models import SessionEntry, ProfessorAvailability, Professor, TimeAvailability
 
@@ -21,9 +22,11 @@ class GradSession(IdentityAuditBase):
         cascade="all, delete-orphan",
         lazy="subquery"
     )
-    availabilities: Mapped[list['ProfessorAvailability']] = relationship(
+    availabilities: Mapped[dict[int, 'ProfessorAvailability']] = relationship(
         "ProfessorAvailability",
         back_populates="session",
+        collection_class=attribute_mapped_collection("professor_id"),
+        cascade="all, delete-orphan",
         lazy="subquery"
     )
 
@@ -31,7 +34,7 @@ class GradSession(IdentityAuditBase):
 
     def availability_dict(self) -> dict[Professor, TimeAvailability]:
         avs = {}
-        for av in self.availabilities:
+        for av in self.availabilities.values():
             avs[av.professor] = av.availability
         return avs
 
