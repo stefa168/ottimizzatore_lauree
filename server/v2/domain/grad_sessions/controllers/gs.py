@@ -17,8 +17,12 @@ import litestar.status_codes as http_statuses
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio.session import AsyncSessionTransaction
 
-from v2.db.models import Student, Professor, Degree, SessionEntry, GradSession
-from v2.domain.grad_sessions.deps import ProfessorRepository, GradSessionRepository
+from v2.db.models import Student, Professor, Degree, SessionEntry, GradSession, ProfessorAvailability, TimeAvailability
+from v2.domain.grad_sessions.deps import (
+    ProfessorRepository,
+    GradSessionRepository,
+    SessionProfessorAvailabilityRepository
+)
 from v2.domain.grad_sessions.schemas import NewCommissionForm
 from v2.domain.grad_sessions import urls
 
@@ -47,6 +51,7 @@ class GraduationSessionController(Controller):
     dependencies = {
         "grad_session_repository": Provide(GradSessionRepository.provide),
         "professor_repository": Provide(ProfessorRepository.provide),
+        "availability_repository": Provide(SessionProfessorAvailabilityRepository.provide),
     }
 
     @get(urls.GRAD_SESSIONS_LIST, return_dto=SessionReadDTO)
@@ -65,6 +70,7 @@ class GraduationSessionController(Controller):
             data: Annotated[NewCommissionForm, Body(media_type=RequestEncodingType.MULTI_PART)],
             professor_repository: ProfessorRepository,
             grad_session_repository: GradSessionRepository,
+            availability_repository: SessionProfessorAvailabilityRepository,
             db_session: AsyncSession
     ) -> GradSession:
         file = data.file
@@ -104,19 +110,25 @@ class GraduationSessionController(Controller):
 
         session_name = data.title or file.filename.removesuffix(".xlsx").removesuffix(".xls")
 
-        async def get_or_create_professor(surname: str | None, name: str | None) -> Professor | None:
+        async def get_or_create_professor(surname: str | None,
+                                          name: str | None,
+                                          prof_set: set[Professor]) -> Professor | None:
             if is_missing(name) or is_missing(surname):
                 return None
 
-            return await professor_repository.upsert(
+            prof = await professor_repository.upsert(
                 Professor(first_name=name, surname=surname),
                 match_fields=['surname', 'name'],
                 auto_commit=False
             )
 
+            prof_set.add(prof)
+            return prof
+
         txn: AsyncSessionTransaction
         async with db_session.begin():
             grad_session = GradSession(title=session_name)
+            sp: set[Professor] = set()  # Session Professors
 
             for index, row in excel.iterrows():
                 student = Student(
@@ -128,10 +140,10 @@ class GraduationSessionController(Controller):
                     university_email=row['EMAIL_ATENEO']
                 )
 
-                supervisor = await get_or_create_professor(row['REL_COGNOME'], row['REL_NOME'])
-                supervisor2 = await get_or_create_professor(row['REL2_COGNOME'], row['REL2_NOME'])
-                supervisor_assistant = await get_or_create_professor(row['CORR_COGNOME'], row['CORR_NOME'])
-                counter_supervisor = await get_or_create_professor(row['CONTROREL_COGNOME'], row['CONTROREL_NOME'])
+                supervisor = await get_or_create_professor(row['REL_COGNOME'], row['REL_NOME'], sp)
+                supervisor2 = await get_or_create_professor(row['REL2_COGNOME'], row['REL2_NOME'], sp)
+                supervisor_assistant = await get_or_create_professor(row['CORR_COGNOME'], row['CORR_NOME'], sp)
+                counter_supervisor = await get_or_create_professor(row['CONTROREL_COGNOME'], row['CONTROREL_NOME'], sp)
 
                 # todo assert that the supervisor is not none
 
@@ -154,5 +166,15 @@ class GraduationSessionController(Controller):
                 grad_session.entries.append(entry)
 
             await grad_session_repository.add(grad_session)
+
+            # Now that we've prepared all the entries and professors we can create all the default availabilities
+            availabilities = [
+                ProfessorAvailability(
+                    professor_id=professor.id,
+                    session_id=grad_session.id,
+                    availability=TimeAvailability.ALWAYS
+                ) for professor in sp
+            ]
+            await availability_repository.add_many(availabilities)
 
             return grad_session
