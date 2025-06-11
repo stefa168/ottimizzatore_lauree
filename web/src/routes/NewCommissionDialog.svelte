@@ -70,7 +70,7 @@
     const {form: formData, enhance} = form;
 
     // Dialog activation features
-    let isShown = false;
+    let isShown = $state(false);
 
     function changeDialogState(isOpen: boolean) {
         isShown = isOpen;
@@ -81,8 +81,8 @@
         }
     }
 
-    let upload_error: UploadErrorResponse | undefined = undefined;
-    let submitting = false;
+    let upload_error: UploadErrorResponse | undefined = $state(undefined);
+    let submitting = $state(false);
 
 </script>
 
@@ -134,21 +134,25 @@
                     </Alert.Root>
                 {/if}
                 <Form.Field {form} name="title">
-                    <Form.Control let:attrs>
-                        <Form.Label>Titolo</Form.Label>
-                        <Input {...attrs} bind:value={$formData.title}/>
+                    <Form.Control>
+                        {#snippet children({attrs})}
+                            <Form.Label>Titolo</Form.Label>
+                            <Input {...attrs} bind:value={$formData.title}/>
+                        {/snippet}
                     </Form.Control>
                     <Form.Description>Il nome che vuoi assegnare alla commissione.</Form.Description>
                     <Form.FieldErrors/>
                 </Form.Field>
                 <Form.Field {form} name="excel">
-                    <Form.Control let:attrs>
-                        <Form.Label>File</Form.Label>
-                        <Input {...attrs}
-                               required
-                               on:change={(e)=>($formData.excel = e.currentTarget.files?.item(0) ?? null)}
-                               type="file"
-                               accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>
+                    <Form.Control>
+                        {#snippet children({attrs})}
+                            <Form.Label>File</Form.Label>
+                            <Input {...attrs}
+                                   required
+                                   on:change={(e)=>($formData.excel = e.currentTarget.files?.item(0) ?? null)}
+                                   type="file"
+                                   accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>
+                        {/snippet}
                     </Form.Control>
                     <Form.Description>Il file contenente i dati della commissione che dovrà essere ottimizzata.
                     </Form.Description>

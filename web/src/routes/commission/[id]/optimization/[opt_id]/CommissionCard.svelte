@@ -6,10 +6,14 @@
     import type {Commission} from "../../commission_types";
     import {formatTime} from "$lib/utils";
 
-    export let problem: Commission | undefined;
-    export let commission: SolutionCommission;
+    interface Props {
+        problem: Commission | undefined;
+        commission: SolutionCommission;
+    }
 
-    $: commissionDetails = () => {
+    let {problem, commission}: Props = $props();
+
+    let commissionDetails = $derived(() => {
         const students = commission.students
             .map(student => student.id)
             // Get only the students of this commission
@@ -31,7 +35,7 @@
                 result += `${masters}M`;
 
         return result;
-    };
+    });
 </script>
 
 <Card.Root class="w-fit transition-all duration-300 hover:shadow-lg dark:hover:bg-primary-foreground">

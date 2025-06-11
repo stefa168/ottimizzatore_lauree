@@ -5,7 +5,11 @@
     import * as Table from "$lib/components/ui/table"
     import StyledFullName from "../StyledFullName.svelte";
 
-    export let commission: Commission;
+    interface Props {
+        commission: Commission;
+    }
+
+    let {commission}: Props = $props();
     const table = createTable(readable(commission.entries));
 
     function getFullNameIfPresent(value: { name: string, surname: string } | null) {
@@ -63,10 +67,12 @@
                 <Subscribe rowAttrs={headerRow.attrs()}>
                     <Table.Row>
                         {#each headerRow.cells as cell (cell.id)}
-                            <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
-                                <Table.Head {...attrs}>
-                                    <Render of={cell.render()}/>
-                                </Table.Head>
+                            <Subscribe attrs={cell.attrs()} props={cell.props()}>
+                                {#snippet children({attrs})}
+                                    <Table.Head {...attrs}>
+                                        <Render of={cell.render()}/>
+                                    </Table.Head>
+                                {/snippet}
                             </Subscribe>
                         {/each}
                     </Table.Row>
@@ -75,16 +81,20 @@
         </Table.Header>
         <Table.Body {...$tableBodyAttrs}>
             {#each $pageRows as row (row.id)}
-                <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-                    <Table.Row {...rowAttrs}>
-                        {#each row.cells as cell (cell.id)}
-                            <Subscribe attrs={cell.attrs()} let:attrs>
-                                <Table.Cell {...attrs}>
-                                    <Render of={cell.render()}/>
-                                </Table.Cell>
-                            </Subscribe>
-                        {/each}
-                    </Table.Row>
+                <Subscribe rowAttrs={row.attrs()}>
+                    {#snippet children({rowAttrs})}
+                        <Table.Row {...rowAttrs}>
+                            {#each row.cells as cell (cell.id)}
+                                <Subscribe attrs={cell.attrs()}>
+                                    {#snippet children({attrs})}
+                                        <Table.Cell {...attrs}>
+                                            <Render of={cell.render()}/>
+                                        </Table.Cell>
+                                    {/snippet}
+                                </Subscribe>
+                            {/each}
+                        </Table.Row>
+                    {/snippet}
                 </Subscribe>
             {/each}
         </Table.Body>

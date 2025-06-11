@@ -1,3 +1,8 @@
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: selectedSolver = {
+        label: String($formData.solver).toUpperCase(),
+        value: $formData.solver
+    };` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
 <script lang="ts">
     import {debugEnabled, selectedProblem} from "$lib/store";
     import {enumKeys} from "$lib/utils";

@@ -30,12 +30,18 @@
     } from "$lib/store";
     import SettingsDialog from "./SettingsDialog.svelte";
 
+    interface Props {
+        children?: import('svelte').Snippet;
+    }
+
+    let {children}: Props = $props();
+
     onMount(async () => {
         await fetchCommissionPreviews();
     });
 
-    let deletionAlertOpen = false;
-    let commissionToBeDeleted: CommissionPreview | null = null;
+    let deletionAlertOpen = $state(false);
+    let commissionToBeDeleted: CommissionPreview | null = $state(null);
 
     function openDeletionAlert(problemId: CommissionPreview) {
         commissionToBeDeleted = problemId;
@@ -174,7 +180,8 @@
             class="flex-shrink-0 p-4 w-full z-60 bottom-0 start-0 pt-4 border-t">
         <ul class="ps-0.5 space-y-0.5 text-md text-gray-600 dark:text-gray-500">
             <li>
-                <button class="flex items-center transition enabled:dark:hover:text-white disabled:cursor-not-allowed" disabled>
+                <button class="flex items-center transition enabled:dark:hover:text-white disabled:cursor-not-allowed"
+                        disabled>
                     <MdiRobotExcited/>
                     <span class="ms-1.5">Stato Solver</span>
                 </button>
@@ -183,7 +190,8 @@
                 <SettingsDialog/>
             </li>
             <li>
-                <button class="flex items-center transition enabled:dark:hover:text-white disabled:cursor-not-allowed" disabled>
+                <button class="flex items-center transition enabled:dark:hover:text-white disabled:cursor-not-allowed"
+                        disabled>
                     <MdiBookInformationVariant/>
                     <span class="ms-1.5">Documentazione</span>
                 </button>
@@ -193,5 +201,5 @@
 </aside>
 
 <main class="pt-6 p-4 sm:ml-64 transition duration-1000 ease-in-out relative">
-    <slot/>
+    {@render children?.()}
 </main>

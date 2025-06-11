@@ -12,7 +12,7 @@
     import ProfessorBurden from "./professors/ProfessorBurden.svelte";
     import EditableProfessorAvailability from "./professors/EditableProfessorAvailability.svelte";
 
-    export let commissionProfessors = writable<Professor[]>([]);
+    let {commissionProfessors = writable<Professor[]>([])} = $props();
     const table = createTable(commissionProfessors);
 
     const columns = table.createColumns([
@@ -90,10 +90,12 @@
                 <Subscribe rowAttrs={headerRow.attrs()}>
                     <Table.Row>
                         {#each headerRow.cells as cell (cell.id)}
-                            <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
-                                <Table.Head {...attrs}>
-                                    <Render of={cell.render()}/>
-                                </Table.Head>
+                            <Subscribe attrs={cell.attrs()} props={cell.props()}>
+                                {#snippet children({attrs})}
+                                    <Table.Head {...attrs}>
+                                        <Render of={cell.render()}/>
+                                    </Table.Head>
+                                {/snippet}
                             </Subscribe>
                         {/each}
                     </Table.Row>
@@ -102,16 +104,20 @@
         </Table.Header>
         <Table.Body {...$tableBodyAttrs}>
             {#each $pageRows as row (row.id)}
-                <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-                    <Table.Row {...rowAttrs}>
-                        {#each row.cells as cell (cell.id)}
-                            <Subscribe attrs={cell.attrs()} let:attrs>
-                                <Table.Cell {...attrs}>
-                                    <Render of={cell.render()}/>
-                                </Table.Cell>
-                            </Subscribe>
-                        {/each}
-                    </Table.Row>
+                <Subscribe rowAttrs={row.attrs()}>
+                    {#snippet children({rowAttrs})}
+                        <Table.Row {...rowAttrs}>
+                            {#each row.cells as cell (cell.id)}
+                                <Subscribe attrs={cell.attrs()}>
+                                    {#snippet children({attrs})}
+                                        <Table.Cell {...attrs}>
+                                            <Render of={cell.render()}/>
+                                        </Table.Cell>
+                                    {/snippet}
+                                </Subscribe>
+                            {/each}
+                        </Table.Row>
+                    {/snippet}
                 </Subscribe>
             {/each}
         </Table.Body>

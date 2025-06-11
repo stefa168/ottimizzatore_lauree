@@ -40,13 +40,13 @@
     let optStatus: OptimizationStatus = derived([selectedConfiguration], ([conf]) => getOptimizationStatus(conf));
     let executionDetails = $selectedConfiguration?.execution_details ?? []
 
-    let settingsOpen = false;
-    let tainted_fields_count: Readable<number>;
-    let formComponent: ConfigurationForm;
+    let settingsOpen = $state(false);
+    let tainted_fields_count: Readable<number> = $state();
+    let formComponent: ConfigurationForm = $state();
 
-    let resultsOpened = true;
+    let resultsOpened = $state(true);
 
-    let errorMessage: string | null = null;
+    let errorMessage: string | null = $state(null);
 
     async function startOptimization() {
         errorMessage = null;
@@ -183,14 +183,14 @@
         return text;
     }
 
-    let log_expanded = false;
+    let log_expanded = $state(false);
 </script>
 
 {#if $selectedConfiguration}
     <div id="configuration-results">
         <div>
             <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
-                    on:click={() => resultsOpened = !resultsOpened}>
+                    onclick={() => resultsOpened = !resultsOpened}>
                 <MdiData class="w-6 h-6 me-2 {($optStatus.status === 'running') ? 'animate-spin' : ''}"
                          style="animation-duration: 2s"/>
                 <span>Risultati</span>
@@ -227,7 +227,7 @@
                             <li>Errore: {executionDetails[0].error_message}.</li>
                         {/if}
                         <li>Log dell'ottimizzatore:
-                            <button on:click={() => log_expanded = !log_expanded}>
+                            <button onclick={() => log_expanded = !log_expanded}>
                                 {log_expanded ? 'Nascondi' : 'Mostra'}
                             </button>
                             <pre class="bg-gray-100 p-4 rounded" hidden={log_expanded}>
@@ -281,7 +281,7 @@
     <div id="configuration-settings">
         <div class="flex items-center justify-between">
             <button class="mt-4 mb-4 text-xl flex items-center cursor-pointer"
-                    on:click={() => settingsOpen = !settingsOpen}>
+                    onclick={() => settingsOpen = !settingsOpen}>
                 <MdiCogPlayOutline class="w-6 h-6 me-2"/>
                 <span>Parametri dell'Ottimizzatore</span>
                 <MdiChevronRight

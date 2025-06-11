@@ -3,12 +3,23 @@
     import MdiChevronRight from '~icons/mdi/chevron-right'
     import MdiLoading from "~icons/mdi/loading";
     import {Button} from "$lib/components/ui/button";
-    import { Badge } from "$lib/components/ui/badge";
+    import {Badge} from "$lib/components/ui/badge";
 
-    export let buttonText = "Dropdown Button";
-    export let open = false;
-    export let loaded = true;
-    export let childCount = 0;
+    interface Props {
+        buttonText?: string;
+        open?: boolean;
+        loaded?: boolean;
+        childCount?: number;
+        children?: import('svelte').Snippet;
+    }
+
+    let {
+        buttonText = "Dropdown Button",
+        open = $bindable(false),
+        loaded = true,
+        childCount = 0,
+        children
+    }: Props = $props();
 
     function click_expand() {
         if (loaded)
@@ -33,5 +44,5 @@
 
 <ul id="lista-problemi-attivi"
     class="transition-all duration-300 ease-in-out overflow-hidden max-w-full {open && loaded ? 'max-h-screen' : 'max-h-0'}">
-    <slot/>
+    {@render children?.()}
 </ul>

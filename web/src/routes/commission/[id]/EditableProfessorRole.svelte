@@ -4,9 +4,13 @@
     import * as Select from '$lib/components/ui/select'
     import type {Selected} from "bits-ui";
 
-    export let row: BodyRow<Professor>;
-    export let value: UniversityRole | string;
-    export let onUpdateValue: <T extends keyof Professor>(p: Professor, field: T, newValue: Professor[T]) => void;
+    interface Props {
+        row: BodyRow<Professor>;
+        value: UniversityRole | string;
+        onUpdateValue: <T extends keyof Professor>(p: Professor, field: T, newValue: Professor[T]) => void;
+    }
+
+    let {row, value = $bindable(), onUpdateValue}: Props = $props();
 
     const UniversityRoles = [
         {value: 'ordinary', label: 'Professore Ordinario'},
@@ -16,7 +20,7 @@
         {value: 'unspecified', label: 'Non Specificato', disabled: true}
     ];
 
-    $: selected = UniversityRoles.find(role => role.value === value)
+    let selected = $derived(UniversityRoles.find(role => role.value === value))
 
     const handleSubmit = (v: Selected<string> | undefined) => {
         if (row.isData()) {
@@ -31,7 +35,7 @@
     <Select.Trigger class="{value === 'unspecified' ? 'bg-destructive/25' : ''}">
         <Select.Value class="{value === 'unspecified' ? 'text-destructive' : ''}" placeholder="Indicare il ruolo"/>
     </Select.Trigger>
-    <Select.Content >
+    <Select.Content>
         <Select.Group>
             <Select.Label>Ruoli</Select.Label>
             {#each UniversityRoles as role}

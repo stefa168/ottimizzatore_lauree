@@ -16,7 +16,13 @@
 
     import type {OptimizationConfiguration} from "./optimization_types";
 
-    $: availableConfigurations = $selectedProblem?.optimization_configurations ?? [];
+    interface Props {
+        children?: import('svelte').Snippet;
+    }
+
+    let {children}: Props = $props();
+
+    let availableConfigurations = $derived($selectedProblem?.optimization_configurations ?? []);
 
     const newConfigMagicValue = '$$#!#$$newConfig$$!#!$$';
 
@@ -95,4 +101,4 @@
     <Select.Input name="role"/>
 </Select.Root>
 
-<slot/>
+{@render children?.()}

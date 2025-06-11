@@ -1,9 +1,13 @@
 <script lang="ts">
     import {capitalize} from "$lib/utils";
 
-    export let name: string | null = null;
-    export let surname: string | null = null;
-    export let applyStyle: boolean = true;
+    interface Props {
+        name?: string | null;
+        surname?: string | null;
+        applyStyle?: boolean;
+    }
+
+    let {name = null, surname = null, applyStyle = true}: Props = $props();
 
 </script>
 <div>

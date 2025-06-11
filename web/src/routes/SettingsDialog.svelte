@@ -10,7 +10,11 @@
     import {debugEnabled} from "$lib/store";
     import MdiCogOutline from '~icons/mdi/cog-outline'
 
-    export let open = false;
+    interface Props {
+        open?: boolean;
+    }
+
+    let {open = $bindable(false)}: Props = $props();
 
     const handleThemeChange = (value: Selected<string> | undefined) => {
         const theme = value?.value;
@@ -26,7 +30,7 @@
 </script>
 
 <button class="flex items-center transition dark:hover:text-white"
-        on:click={() => open = !open}>
+        onclick={() => open = !open}>
     <MdiCogOutline/>
     <span class="ms-1.5">Impostazioni</span>
 </button>

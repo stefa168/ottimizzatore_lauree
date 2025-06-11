@@ -7,7 +7,7 @@
     import {selectedProblem} from "$lib/store.js";
     import {goto} from "$app/navigation";
 
-    $: commissionProfessors = $selectedProblem?.entries.flatMap((student) => {
+    let commissionProfessors = $derived($selectedProblem?.entries.flatMap((student) => {
         let professors = [student.supervisor];
         if (student.supervisor_assistant != null) {
             professors.push(student.supervisor_assistant);
@@ -18,16 +18,16 @@
         return professors;
     }).filter((professor, index, self) => {
         return index === self.findIndex((p) => p.id === professor.id);
-    }) ?? [];
+    }) ?? []);
 
-    $: professorsWithoutRole = commissionProfessors?.filter((professor) => {
+    let professorsWithoutRole = $derived(commissionProfessors?.filter((professor) => {
         return professor.role === 'unspecified';
-    }) ?? [];
+    }) ?? []);
 
-    $: problemsPresent = professorsWithoutRole.length > 0;
+    let problemsPresent = $derived(professorsWithoutRole.length > 0);
 
-    $: bachelorStudents = $selectedProblem?.entries.filter((student) => student.degree_level === "bachelors") ?? [];
-    $: masterStudents = $selectedProblem?.entries.filter((student) => student.degree_level === "masters") ?? [];
+    let bachelorStudents = $derived($selectedProblem?.entries.filter((student) => student.degree_level === "bachelors") ?? []);
+    let masterStudents = $derived($selectedProblem?.entries.filter((student) => student.degree_level === "masters") ?? []);
 </script>
 
 <div>
@@ -76,7 +76,7 @@
                     didattico assegnato.
                 {/if}
                 <button class="inline-flex items-center justify-center text-blue-500 hover:underline"
-                        on:click={() => goto(`/commission/${$selectedProblem?.id}/professors/`)}>
+                        onclick={() => goto(`/commission/${$selectedProblem?.id}/professors/`)}>
                     Vai alla sezione
                     <IcOutlineKeyboardDoubleArrowRight/>
                 </button>

@@ -8,7 +8,7 @@
     import ProfessorsTable from "../commission-professors-table.svelte";
     import IcOutlineReportProblem from '~icons/ic/outline-report-problem'
 
-    export let commissionProfessors = writable<Professor[]>(
+    let { commissionProfessors = writable<Professor[]>(
         $selectedProblem?.entries.flatMap((student) => {
             let professors = [student.supervisor];
             if (student.supervisor_assistant != null) {
@@ -23,11 +23,11 @@
         }).sort((a, b) => {
             return a.surname.localeCompare(b.surname);
         }) ?? []
-    );
+    ) } = $props();
 
-    $: professorsWithoutRole = $commissionProfessors?.filter((professor) => {
+    let professorsWithoutRole = $derived($commissionProfessors?.filter((professor) => {
         return professor.role === 'unspecified';
-    }) ?? [];
+    }) ?? []);
 
 </script>
 

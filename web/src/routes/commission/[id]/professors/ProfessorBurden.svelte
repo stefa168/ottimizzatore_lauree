@@ -1,7 +1,11 @@
 <script lang="ts">
     import type {ProfessorBurden} from "../commission_types";
 
-    export let burden: ProfessorBurden;
+    interface Props {
+        burden: ProfessorBurden;
+    }
+
+    let {burden}: Props = $props();
 </script>
 
 <strong>

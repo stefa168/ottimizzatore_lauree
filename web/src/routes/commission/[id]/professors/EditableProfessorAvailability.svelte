@@ -4,9 +4,13 @@
     import * as Select from '$lib/components/ui/select'
     import type {Selected} from "bits-ui";
 
-    export let row: BodyRow<Professor>;
-    export let value: ProfessorAvailability | string;
-    export let onUpdateValue: <T extends keyof Professor> (p: Professor, field: T, newValue: Professor[T]) => Promise<boolean>;
+    interface Props {
+        row: BodyRow<Professor>;
+        value: ProfessorAvailability | string;
+        onUpdateValue: <T extends keyof Professor> (p: Professor, field: T, newValue: Professor[T]) => Promise<boolean>;
+    }
+
+    let {row, value = $bindable(), onUpdateValue}: Props = $props();
 
     type Selectable = { value: string, label: string, disabled?: boolean };
 
@@ -21,9 +25,9 @@
         return options.find(a => a.value == s) ?? options[0];
     }
 
-    let lastUpdateErrored = false;
+    let lastUpdateErrored = $state(false);
 
-    $: selected = getSelectedOption(value, options);
+    let selected = $derived(getSelectedOption(value, options));
 
     const handleSubmit = async (v: Selected<string> | undefined) => {
         const new_value = v?.value ?? 'always';
@@ -44,7 +48,7 @@
 
 <Select.Root {selected} onSelectedChange={handleSubmit}>
     <Select.Trigger class="{lastUpdateErrored ? 'bg-warning/25' : ''}">
-        <Select.Value class="{lastUpdateErrored ? 'text-warning' : ''}" placeholder="Indicare la disponibilità" />
+        <Select.Value class="{lastUpdateErrored ? 'text-warning' : ''}" placeholder="Indicare la disponibilità"/>
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
