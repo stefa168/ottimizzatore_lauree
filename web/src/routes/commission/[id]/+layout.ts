@@ -13,14 +13,14 @@ export async function load({fetch, params}) {
     if (!response.ok) {
         switch (response.status) {
             case 404: {
-                throw error(404,
-                    `La Sessione di Laurea con ID ${params.id} non esiste. 
+                error(404,
+                                    `La Sessione di Laurea con ID ${params.id} non esiste. 
                      Dettagli: ${await response.text()}`
-                );
+                                );
             }
             default: {
                 // @ts-ignore
-                throw error(response.status, await response.text());
+                error(response.status, await response.text());
             }
         }
     }

@@ -10,12 +10,12 @@ export async function load({params, parent}) {
     // try to get the configuration from selectedProblem
     const problem = get(selectedProblem);
     if (problem === undefined) {
-        throw error(500, "No problem selected");
+        error(500, "No problem selected");
     }
 
     const configuration = problem.optimization_configurations.find((c) => Number(c.id) == opt_id);
     if (configuration === undefined) {
-        throw error(404, "Configuration not found");
+        error(404, "Configuration not found");
     }
 
     selectedConfiguration.set(configuration);
