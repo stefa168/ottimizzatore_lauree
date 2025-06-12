@@ -28,7 +28,7 @@
         fetchCommissionPreviews,
         deleteCommission
     } from "$lib/store";
-    import SettingsDialog from "./SettingsDialog.svelte";
+    // import SettingsDialog from "./SettingsDialog.svelte";
 
     interface Props {
         children?: import('svelte').Snippet;
@@ -187,7 +187,7 @@
                 </button>
             </li>
             <li>
-                <SettingsDialog/>
+<!--                <SettingsDialog/>-->
             </li>
             <li>
                 <button class="flex items-center transition enabled:dark:hover:text-white disabled:cursor-not-allowed"
