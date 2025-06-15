@@ -3,24 +3,86 @@
     import * as Collapsible from "$lib/components/ui/collapsible"
 
     // Icons
-    import MdiAlertCircleOutline from '~icons/mdi/alert-circle-outline'
     import MdiRobotExcited from '~icons/mdi/robot-excited'
     import MdiBookInformationVariant from '~icons/mdi/book-information-variant'
     import MdiCogOutline from '~icons/mdi/cog-outline'
     import MdiBookClock from '~icons/mdi/book-clock'
-    import MdiChevronDown from '~icons/mdi/chevron-down'
-    import MdiPlus from '~icons/mdi/plus'
-    import RadixIconsTrash from '~icons/radix-icons/trash'
     import RadixIconsArchive from '~icons/radix-icons/archive'
-    import RadixIconsPencil2 from '~icons/radix-icons/pencil-2'
     import MdiAccountGroup from '~icons/mdi/account-group'
+
+    import type {Component} from "svelte";
+    import type {SvelteHTMLElements} from "svelte/elements";
 
     // Replace with your real data / store
     const commissions = [
         {id: 1, title: "Commission Spring 2025", url: "/commissions/1"},
         {id: 2, title: "Commission Fall 2025", url: "/commissions/2"}
     ];
+
+    interface SidebarItem {
+        title: string;
+        path: string;
+        icon?: Component<SvelteHTMLElements['svg']>;
+        isActive?: boolean;
+    }
+
+    const items: {
+        body: SidebarItem [],
+        footer: SidebarItem[]
+    } = {
+        body: [{
+            title: "Sessioni attive",
+            icon: MdiBookClock,
+            path: "#",
+            isActive: true
+        }, {
+            title: "Sessioni Archiviate",
+            icon: RadixIconsArchive,
+            path: "#",
+            isActive: true
+        }, {
+            title: "Elenco Docenti",
+            icon: MdiAccountGroup,
+            path: "#",
+            isActive: true
+        }],
+        footer: [{
+            title: "Stato Solver",
+            icon: MdiRobotExcited,
+            path: "#",
+            isActive: false
+        }, {
+            title: "Impostazioni",
+            icon: MdiCogOutline,
+            path: "#",
+            isActive: true
+        }, {
+            title: "Documentazione",
+            icon: MdiBookInformationVariant,
+            path: "#",
+            isActive: false
+        }]
+    };
 </script>
+
+{#snippet sidebarItemSnip(items: SidebarItem[])}
+    <Sidebar.Group>
+        <Sidebar.Menu>
+            {#each items as item (item.title)}
+                <Sidebar.MenuItem>
+                    <Sidebar.MenuButton>
+                        {#snippet child({props})}
+                            <a href={item.path} {...props}>
+                                <svelte:component this={item.icon}/>
+                                <span>{item.title}</span>
+                            </a>
+                        {/snippet}
+                    </Sidebar.MenuButton>
+                </Sidebar.MenuItem>
+            {/each}
+        </Sidebar.Menu>
+    </Sidebar.Group>
+{/snippet}
 
 <Sidebar.Root variant="sidebar" collapsible="icon">
     <Sidebar.Header>
@@ -35,49 +97,9 @@
         </a>
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group>
-            <Sidebar.Menu>
-                <Sidebar.MenuItem>
-                    <Sidebar.MenuButton>
-                        <MdiBookClock/>
-                        <span>Sessioni attive</span>
-                    </Sidebar.MenuButton>
-                </Sidebar.MenuItem>
-                <Sidebar.MenuItem>
-                    <Sidebar.MenuButton>
-                        <RadixIconsArchive/>
-                        <span>Sessioni Archiviate</span>
-                    </Sidebar.MenuButton>
-                </Sidebar.MenuItem>
-                <Sidebar.MenuItem>
-                    <Sidebar.MenuButton>
-                        <MdiAccountGroup/>
-                        <span>Elenco Docenti</span>
-                    </Sidebar.MenuButton>
-                </Sidebar.MenuItem>
-            </Sidebar.Menu>
-        </Sidebar.Group>
+        {@render sidebarItemSnip(items.body)}
     </Sidebar.Content>
     <Sidebar.Footer>
-        <Sidebar.Menu>
-            <Sidebar.MenuItem>
-                <Sidebar.MenuButton>
-                    <MdiRobotExcited/>
-                    <span>Stato Solver</span>
-                </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
-            <Sidebar.MenuItem>
-                <Sidebar.MenuButton>
-                    <MdiCogOutline/>
-                    <span>Impostazioni</span>
-                </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
-            <Sidebar.MenuItem>
-                <Sidebar.MenuButton>
-                    <MdiBookInformationVariant/>
-                    <span>Documentazione</span>
-                </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
-        </Sidebar.Menu>
+        {@render sidebarItemSnip(items.footer)}
     </Sidebar.Footer>
 </Sidebar.Root>
