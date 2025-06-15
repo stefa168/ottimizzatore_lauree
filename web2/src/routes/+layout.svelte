@@ -1,7 +1,25 @@
 <script lang="ts">
-	import '../app.css';
+    import '../app.css';
 
-	let { children } = $props();
+    import * as Sidebar from "$lib/components/ui/sidebar"
+    import AppSidebar from '@/components/app-sidebar.svelte';
+	import { ModeWatcher } from 'mode-watcher';
+
+    let {children} = $props();
 </script>
 
-{@render children()}
+<svelte:head>
+    <title>Ottimizzatore Lauree</title>
+</svelte:head>
+
+<!-- For dark/light mode -->
+<ModeWatcher/>
+
+<Sidebar.Provider>
+    <AppSidebar/>
+
+    <main>
+        <Sidebar.Trigger/>
+        {@render children?.()}
+    </main>
+</Sidebar.Provider>
