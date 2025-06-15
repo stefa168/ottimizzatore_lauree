@@ -66,22 +66,20 @@
 </script>
 
 {#snippet sidebarItemSnip(items: SidebarItem[])}
-    <Sidebar.Group>
-        <Sidebar.Menu>
-            {#each items as item (item.title)}
-                <Sidebar.MenuItem>
-                    <Sidebar.MenuButton>
-                        {#snippet child({props})}
-                            <a href={item.path} {...props}>
-                                <svelte:component this={item.icon}/>
-                                <span>{item.title}</span>
-                            </a>
-                        {/snippet}
-                    </Sidebar.MenuButton>
-                </Sidebar.MenuItem>
-            {/each}
-        </Sidebar.Menu>
-    </Sidebar.Group>
+    <Sidebar.Menu>
+        {#each items as item (item.title)}
+            <Sidebar.MenuItem>
+                <Sidebar.MenuButton>
+                    {#snippet child({props})}
+                        <a href={item.path} {...props}>
+                            <svelte:component this={item.icon}/>
+                            <span>{item.title}</span>
+                        </a>
+                    {/snippet}
+                </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+        {/each}
+    </Sidebar.Menu>
 {/snippet}
 
 <Sidebar.Root variant="sidebar" collapsible="icon">
@@ -97,7 +95,9 @@
         </a>
     </Sidebar.Header>
     <Sidebar.Content>
-        {@render sidebarItemSnip(items.body)}
+        <Sidebar.Group>
+            {@render sidebarItemSnip(items.body)}
+        </Sidebar.Group>
     </Sidebar.Content>
     <Sidebar.Footer>
         {@render sidebarItemSnip(items.footer)}
