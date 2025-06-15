@@ -26,12 +26,12 @@
 		"@iconify-json/ph": "^1.2.2",
 		"@iconify-json/radix-icons": "^1.2.2",
 		"@internationalized/date": "^3.8.2",
-		"@lucide/svelte": "^0.513.0",
+		"@lucide/svelte": "^0.515.0",
 		"@sveltejs/adapter-auto": "^6.0.0",
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.1.0",
 		"@tailwindcss/vite": "^4.0.0",
-		"bits-ui": "^2.6.2",
+		"bits-ui": "^2.8.0",
 		"clsx": "^2.1.1",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
@@ -51,6 +51,7 @@
 		"vite": "^6.2.6"
 	},
 	"dependencies": {
-		"mode-watcher": "^1.0.8"
+		"mode-watcher": "^1.0.8",
+		"svelte-persisted-store": "^0.12.0"
 	}
 }

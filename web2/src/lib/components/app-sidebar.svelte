@@ -12,12 +12,7 @@
 
     import type {Component} from "svelte";
     import type {SvelteHTMLElements} from "svelte/elements";
-
-    // Replace with your real data / store
-    const commissions = [
-        {id: 1, title: "Commission Spring 2025", url: "/commissions/1"},
-        {id: 2, title: "Commission Fall 2025", url: "/commissions/2"}
-    ];
+    import AppSettingsDialog from "./app-settings-dialog.svelte";
 
     interface SidebarItem {
         title: string;
@@ -26,6 +21,8 @@
         isActive?: boolean;
     }
 
+    let settingsDialog: AppSettingsDialog = $state();
+
     const items: {
         body: SidebarItem [],
         footer: SidebarItem[]
@@ -33,17 +30,17 @@
         body: [{
             title: "Sessioni attive",
             icon: MdiBookClock,
-            path: "#",
+            path: "/gradsession",
             isActive: true
         }, {
             title: "Sessioni Archiviate",
             icon: RadixIconsArchive,
-            path: "#",
+            path: "/archive",
             isActive: true
         }, {
             title: "Elenco Docenti",
             icon: MdiAccountGroup,
-            path: "#",
+            path: "/professors",
             isActive: true
         }],
         footer: [{
@@ -51,11 +48,6 @@
             icon: MdiRobotExcited,
             path: "#",
             isActive: false
-        }, {
-            title: "Impostazioni",
-            icon: MdiCogOutline,
-            path: "#",
-            isActive: true
         }, {
             title: "Documentazione",
             icon: MdiBookInformationVariant,
@@ -66,20 +58,18 @@
 </script>
 
 {#snippet sidebarItemSnip(items: SidebarItem[])}
-    <Sidebar.Menu>
-        {#each items as item (item.title)}
-            <Sidebar.MenuItem>
-                <Sidebar.MenuButton>
-                    {#snippet child({props})}
-                        <a href={item.path} {...props}>
-                            <svelte:component this={item.icon}/>
-                            <span>{item.title}</span>
-                        </a>
-                    {/snippet}
-                </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
-        {/each}
-    </Sidebar.Menu>
+    {#each items as item (item.title)}
+        <Sidebar.MenuItem>
+            <Sidebar.MenuButton>
+                {#snippet child({props})}
+                    <a href={item.path} {...props}>
+                        <item.icon/>
+                        <span>{item.title}</span>
+                    </a>
+                {/snippet}
+            </Sidebar.MenuButton>
+        </Sidebar.MenuItem>
+    {/each}
 {/snippet}
 
 <Sidebar.Root variant="sidebar" collapsible="icon">
@@ -95,11 +85,25 @@
         </a>
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group>
-            {@render sidebarItemSnip(items.body)}
-        </Sidebar.Group>
+        <Sidebar.Menu>
+
+            <Sidebar.Group>
+                {@render sidebarItemSnip(items.body)}
+            </Sidebar.Group>
+        </Sidebar.Menu>
     </Sidebar.Content>
     <Sidebar.Footer>
         {@render sidebarItemSnip(items.footer)}
+        <Sidebar.Menu>
+
+            <Sidebar.MenuItem>
+                <Sidebar.MenuButton onclick={() => settingsDialog.toggleDialog()}>
+                    <MdiCogOutline/>
+                    Impostazioni
+                </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+        </Sidebar.Menu>
     </Sidebar.Footer>
 </Sidebar.Root>
+
+<AppSettingsDialog bind:this={settingsDialog}/>
