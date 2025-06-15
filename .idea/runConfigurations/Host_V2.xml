@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="host" type="js.build_tools.npm">
-    <package-json value="$PROJECT_DIR$/web/package.json" />
+  <configuration default="false" name="Host V2" type="js.build_tools.npm">
+    <package-json value="$PROJECT_DIR$/web2/package.json" />
     <command value="run" />
     <scripts>
       <script value="host" />
