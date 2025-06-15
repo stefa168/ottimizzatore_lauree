@@ -6,6 +6,8 @@
       <sourceFolder url="file://$MODULE_DIR$/server" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/web/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/web/static" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/web2/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/web2/static" type="java-resource" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/venv/bin" />
       <excludeFolder url="file://$MODULE_DIR$/venv/lib" />
