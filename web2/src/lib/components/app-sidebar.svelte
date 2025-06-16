@@ -93,11 +93,12 @@
         </Sidebar.Menu>
     </Sidebar.Content>
     <Sidebar.Footer>
-        {@render sidebarItemSnip(items.footer)}
         <Sidebar.Menu>
-
+            {@render sidebarItemSnip(items.footer)}
             <Sidebar.MenuItem>
-                <Sidebar.MenuButton onclick={() => settingsDialog.toggleDialog()}>
+                <Sidebar.MenuButton
+                        class="hover:cursor-pointer"
+                        onclick={() => settingsDialog.toggleDialog()}>
                     <MdiCogOutline/>
                     Impostazioni
                 </Sidebar.MenuButton>
