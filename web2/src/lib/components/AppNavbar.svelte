@@ -62,7 +62,7 @@
     {/each}
 {/snippet}
 
-<header class="bg-background sticky top-0 flex h-16 items-center gap-4 border-b px-4 md:px-6 mb-4">
+<header class="bg-background sticky top-0 flex h-16 items-center gap-4 border-b px-4 md:px-6">
     <nav class="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6 h-full">
         <header class="h-full">
             <a class="flex items-center gap-2 text-lg font-semibold md:text-base h-full" href="/">
@@ -85,8 +85,7 @@
             <MdiBookInformationVariant class="me-2"/>
             <span>Documentazione</span>
         </a>
-        <button
-                class="hover:cursor-pointer hover:text-foreground transition-colors flex items-center"
+        <button class="hover:cursor-pointer hover:text-foreground transition-colors flex items-center"
                 onclick={() => settingsDialog.toggleDialog()}>
             <MdiCogOutline/>
             <span>Impostazioni</span>

@@ -1,11 +1,14 @@
 <script lang="ts">
+    import type {LayoutProps} from "./$types";
+    import {ModeWatcher} from 'mode-watcher';
+
     import '../app.css';
 
-    import * as Sidebar from "$lib/components/ui/sidebar"
-    import AppSidebar from '@/components/app-sidebar.svelte';
-	import { ModeWatcher } from 'mode-watcher';
+    import {QueryClientProvider} from "@tanstack/svelte-query";
+    import {SvelteQueryDevtools} from "@tanstack/svelte-query-devtools";
+    import AppNavbar from "@/components/AppNavbar.svelte";
 
-    let {children} = $props();
+    let {data, children}: LayoutProps = $props();
 </script>
 
 <svelte:head>
@@ -15,11 +18,12 @@
 <!-- For dark/light mode -->
 <ModeWatcher/>
 
-<Sidebar.Provider>
-    <AppSidebar/>
-
-    <main>
-        <Sidebar.Trigger/>
-        {@render children?.()}
-    </main>
-</Sidebar.Provider>
+<QueryClientProvider client={data.queryClient}>
+    <div class="flex min-h-screen w-full flex-col">
+        <AppNavbar/>
+        <main class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4">
+            {@render children?.()}
+        </main>
+    </div>
+    <SvelteQueryDevtools/>
+</QueryClientProvider>
