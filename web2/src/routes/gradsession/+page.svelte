@@ -14,8 +14,8 @@
     import {useQueryClient} from "@tanstack/svelte-query";
     import {GradSessionApiQueries} from "@/api/GradSesssionApi";
 
-    let {data}: PageProps = $props();
-    let searchText = $state('');
+    import DataTable from "@/components/data-table.svelte";
+    import {columns} from "./columns";
 
     const queryClient = useQueryClient();
     const gsApiQueries = GradSessionApiQueries(queryClient);
@@ -23,58 +23,22 @@
     const gsQuery = gsApiQueries.allSessionsQuery();
 
     let sessions = $derived($gsQuery.isSuccess ? $gsQuery.data : []);
-
-    const dateFormatter = new Intl.DateTimeFormat('it-IT', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-
-    function formatDate(dateString: string) {
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return 'Invalid date';
-            }
-            return dateFormatter.format(date);
-        } catch (error) {
-            return 'Invalid date';
-        }
-    }
-
-
 </script>
 
+<div class="border-b-2 mb-6">
+    <h2 class="text-2xl mt-4 mb-1"> Sessioni di Laurea attivamente in gestione </h2>
+    <p class="mb-2">In questa sezione sono indicate tutte le sessioni di laurea caricate e disponibili per la
+        generazione delle commissioni.</p>
+</div>
 
-<Card.Root>
-    <Card.Header class="flex flex-col pb-0">
-        <div class="flex flex-row justify-between">
-            <!-- Title and search row -->
-            <div>
-                <Card.Title>Remote Terminal Units</Card.Title>
-                <Card.Description>
-                    In this section you can manage the RTUs that are handled by the server.
-                </Card.Description>
-            </div>
-        </div>
-    </Card.Header>
-    <Card.Content>
-        {#if $gsQuery.isPending}
-            Caricando le sessioni attive...
-        {/if}
+{#if $gsQuery.isPending}
+    Caricando le sessioni attive...
+{/if}
 
-        {#if $gsQuery.isError}
-            Errore: {JSON.stringify($gsQuery.error)}
-        {/if}
+{#if $gsQuery.isError}
+    Errore: {JSON.stringify($gsQuery.error)}
+{/if}
 
-        {#if $gsQuery.isSuccess}
-            <ul class="list-disc list-inside">
-                {#each sessions as s}
-                    <li>{s.title} Creata il {dateFormatter.format(s.created_at)}</li>
-                {/each}
-            </ul>
-        {/if}
-    </Card.Content>
-</Card.Root>
+{#if $gsQuery.isSuccess}
+    <DataTable data={sessions} columns={columns}/>
+{/if}
