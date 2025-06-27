@@ -22,15 +22,15 @@
         {
             caption: "Sessioni attive",
             icon: MdiBookClock,
-            path: "./gradsession",
+            path: "/gradsession",
         }, {
             caption: "Sessioni Archiviate",
             icon: RadixIconsArchive,
-            path: "./archive",
+            path: "/archive",
         }, {
             caption: "Elenco Docenti",
             icon: MdiAccountGroup,
-            path: "./professors",
+            path: "/professors",
         }
     ];
 
@@ -53,7 +53,7 @@
 
 {#snippet sectionGroup(ss: Section[])}
     {#each ss as s}
-        <a href="{s.path}"
+        <a href={s.path}
            class="{sectionName === s.path ? 'text-foreground' : 'text-muted-foreground'}
                   hover:text-foreground transition-colors flex items-center">
             <s.icon class="me-2"/>
