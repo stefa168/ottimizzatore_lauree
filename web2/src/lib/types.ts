@@ -1,3 +1,9 @@
+export interface ApiErrorResponse<TExtra> {
+    detail: string,
+    extra?: TExtra,
+    status_code: number
+}
+
 interface GradSession {
     id: number,
     title: string,
