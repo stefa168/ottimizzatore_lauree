@@ -28,7 +28,8 @@ from v2.domain.grad_sessions import urls
 
 EXCEL_MEDIA_TYPES: Final[list[str]] = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel"
+    "application/vnd.ms-excel",
+    "application/vnd.oasis.opendocument.spreadsheet"
 ]
 
 MISSING: Final = {None, '', 'None'}
