@@ -12,7 +12,7 @@
   <Button
     variant="ghost"
     style="height: calc(var(--spacing) * 8)"
-    onclick={() => goto(`/gradsession/${id}`)}
+    href={`/gradsession/${id}`}
   >
     Visualizza
   </Button>

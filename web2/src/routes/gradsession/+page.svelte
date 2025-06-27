@@ -15,7 +15,7 @@
 </script>
 
 <div class="border-b-2 mb-6">
-  <h2 class="text-2xl mt-4 mb-1"> Sessioni di Laurea attivamente in gestione </h2>
+  <h2 class="text-3xl mt-4 mb-1"> Sessioni di Laurea attivamente in gestione </h2>
   <p class="mb-2">In questa sezione sono indicate tutte le sessioni di laurea caricate e disponibili per la
     generazione delle commissioni.</p>
 </div>

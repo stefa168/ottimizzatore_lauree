@@ -25,5 +25,5 @@
             {@render children?.()}
         </main>
     </div>
-    <SvelteQueryDevtools/>
+    <SvelteQueryDevtools buttonPosition="bottom-left"/>
 </QueryClientProvider>
