@@ -4,39 +4,70 @@
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import {goto} from "$app/navigation";
   import ButtonGroup from "@/components/ButtonGroup.svelte";
+  import {useQueryClient} from "@tanstack/svelte-query";
+  import {GradSessionApiQueries} from "@/api/GradSesssionApi";
+
+  import LucideLoaderCircle from '~icons/lucide/loader-circle'
 
   let {id}: { id: number; } = $props();
+
+  const queryClient = useQueryClient();
+  const gradSessionApiQueries = GradSessionApiQueries(queryClient);
+  const deleteSessionMutation = gradSessionApiQueries.deleteSessionMutation()
+
+  const isDeleting = $derived($deleteSessionMutation.isPending)
+
+  const deleteSession = async () => {
+    await $deleteSessionMutation.mutateAsync(id)
+  }
 </script>
 
-<ButtonGroup>
+{#if !isDeleting}
+  <ButtonGroup>
+    <Button
+      variant="ghost"
+      style="height: calc(var(--spacing) * 8)"
+      href={`/gradsession/${id}`}
+      disabled={isDeleting}
+    >
+      Visualizza
+    </Button>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger disabled={isDeleting}>
+        {#snippet child({props})}
+          <Button
+            {...props}
+            variant="ghost"
+            size="icon"
+            class="relative size-8 p-0"
+          >
+            <span class="sr-only">Apri menu azioni</span>
+            <EllipsisIcon/>
+          </Button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <DropdownMenu.Group>
+          <DropdownMenu.Label>Azioni</DropdownMenu.Label>
+          <DropdownMenu.Item>Archivia</DropdownMenu.Item>
+          <DropdownMenu.Separator/>
+          <DropdownMenu.Item
+            onclick={deleteSession}
+            disabled={isDeleting}
+          >
+            Elimina
+          </DropdownMenu.Item>
+        </DropdownMenu.Group>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  </ButtonGroup>
+{:else}
   <Button
     variant="ghost"
     style="height: calc(var(--spacing) * 8)"
-    href={`/gradsession/${id}`}
+    disabled={isDeleting}
   >
-    Visualizza
+    Cancellando...
+    <LucideLoaderCircle class="animate-spin"/>
   </Button>
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger>
-      {#snippet child({props})}
-        <Button
-          {...props}
-          variant="ghost"
-          size="icon"
-          class="relative size-8 p-0"
-        >
-          <span class="sr-only">Apri menu azioni</span>
-          <EllipsisIcon/>
-        </Button>
-      {/snippet}
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content>
-      <DropdownMenu.Group>
-        <DropdownMenu.Label>Azioni</DropdownMenu.Label>
-        <DropdownMenu.Item>Archivia</DropdownMenu.Item>
-        <DropdownMenu.Separator/>
-        <DropdownMenu.Item>Elimina</DropdownMenu.Item>
-      </DropdownMenu.Group>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-</ButtonGroup>
+{/if}

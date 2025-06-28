@@ -2,6 +2,7 @@
 import type {ApiErrorResponse, GradSession} from "@/types";
 import {createMutation, createQuery, type QueryClient} from "@tanstack/svelte-query";
 import type {CommissionFormData, UploadErrorDetails} from "@/schema/CommissionFormSchema";
+import {delay} from "@/utils";
 
 const PUBLIC_BACKEND_URL = "http://127.0.0.1:8000/api/v1";
 
@@ -52,6 +53,13 @@ export const GradSessionApi = (customFetch = fetch) => ({
     }
 
     return await response.json() as Promise<RawGradSession>
+  },
+  delete: async (id: number) => {
+    await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${id}`, {
+      method: 'DELETE'
+    });
+    await delay(10000);
+    return id;
   }
 });
 
@@ -64,12 +72,17 @@ export const GradSessionApiQueries = (queryClient: QueryClient, customFetch = fe
     }),
   uploadSessionMutation: () =>
     createMutation<GradSession, ApiErrorResponse<UploadErrorDetails>, CommissionFormData>({
-      mutationFn: (data: CommissionFormData) => GradSessionApi(customFetch)
-        .create(data)
-        .then((r) => transformGradSession(r)),
+      mutationFn: (data: CommissionFormData) => GradSessionApi(customFetch).create(data).then(transformGradSession),
       onSuccess: (raw) => {
         queryClient.invalidateQueries({queryKey: GradSessionKeys.all});
       },
 
     }),
+  deleteSessionMutation: () =>
+    createMutation({
+      mutationFn: (id: number) => GradSessionApi(customFetch).delete(id),
+      onSuccess: () => {
+        queryClient.invalidateQueries({queryKey: GradSessionKeys.all});
+      }
+    })
 });
