@@ -8,6 +8,7 @@
   import {GradSessionApiQueries} from "@/api/GradSesssionApi";
 
   import LucideLoaderCircle from '~icons/lucide/loader-circle'
+  import {toast} from "svelte-sonner";
 
   let {id}: { id: number; } = $props();
 
@@ -19,6 +20,8 @@
 
   const deleteSession = async () => {
     await $deleteSessionMutation.mutateAsync(id)
+      .then(() => toast.success("La sessione è stata eliminata con successo."))
+      .catch((e) => toast.error("Si è verificato un errore durante la cancellazione della sessione", e))
   }
 </script>
 
