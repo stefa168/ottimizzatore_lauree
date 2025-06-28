@@ -2,7 +2,6 @@
 import type {ApiErrorResponse, GradSession} from "@/types";
 import {createMutation, createQuery, type QueryClient} from "@tanstack/svelte-query";
 import type {CommissionFormData, UploadErrorDetails} from "@/schema/CommissionFormSchema";
-import {delay} from "@/utils";
 
 const PUBLIC_BACKEND_URL = "http://127.0.0.1:8000/api/v1";
 
@@ -58,7 +57,6 @@ export const GradSessionApi = (customFetch = fetch) => ({
     await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${id}`, {
       method: 'DELETE'
     });
-    await delay(10000);
     return id;
   }
 });
