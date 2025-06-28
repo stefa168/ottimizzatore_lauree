@@ -1,0 +1,15 @@
+meta {
+  name: Delete Graduation Session
+  type: http
+  seq: 4
+}
+
+delete {
+  url: 127.0.0.1:8000/api/v1/sessions/:sid
+  body: none
+  auth: inherit
+}
+
+params:path {
+  sid: 3
+}

@@ -5,7 +5,7 @@ from typing import Annotated, Final, Any
 
 import pandas as pd
 
-from litestar import post, get, Controller
+from litestar import post, get, delete, Controller
 from litestar.di import Provide
 from litestar.dto import DTOConfig
 from litestar.params import Body
@@ -16,6 +16,7 @@ import litestar.status_codes as http_statuses
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio.session import AsyncSessionTransaction
+from advanced_alchemy.exceptions import NotFoundError
 
 from v2.db.models import Student, Professor, Degree, SessionEntry, GradSession, ProfessorAvailability, TimeAvailability
 from v2.domain.grad_sessions.deps import (
@@ -179,3 +180,11 @@ class GraduationSessionController(Controller):
             await availability_repository.add_many(availabilities)
 
             return grad_session
+
+    @delete(urls.GRAD_SESSION_DELETE, status_code=http_statuses.HTTP_200_OK)
+    async def delete_session(self, sid: int, grad_session_repository: GradSessionRepository) -> None:
+        try:
+            _ = await grad_session_repository.delete(sid)
+        except NotFoundError:
+            raise HTTPException(status_code=http_statuses.HTTP_404_NOT_FOUND)
+
