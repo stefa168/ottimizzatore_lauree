@@ -5,7 +5,7 @@
   import {useQueryClient} from "@tanstack/svelte-query";
   import {GradSessionApiQueries} from "@/api/GradSesssionApi";
 
-  import {EXCEL_MIME_STRING, EXCEL_MIME_TYPES} from "@/const";
+  import {EXCEL_MIME_STRING} from "@/const";
 
   // Shadcn components
   // noinspection ES6UnusedImports
@@ -19,6 +19,7 @@
   // Icons
   import MdiAlertOutline from '~icons/mdi/alert-outline'
   import {goto} from "$app/navigation";
+  import {toast} from "svelte-sonner";
 
   // TSQ
   const queryClient = useQueryClient();
@@ -39,7 +40,10 @@
         return;
       }
 
-      await $uploadNewGSMutation.mutateAsync(form.data).then((r) => goto(`/gradsession/${r.id}`)).catch(() => cancel());
+      await $uploadNewGSMutation.mutateAsync(form.data)
+        .then((r) => goto(`/gradsession/${r.id}`))
+        .then(() => toast.success("Commissione creata con successo! Apertura in corso..."))
+        .catch(() => cancel());
     }
   });
   const {form: formData, enhance} = form;
