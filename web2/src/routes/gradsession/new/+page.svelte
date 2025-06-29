@@ -44,8 +44,9 @@
         .then(s => {
           invalidate((url) => url.href.includes("sessions"));
           toast.success("Commissione creata con successo! Apertura in corso...");
-          goto(`/gradsession/${s.id}`);
+          return s
         })
+        .then((s) => goto(`/gradsession/${s.id}`))
         .catch(() => cancel());
     }
   });
