@@ -1,4 +1,4 @@
-export interface ApiErrorResponse<TExtra> {
+export interface ApiErrorResponse<TExtra = never> {
     detail: string,
     extra?: TExtra,
     status_code: number
