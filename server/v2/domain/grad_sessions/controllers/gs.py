@@ -63,7 +63,11 @@ class GraduationSessionController(Controller):
 
     @get(urls.GRAD_SESSION_RETRIEVE, return_dto=SessionReadDTO)
     async def get_session(self, sid: int, grad_session_repository: GradSessionRepository) -> GradSession:
-        session_db = await grad_session_repository.get(sid)
+        session_db = await grad_session_repository.get_one_or_none(GradSession.id == sid)
+
+        if session_db is None:
+            raise HTTPException(detail="Specified Session does not exist", status_code=http_statuses.HTTP_404_NOT_FOUND)
+
         return session_db
 
     @post(urls.GRAD_SESSIONS_UPLOAD_EXCEL, return_dto=SessionReadDTO)
@@ -187,4 +191,3 @@ class GraduationSessionController(Controller):
             _ = await grad_session_repository.delete(sid)
         except NotFoundError:
             raise HTTPException(status_code=http_statuses.HTTP_404_NOT_FOUND)
-
