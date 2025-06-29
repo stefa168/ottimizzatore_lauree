@@ -10,17 +10,13 @@
 
     let {children, data}: LayoutProps = $props();
 
-    type Section = { label: string, name: string, path?: string, icon: Component<SvelteHTMLElements['svg']> };
+    type Section = { label: string, slug: string, path?: string, icon: Component<SvelteHTMLElements['svg']> };
     const sections: Section[] = [
-        {label: 'Informazioni', name: 'info', path: '', icon: MdiInformationVariantBoxOutline},
-        {label: 'Studenti Candidati', name: 'candidates', icon: NimbusUniversity},
-        {label: 'Docenti della Sessione', name: 'professors', icon: MaterialSymbolsPersonPin},
-        {label: 'Ottimizzazione', name: 'optimization', icon: MageRobotUwuFill},
+        {label: 'Informazioni', slug: 'info', path: '', icon: MdiInformationVariantBoxOutline},
+        {label: 'Studenti Candidati', slug: 'candidates', icon: NimbusUniversity},
+        {label: 'Docenti della Sessione', slug: 'professors', icon: MaterialSymbolsPersonPin},
+        {label: 'Ottimizzazione', slug: 'optimization', icon: MageRobotUwuFill},
     ];
-
-    const changeSection = (newSection: Section) => {
-        // todo
-    };
 
     let currentSection = $state("");
 </script>
@@ -35,12 +31,12 @@
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400">
             {#each sections as section}
                 <li>
-                    <button onclick={() => changeSection(section)}
-                            data-active={currentSection === section.name}
+                    <a href={`/gradsession/${data.session_id}/${section.path ?? section.slug}`}
+                            data-active={currentSection === section.slug}
                             class="inline-flex items-center justify-center p-4 px-2 border-b-2 border-transparent rounded-t-lg hover:cursor-pointer hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group data-[active=true]:text-primary data-[active=true]:border-primary transition-all ease-in-out duration-150">
                         <section.icon class="w-4 h-4 me-2"/>
                         <span>{section.label}</span>
-                    </button>
+                    </a>
                 </li>
             {/each}
         </ul>
