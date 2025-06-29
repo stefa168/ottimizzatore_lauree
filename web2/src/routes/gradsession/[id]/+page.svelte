@@ -1,26 +1,20 @@
 <script lang="ts">
+  import type {PageProps} from "./$types";
+  import {goto} from "$app/navigation";
+
   import IcOutlineChecklist from '~icons/ic/outline-checklist'
   import IcOutlineReportProblem from '~icons/ic/outline-report-problem'
   import IcBaselineInfo from '~icons/ic/baseline-info'
   import IcOutlineKeyboardDoubleArrowRight from '~icons/ic/outline-keyboard-double-arrow-right'
-  import type {PageProps} from "./$types";
-  import {useQueryClient} from "@tanstack/svelte-query";
-  import {GradSessionApiQueries} from "@/api/GradSesssionApi";
-  import {goto} from "$app/navigation";
 
   let {data}: PageProps = $props();
   let session_id = $derived(data.session_id);
 
-  const queryClient = useQueryClient();
-  const gradSessionApiQueries = GradSessionApiQueries(queryClient);
-  const studentEntriesQuery = gradSessionApiQueries.sessionStudentsQuery(session_id);
-  const professorsQuery = gradSessionApiQueries.sessionProfessorsQuery(session_id);
-
-  let studentEntries = $derived($studentEntriesQuery.data ?? []);
+  let studentEntries = $derived(data.student_entries);
   let bachelorStudents = $derived(studentEntries.filter(e => e.degree_level === 'bachelors'));
   let masterStudents = $derived(studentEntries.filter(e => e.degree_level === 'masters'));
 
-  let professors = $derived($professorsQuery.data ?? []);
+  let professors = $derived(data.professors);
   let professorsWithoutRole = $derived(professors.filter(p => p.role === 'unspecified'));
 
   let problemsPresent = $derived(professorsWithoutRole.length > 0)

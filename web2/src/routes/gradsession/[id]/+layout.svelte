@@ -6,8 +6,9 @@
 
     import type {Component} from "svelte";
     import type {SvelteHTMLElements} from "svelte/elements";
+    import type {LayoutProps} from "./$types";
 
-    let {children} = $props();
+    let {children, data}: LayoutProps = $props();
 
     type Section = { label: string, name: string, path?: string, icon: Component<SvelteHTMLElements['svg']> };
     const sections: Section[] = [
@@ -25,7 +26,7 @@
 </script>
 
 <div class="container mx-auto pb-10">
-    <h1 class="text-2xl mb-4 font-medium">[Titolo Sessione di Laurea]</h1>
+    <h1 class="text-2xl mb-4 font-medium">{data.session.title}</h1>
 
     <!-- Styles from https://flowbite.com/docs/components/tabs/ -->
     <!-- Tabs Root -->
@@ -36,7 +37,7 @@
                 <li>
                     <button onclick={() => changeSection(section)}
                             data-active={currentSection === section.name}
-                            class="inline-flex items-center justify-center p-4 px-2 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group data-[active=true]:text-primary data-[active=true]:border-primary transition-all ease-in-out duration-150">
+                            class="inline-flex items-center justify-center p-4 px-2 border-b-2 border-transparent rounded-t-lg hover:cursor-pointer hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group data-[active=true]:text-primary data-[active=true]:border-primary transition-all ease-in-out duration-150">
                         <section.icon class="w-4 h-4 me-2"/>
                         <span>{section.label}</span>
                     </button>
