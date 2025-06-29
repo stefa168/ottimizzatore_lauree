@@ -2,10 +2,10 @@
   import {EllipsisIcon} from "@lucide/svelte";
   import {Button} from "@/components/ui/button";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
-  import {goto} from "$app/navigation";
+  import {goto, invalidate, invalidateAll} from "$app/navigation";
   import ButtonGroup from "@/components/ButtonGroup.svelte";
   import {useQueryClient} from "@tanstack/svelte-query";
-  import {GradSessionApiQueries} from "@/api/GradSesssionApi";
+  import {GradSessionApi, GradSessionApiQueries} from "@/api/GradSesssionApi";
 
   import LucideLoaderCircle from '~icons/lucide/loader-circle'
   import {toast} from "svelte-sonner";
@@ -19,9 +19,10 @@
   const isDeleting = $derived($deleteSessionMutation.isPending)
 
   const deleteSession = async () => {
-    await $deleteSessionMutation.mutateAsync(id)
+    await GradSessionApi().delete(id)
+      .then(() => invalidate((url) => url.href.includes("sessions")))
       .then(() => toast.success("La sessione è stata eliminata con successo."))
-      .catch((e) => toast.error("Si è verificato un errore durante la cancellazione della sessione", e))
+      .catch((e) => toast.error("Si è verificato un errore durante la cancellazione della sessione", e));
   }
 </script>
 

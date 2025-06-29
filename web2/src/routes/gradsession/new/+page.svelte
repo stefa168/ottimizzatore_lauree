@@ -18,7 +18,7 @@
 
   // Icons
   import MdiAlertOutline from '~icons/mdi/alert-outline'
-  import {goto} from "$app/navigation";
+  import {goto, invalidate} from "$app/navigation";
   import {toast} from "svelte-sonner";
 
   // TSQ
@@ -41,8 +41,11 @@
       }
 
       await $uploadNewGSMutation.mutateAsync(form.data)
-        .then((r) => goto(`/gradsession/${r.id}`))
-        .then(() => toast.success("Commissione creata con successo! Apertura in corso..."))
+        .then(s => {
+          invalidate((url) => url.href.includes("sessions"));
+          toast.success("Commissione creata con successo! Apertura in corso...");
+          goto(`/gradsession/${s.id}`);
+        })
         .catch(() => cancel());
     }
   });
