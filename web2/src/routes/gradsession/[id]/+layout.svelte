@@ -7,6 +7,7 @@
     import type {Component} from "svelte";
     import type {SvelteHTMLElements} from "svelte/elements";
     import type {LayoutProps} from "./$types";
+    import {page} from '$app/state';
 
     let {children, data}: LayoutProps = $props();
 
@@ -18,7 +19,7 @@
         {label: 'Ottimizzazione', slug: 'optimization', icon: MageRobotUwuFill},
     ];
 
-    let currentSection = $state("");
+    let currentSection = $derived(page.url.pathname.split('/').at(3) ?? 'info');
 </script>
 
 <div class="container mx-auto pb-10">
