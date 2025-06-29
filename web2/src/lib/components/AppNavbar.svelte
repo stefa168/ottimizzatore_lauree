@@ -1,7 +1,5 @@
 <script lang="ts">
     import {page} from "$app/state";
-    import DarkModeButton from "@/components/DarkModeButton.svelte";
-    import DebuggingButton from "@/components/DebuggingButton.svelte";
     import type {Component} from "svelte";
     import type {SvelteHTMLElements} from "svelte/elements";
 
