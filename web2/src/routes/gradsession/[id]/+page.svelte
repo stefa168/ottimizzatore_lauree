@@ -42,7 +42,7 @@
         </li>
       </ul>
     </li>
-    <li>Alla commissione parteciperanno {professors?.length} docenti.</li>
+    <li>Alla commissione parteciperanno {professors.length} docenti.</li>
   </ul>
 </div>
 
