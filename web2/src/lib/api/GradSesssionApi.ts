@@ -29,10 +29,18 @@ export const GradSessionKeys = {
 export const GradSessionApi = (customFetch = fetch) => ({
   getAll: async (): Promise<RawGradSession[]> => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions`);
+
+    if (!response.ok)
+      throw await response.json() as ApiErrorResponse;
+
     return (await response.json()) as RawGradSession[];
   },
   getById: async (id: number): Promise<RawGradSession> => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${id}`);
+
+    if (!response.ok)
+      throw await response.json() as ApiErrorResponse;
+
     return (await response.json()) as RawGradSession;
   },
   create: async (data: CommissionFormData): Promise<RawGradSession> => {

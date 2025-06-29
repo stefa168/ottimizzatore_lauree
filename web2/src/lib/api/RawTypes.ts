@@ -30,3 +30,5 @@ export const transformSessionProfessor = (raw: RawSessionProfessor): SessionProf
   const av: AvailabilityAndDate = {when: raw.availability.when, updated_at: new Date(raw.availability.updated_at)};
   return {...raw, availability: av};
 }
+
+export const transformSessionProfessorList = (raw: RawSessionProfessor[]): SessionProfessor[] => raw.map(transformSessionProfessor)

@@ -1,16 +1,30 @@
 import type {LayoutLoad} from "./$types";
 import {GradSessionApi} from "@/api/GradSesssionApi";
-import {transformGradSession, transformSessionProfessor} from "@/api/RawTypes";
+import {transformGradSession, transformSessionProfessorList} from "@/api/RawTypes";
+import {error} from "@sveltejs/kit";
+import type {ApiErrorResponse} from "@/types";
 
 export const load: LayoutLoad = async ({params, parent, fetch}) => {
   const session_id = Number.parseInt(params.id);
   let api = GradSessionApi(fetch);
 
-  return {
-    session_id: session_id,
-    // todo add svelte error page
-    session: await api.getById(session_id).then(transformGradSession),
-    student_entries: await api.getStudents(session_id),
-    professors: await api.getProfessors(session_id).then(lst => lst.map(transformSessionProfessor))
-  };
+  try {
+    const [session, student_entries, professors] = await Promise.all([
+      api.getById(session_id).then(transformGradSession),
+      api.getStudents(session_id),
+      api.getProfessors(session_id).then(transformSessionProfessorList)
+    ]);
+
+    return {
+      session_id: session_id,
+      session,
+      student_entries,
+      professors
+
+    };
+  } catch (err) {
+    // Handle the API error appropriately
+    const apiError = err as ApiErrorResponse;
+    error(apiError.status_code, {message: apiError.detail})
+  }
 }
