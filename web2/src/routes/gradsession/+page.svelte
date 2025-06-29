@@ -1,17 +1,9 @@
 <script lang="ts">
-  /* Shadcn components */
-  import {useQueryClient} from "@tanstack/svelte-query";
-  import {GradSessionApiQueries} from "@/api/GradSesssionApi";
-
   import DataTable from "@/components/data-table.svelte";
   import {columns} from "./columns";
+  import type {PageProps} from "./$types";
 
-  const queryClient = useQueryClient();
-  const gsApiQueries = GradSessionApiQueries(queryClient);
-
-  const gsQuery = gsApiQueries.allSessionsQuery();
-
-  let sessions = $derived($gsQuery.isSuccess ? $gsQuery.data : []);
+  let {data}: PageProps = $props();
 </script>
 
 <div class="border-b-2 mb-6">
@@ -20,14 +12,10 @@
     generazione delle commissioni.</p>
 </div>
 
-{#if $gsQuery.isPending}
+{#await data.sessions}
   Caricando le sessioni attive...
-{/if}
-
-{#if $gsQuery.isError}
-  Errore: {JSON.stringify($gsQuery.error)}
-{/if}
-
-{#if $gsQuery.isSuccess}
+{:then sessions}
   <DataTable data={sessions} columns={columns}/>
-{/if}
+{:catch error}
+  Errore: {JSON.stringify(error)}
+{/await}
