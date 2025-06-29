@@ -9,6 +9,9 @@ GRAD_SESSION_DELETE = "/sessions/{sid:int}"
 # Grad Session Student Urls
 GRAD_SESSION_ENTRY_LIST = "/sessions/{sid:int}/students"
 
+# Professor Urls
+GRAD_SESSION_PROFESSOR_LIST = "/sessions/{sid:int}/professors"
+
 # Professor Availabilities Urls
 GRAD_SESSION_PROF_AVAILABILITY_LIST = "/sessions/{sid:int}/availabilities"
 GRAD_SESSION_PROF_AVAILABILITY_CREATE = "/sessions/{sid:int}/availabilities"

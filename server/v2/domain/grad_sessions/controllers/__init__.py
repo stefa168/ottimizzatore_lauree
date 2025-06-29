@@ -1,5 +1,5 @@
 from .gs import GraduationSessionController
 from .students import StudentController
-from .availabilities import AvailabilityController
+from .professors import ProfessorController
 
-__all__ = ["GraduationSessionController", "StudentController", "AvailabilityController"]
+__all__ = ["GraduationSessionController", "StudentController", "ProfessorController"]
