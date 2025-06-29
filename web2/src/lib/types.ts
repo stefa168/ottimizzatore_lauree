@@ -17,9 +17,10 @@ interface GradSessionEntry {
     id: number,
     candidate: Student,
     degree_level: DegreeLevel,
-    supervisor: Professor,
-    supervisor_assistant: Professor | null,
-    counter_supervisor: Professor | null
+    supervisor_id: number,
+    supervisor2_id: number | null,
+    supervisor_assistant_id: number | null,
+    counter_supervisor_id: number | null
 }
 
 interface Student {
@@ -27,19 +28,23 @@ interface Student {
     matriculation_number: number,
     name: string,
     surname: string,
-    phone_number: string,
-    personal_email: string,
     university_email: string,
 }
 
 type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
 type ProfessorAvailability = 'always' | 'morning' | 'afternoon' | 'split'
 
-interface Professor {
+interface AvailabilityAndDate {
+    when: ProfessorAvailability,
+    updated_at: Date
+}
+
+interface SessionProfessor {
     id: number,
     name: string,
     surname: string,
-    role: UniversityRole
+    role: UniversityRole,
+    availability: AvailabilityAndDate,
 }
 
 export type {
@@ -47,6 +52,8 @@ export type {
     GradSessionEntry,
     Student,
     DegreeLevel,
-    Professor,
-    UniversityRole
+    SessionProfessor,
+    UniversityRole,
+    ProfessorAvailability,
+    AvailabilityAndDate
 }
