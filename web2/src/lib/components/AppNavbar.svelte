@@ -11,7 +11,10 @@
     import MdiAccountGroup from '~icons/mdi/account-group'
     import AppSettingsDialog from "@/components/app-settings-dialog.svelte";
 
-    let sectionName = $derived(page.url.pathname.split('/').at(1));
+    let sectionName = $derived.by(() => {
+        const first = page.url.pathname.split('/').at(1);
+        return first ? `/${first}` : '/';
+    });
 
     let settingsDialog: AppSettingsDialog;
 
