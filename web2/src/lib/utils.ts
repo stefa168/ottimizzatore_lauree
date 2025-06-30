@@ -18,3 +18,11 @@ export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?:
 export const delay = (ms: number) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+});

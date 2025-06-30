@@ -3,14 +3,8 @@ import type {GradSession} from "@/types";
 import {createRawSnippet} from "svelte";
 import {renderComponent, renderSnippet} from "@/components/ui/data-table";
 import DataTableActions from "./DataTableActions.svelte";
+import {dateFormatter} from "@/utils";
 
-const dateFormatter = new Intl.DateTimeFormat('it-IT', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit'
-});
 
 export const columns: ColumnDef<GradSession>[] = [
   {
