@@ -19,6 +19,12 @@ export const delay = (ms: number) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export const capitalize = (s: string) =>
+  s.toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
 export const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   year: 'numeric',
   month: 'long',

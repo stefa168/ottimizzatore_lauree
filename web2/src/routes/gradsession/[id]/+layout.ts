@@ -19,8 +19,8 @@ export const load: LayoutLoad = async ({params, parent, fetch}) => {
       session_id: session_id,
       session,
       student_entries,
-      professors
-
+      professors,
+      professorsMap: new Map(professors.map(p => [p.id, p])),
     };
   } catch (err) {
     // Handle the API error appropriately
