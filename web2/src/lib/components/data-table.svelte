@@ -14,13 +14,19 @@
 
   import {LucideChevronsLeft, LucideChevronsRight, LucideChevronLeft, LucideChevronRight} from "@lucide/svelte";
   import ButtonGroup from "@/components/ButtonGroup.svelte";
+  import type {TextTemplates} from "@/types";
+  import {formatText} from "@/utils";
 
   type DataTableProps<TData, TValue> = {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
+    singlePlural: TextTemplates;
   };
 
-  let {data, columns}: DataTableProps<TData, TValue> = $props();
+  let {data, columns, singlePlural = {
+    singular: (n: number) => "È presente un solo elemento.",
+    plural: (n: number) => `Sono presenti un totale di ${n} elementi.`
+  }}: DataTableProps<TData, TValue> = $props();
 
   let pagination = $state<PaginationState>({pageIndex: 0, pageSize: 10});
 
@@ -91,7 +97,7 @@
     <div class="text-muted-foreground flex-1 text-sm">
       <!--{table.getFilteredSelectedRowModel().rows.length} of-->
       <!--{table.getFilteredRowModel().rows.length} row(s) selected.-->
-      In totale sono presenti {table.getFilteredRowModel().rows.length} Studenti.
+      {formatText(singlePlural, table.getFilteredRowModel().rows.length)}
     </div>
     <div class="flex items-center space-x-6 lg:space-x-8">
       <div class="flex items-center space-x-2">

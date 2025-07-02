@@ -48,14 +48,9 @@ export interface SessionProfessor extends NameSurname{
     availability: AvailabilityAndDate,
 }
 
-export type {
-    NameSurname,
-    GradSession,
-    GradSessionEntry,
-    Student,
-    DegreeLevel,
-    SessionProfessor,
-    UniversityRole,
-    ProfessorAvailability,
-    AvailabilityAndDate
-}
+export type TextTemplate = (count: number) => string;
+
+export type TextTemplates = {
+    singular: TextTemplate,
+    plural: TextTemplate
+};

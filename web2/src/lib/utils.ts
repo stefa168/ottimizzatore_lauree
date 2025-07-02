@@ -1,6 +1,6 @@
 import {clsx, type ClassValue} from "clsx";
 import {twMerge} from "tailwind-merge";
-import type {GradSessionEntry} from "@/types";
+import type {GradSessionEntry, TextTemplates} from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -35,6 +35,10 @@ export const getDegreeLevelString = (s: GradSessionEntry) => {
     default:
       return s.degree_level;
   }
+}
+
+export const formatText = (templates: TextTemplates, count: number): string => {
+  return count === 1 ? templates.singular(count) : templates.plural(count);
 }
 
 export const dateFormatter = new Intl.DateTimeFormat('it-IT', {
