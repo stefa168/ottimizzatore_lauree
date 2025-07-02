@@ -76,4 +76,3 @@
     <p>Non è stato rilevato alcun problema relativo alla sessione di laurea.</p>
   {/if}
 </div>
-<SuperDebugRuned data={data.student_entries} label="Student Entries"/>
