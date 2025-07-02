@@ -4,16 +4,16 @@ export interface ApiErrorResponse<TExtra = never> {
     status_code: number
 }
 
-interface GradSession {
+export interface GradSession {
     id: number,
     title: string,
     created_at: Date,
     updated_at: Date
 }
 
-type DegreeLevel = 'bachelors' | 'masters';
+export type DegreeLevel = 'bachelors' | 'masters';
 
-interface GradSessionEntry {
+export interface GradSessionEntry {
     id: number,
     candidate: Student,
     degree_level: DegreeLevel,
@@ -23,26 +23,26 @@ interface GradSessionEntry {
     counter_supervisor_id: number | null
 }
 
-interface NameSurname {
+export interface NameSurname {
     first_name: string,
     surname: string
 }
 
-interface Student extends NameSurname {
+export interface Student extends NameSurname {
     id: number,
     matriculation_number: number,
     university_email: string,
 }
 
-type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
-type ProfessorAvailability = 'always' | 'morning' | 'afternoon' | 'split'
+export type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
+export type ProfessorAvailability = 'always' | 'morning' | 'afternoon' | 'split'
 
-interface AvailabilityAndDate {
+export interface AvailabilityAndDate {
     when: ProfessorAvailability,
     updated_at: Date
 }
 
-interface SessionProfessor extends NameSurname{
+export interface SessionProfessor extends NameSurname{
     id: number,
     role: UniversityRole,
     availability: AvailabilityAndDate,
