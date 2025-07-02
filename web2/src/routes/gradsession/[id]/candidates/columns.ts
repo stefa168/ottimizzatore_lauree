@@ -3,10 +3,16 @@ import type {GradSessionEntry, SessionProfessor} from "@/types";
 import {renderComponent} from "@/components/ui/data-table";
 import StyledFullName from "@/components/StyledFullName.svelte";
 import {getDegreeLevelString} from "@/utils";
+import LucideHash from '~icons/lucide/hash'
 
 // Using row instead of getValue because for some reason it results to be unknown 🤔
 // https://tanstack.com/table/v8/docs/guide/column-defs#cell-formatting
 export const columns: (professorMap: Map<number, SessionProfessor>) => ColumnDef<GradSessionEntry>[] = (professorMap) => [
+  {
+    id: "id",
+    header: () => renderComponent(LucideHash),
+    cell: ({row}) => row.index + 1,
+  },
   {
     id: "candidate",
     header: "Candidato",
