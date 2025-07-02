@@ -66,7 +66,7 @@
           didattico assegnato.
         {/if}
         <button class="inline-flex items-center justify-center text-blue-500 hover:underline"
-                onclick={() => goto(`/commission/${session_id}/professors/`)}>
+                onclick={() => goto(`/gradsession/${session_id}/professors/`)}>
           Vai alla sezione
           <IcOutlineKeyboardDoubleArrowRight/>
         </button>
@@ -76,3 +76,4 @@
     <p>Non è stato rilevato alcun problema relativo alla sessione di laurea.</p>
   {/if}
 </div>
+<SuperDebugRuned data={data.student_entries} label="Student Entries"/>
