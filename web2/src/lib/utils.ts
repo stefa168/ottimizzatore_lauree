@@ -1,5 +1,6 @@
 import {clsx, type ClassValue} from "clsx";
 import {twMerge} from "tailwind-merge";
+import type {GradSessionEntry} from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,6 +25,17 @@ export const capitalize = (s: string) =>
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+
+export const getDegreeLevelString = (s: GradSessionEntry) => {
+  switch (s.degree_level) {
+    case "bachelors":
+      return "Triennale";
+    case "masters":
+      return "Magistrale";
+    default:
+      return s.degree_level;
+  }
+}
 
 export const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   year: 'numeric',

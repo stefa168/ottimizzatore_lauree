@@ -1,24 +1,20 @@
 <script lang="ts">
     import {capitalize} from "$lib/utils";
+    import type {NameSurname} from "@/types";
 
     interface Props {
-        name?: string | null;
-        surname?: string | null;
+        fullName?: NameSurname;
         applyStyle?: boolean;
     }
 
-    let {name = null, surname = null, applyStyle = true}: Props = $props();
+    let {fullName = undefined, applyStyle = true}: Props = $props();
 
 </script>
 <div>
-    {#if name === null && surname === null}
+    {#if !fullName}
         <span class="font-extralight">-</span>
     {:else}
-        {#if surname !== null}
-            <span class="{applyStyle ? 'font-bold' : '' }">{capitalize(surname)}</span>
-        {/if}
-        {#if name !== null}
-            <span class="{applyStyle ? 'font-light' : '' }">{capitalize(name)}</span>
-        {/if}
+        <span class="{applyStyle ? 'font-bold' : '' }">{capitalize(fullName.surname)}</span>
+        <span class="{applyStyle ? 'font-light' : '' }">{capitalize(fullName.first_name)}</span>
     {/if}
 </div>

@@ -23,11 +23,14 @@ interface GradSessionEntry {
     counter_supervisor_id: number | null
 }
 
-interface Student {
+interface NameSurname {
+    first_name: string,
+    surname: string
+}
+
+interface Student extends NameSurname {
     id: number,
     matriculation_number: number,
-    name: string,
-    surname: string,
     university_email: string,
 }
 
@@ -39,15 +42,14 @@ interface AvailabilityAndDate {
     updated_at: Date
 }
 
-interface SessionProfessor {
+interface SessionProfessor extends NameSurname{
     id: number,
-    name: string,
-    surname: string,
     role: UniversityRole,
     availability: AvailabilityAndDate,
 }
 
 export type {
+    NameSurname,
     GradSession,
     GradSessionEntry,
     Student,
