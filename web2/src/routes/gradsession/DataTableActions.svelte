@@ -29,10 +29,10 @@
 {#if !isDeleting}
   <ButtonGroup>
     <Button
-      variant="ghost"
-      style="height: calc(var(--spacing) * 8)"
-      href={`/gradsession/${id}`}
-      disabled={isDeleting}
+        variant="ghost"
+        style="height: calc(var(--spacing) * 8)"
+        href={`/gradsession/${id}`}
+        disabled={isDeleting}
     >
       Visualizza
     </Button>
@@ -40,10 +40,10 @@
       <DropdownMenu.Trigger disabled={isDeleting}>
         {#snippet child({props})}
           <Button
-            {...props}
-            variant="ghost"
-            size="icon"
-            class="relative size-8 p-0"
+              {...props}
+              variant="ghost"
+              size="icon"
+              class="relative size-8 p-0"
           >
             <span class="sr-only">Apri menu azioni</span>
             <EllipsisIcon/>
@@ -56,8 +56,8 @@
           <DropdownMenu.Item>Archivia</DropdownMenu.Item>
           <DropdownMenu.Separator/>
           <DropdownMenu.Item
-            onclick={deleteSession}
-            disabled={isDeleting}
+              onclick={deleteSession}
+              disabled={isDeleting}
           >
             Elimina
           </DropdownMenu.Item>
@@ -67,9 +67,9 @@
   </ButtonGroup>
 {:else}
   <Button
-    variant="ghost"
-    style="height: calc(var(--spacing) * 8)"
-    disabled={isDeleting}
+      variant="ghost"
+      style="height: calc(var(--spacing) * 8)"
+      disabled={isDeleting}
   >
     Cancellando...
     <LucideLoaderCircle class="animate-spin"/>

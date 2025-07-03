@@ -17,6 +17,8 @@ export const columns: (burdens: Map<number, ProfessorBurden>) => ColumnDef<Sessi
     accessorKey: "role",
     header: "Ruolo Universitario"
   }, {
+    header: "Disponibilità"
+  }, {
     header: "Carico",
     cell: ({row}) => renderComponent(ProfessorBurdenComponent, {burden: burdens.get(row.original.id)})
   }
