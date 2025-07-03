@@ -3,6 +3,22 @@
   <component name="JsonSchemaMappingsProjectConfiguration">
     <state>
       <map>
+        <entry key="inlang-message-format">
+          <value>
+            <SchemaInfo>
+              <option name="generatedName" value="New Schema" />
+              <option name="name" value="inlang-message-format" />
+              <option name="relativePathToSchema" value="https://inlang.com/schema/inlang-message-format" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="web2/messages/it.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
         <entry key="schema">
           <value>
             <SchemaInfo>

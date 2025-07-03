@@ -461,3 +461,5 @@ pyvenv.cfg
 pip-selfcheck.json
 
 # End of https://www.toptal.com/developers/gitignore/api/node,svelte,intellij,python,venv
+/web2/project.inlang/cache/plugins/
+/web2/project.inlang/project_id
