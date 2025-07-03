@@ -54,3 +54,8 @@ export type TextTemplates = {
     singular: TextTemplate,
     plural: TextTemplate
 };
+
+export interface ProfessorBurden {
+    asSupervisor: number,
+    asCounterSupervisor: number
+}

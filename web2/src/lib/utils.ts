@@ -1,6 +1,6 @@
 import {clsx, type ClassValue} from "clsx";
 import {twMerge} from "tailwind-merge";
-import type {GradSessionEntry, TextTemplates} from "@/types";
+import type {GradSessionEntry, ProfessorBurden, SessionProfessor, TextTemplates} from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -48,3 +48,32 @@ export const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   hour: '2-digit',
   minute: '2-digit'
 });
+
+export const computeProfessorsBurdens = (
+  professorMap: Map<number, SessionProfessor>,
+  sessionEntries: GradSessionEntry[]
+): Map<number, ProfessorBurden> => {
+  let burdens = new Map<number, ProfessorBurden>();
+
+  // Initialize all professors with zero burden
+  for (let [professorId] of professorMap) {
+    burdens.set(professorId, {asSupervisor: 0, asCounterSupervisor: 0});
+  }
+
+  // Loop through session entries and count burdens
+  for (let entry of sessionEntries) {
+    // Count supervisor
+    if (entry.supervisor_id && burdens.has(entry.supervisor_id)) {
+      const current = burdens.get(entry.supervisor_id)!;
+      current.asSupervisor += 1;
+    }
+
+    // Count counter supervisor
+    if (entry.counter_supervisor_id && burdens.has(entry.counter_supervisor_id)) {
+      const current = burdens.get(entry.counter_supervisor_id)!;
+      current.asCounterSupervisor += 1;
+    }
+  }
+
+  return burdens;
+};
