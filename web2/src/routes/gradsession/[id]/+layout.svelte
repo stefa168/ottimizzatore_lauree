@@ -8,8 +8,10 @@
   import type {SvelteHTMLElements} from "svelte/elements";
   import type {LayoutProps} from "./$types";
   import {page} from '$app/state';
+  import {setSessionData} from "../SessionData.svelte";
 
   let {children, data}: LayoutProps = $props();
+  let sessionData = setSessionData(data.session, data.student_entries, data.professors);
 
   type Section = { label: string, slug: string, path?: string, icon: Component<SvelteHTMLElements['svg']> };
   const sections: Section[] = [
@@ -23,7 +25,7 @@
 </script>
 
 <div class="container mx-auto pb-10">
-  <h1 class="text-2xl mb-4 font-medium">{data.session.title}</h1>
+  <h1 class="text-2xl mb-4 font-medium">{sessionData.session.title}</h1>
 
   <!-- Styles from https://flowbite.com/docs/components/tabs/ -->
   <!-- Tabs Root -->

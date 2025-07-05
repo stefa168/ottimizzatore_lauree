@@ -1,10 +1,12 @@
 import type {ColumnDef} from "@tanstack/table-core";
-import type {ProfessorBurden, SessionProfessor} from "@/types";
+import type {SessionProfessor} from "@/types";
 import {renderComponent} from "@/components/ui/data-table";
 import StyledFullName from "@/components/StyledFullName.svelte";
 import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
+import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
+import type {SessionData} from "../../SessionData.svelte";
 
-export const columns: (burdens: Map<number, ProfessorBurden>) => ColumnDef<SessionProfessor>[] = (burdens) => [
+export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: SessionData) => [
   {
     accessorKey: "surname",
     header: "Cognome",
@@ -15,11 +17,22 @@ export const columns: (burdens: Map<number, ProfessorBurden>) => ColumnDef<Sessi
     cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "name"})
   }, {
     accessorKey: "role",
-    header: "Ruolo Universitario"
+    header: "Ruolo Universitario",
+    cell: ({row}) => renderComponent(ProfessorRoleSelector, {
+      value: row.original.role,
+      onUpdateValue: (newRole) => {
+        let professor = sd.professorsMap.get(row.original.id);
+        if (!professor)
+          return;
+
+        // todo implement serverside mutation
+        professor.role = newRole;
+      }
+    })
   }, {
     header: "Disponibilità"
   }, {
     header: "Carico",
-    cell: ({row}) => renderComponent(ProfessorBurdenComponent, {burden: burdens.get(row.original.id)})
+    cell: ({row}) => renderComponent(ProfessorBurdenComponent, {burden: sd.professorsBurdens.get(row.original.id)})
   }
 ]

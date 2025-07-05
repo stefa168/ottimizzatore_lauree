@@ -1,12 +1,13 @@
 <script lang="ts">
-  import type {PageProps} from "./$types";
-  import {computeProfessorsBurdens} from "@/utils";
+  import {columns} from "./columns";
   import DataTable from "@/components/data-table.svelte";
   import {columns} from "./columns";
+  import {getSessionData} from "../../SessionData.svelte";
 
-  let {data}: PageProps = $props();
+  let sessionData = getSessionData();
 
   $inspect(data.professorsBurdens);
 </script>
 
 <DataTable data={data.professors} columns={columns(data.professorsBurdens)}/>
+<DataTable data={sessionData.professors} columns={columns(sessionData)}/>

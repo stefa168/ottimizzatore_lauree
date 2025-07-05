@@ -1,20 +1,20 @@
 <script lang="ts">
-  import type {PageProps} from "./$types";
   import {goto} from "$app/navigation";
 
   import IcOutlineChecklist from '~icons/ic/outline-checklist'
   import IcOutlineReportProblem from '~icons/ic/outline-report-problem'
   import IcBaselineInfo from '~icons/ic/baseline-info'
   import IcOutlineKeyboardDoubleArrowRight from '~icons/ic/outline-keyboard-double-arrow-right'
+  import {getSessionData} from "../SessionData.svelte";
 
-  let {data}: PageProps = $props();
-  let session_id = $derived(data.session_id);
+  let sessionData = getSessionData();
+  let session_id = $derived(sessionData.session.id);
 
-  let studentEntries = $derived(data.student_entries);
+  let studentEntries = $derived(sessionData.student_entries);
   let bachelorStudents = $derived(studentEntries.filter(e => e.degree_level === 'bachelors'));
   let masterStudents = $derived(studentEntries.filter(e => e.degree_level === 'masters'));
 
-  let professors = $derived(data.professors);
+  let professors = $derived(sessionData.professors);
   let professorsWithoutRole = $derived(professors.filter(p => p.role === 'unspecified'));
 
   let problemsPresent = $derived(professorsWithoutRole.length > 0)
