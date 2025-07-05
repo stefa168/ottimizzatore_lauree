@@ -29,6 +29,11 @@ export const load: LayoutLoad = async ({params, parent, fetch}) => {
   } catch (err) {
     // Handle the API error appropriately
     const apiError = err as ApiErrorResponse;
-    error(apiError.status_code, {message: apiError.detail})
+
+    if (apiError.status_code === undefined) {
+      throw err;
+    }
+
+    error(apiError.status_code, {message: apiError.detail});
   }
 }
