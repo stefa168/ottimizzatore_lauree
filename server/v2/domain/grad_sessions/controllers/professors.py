@@ -4,12 +4,13 @@ import itertools
 
 from litestar import get, Controller, patch
 from litestar.di import Provide
-from litestar.dto import DTOConfig
+from litestar.dto import DTOConfig, DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
+from litestar.plugins.pydantic import PydanticDTO
 from litestar.plugins.sqlalchemy import SQLAlchemyDTO
 
-from v2.db.models import ProfessorAvailability, SessionEntry
+from v2.db.models import ProfessorAvailability, SessionEntry, Professor
 from v2.domain.grad_sessions import urls
 from v2.domain.grad_sessions.deps import (
     SessionProfessorAvailabilityRepository,
@@ -22,6 +23,13 @@ from v2.domain.grad_sessions.schemas import UpdateProfessorAvailability, Profess
 class ProfAvailabilityReadDTO(SQLAlchemyDTO[ProfessorAvailability]):
     config = DTOConfig(
         max_nested_depth=0
+    )
+
+
+class ProfessorDTO(SQLAlchemyDTO[Professor]):
+    config = DTOConfig(
+        partial=True,
+        exclude={"created_at", "updated_at"}
     )
 
 
@@ -82,7 +90,27 @@ class ProfessorController(Controller):
         )
         return availabilities
 
-    @patch(urls.GRAD_SESSION_PROF_AVAILABILITY_CREATE, return_dto=ProfAvailabilityReadDTO)
+    @patch(urls.GRAD_SESSION_PROFESSOR_UPDATE, dto=ProfessorDTO)
+    async def update_professor(
+            self,
+            data: DTOData[Professor],
+            professor_repository: ProfessorRepository
+    ) -> Professor:
+        pid = data.as_builtins().get("id")
+        if pid is None:
+            raise HTTPException(detail="Field `id` is required for patch",
+                                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        professor: Professor | None = await professor_repository.get_one_or_none(Professor.id == pid)
+        if professor is None:
+            raise HTTPException(detail="Professor not found", status_code=http_statuses.HTTP_404_NOT_FOUND)
+
+        # This method actually updates `professor`, not the `data` variable
+        return data.update_instance(professor)
+
+        # return professor
+
+    @patch(urls.GRAD_SESSION_PROF_AVAILABILITY_UPDATE, return_dto=ProfAvailabilityReadDTO)
     async def update_professor_availability(
             self,
             sid: int,

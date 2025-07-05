@@ -11,8 +11,9 @@ GRAD_SESSION_ENTRY_LIST = "/sessions/{sid:int}/students"
 
 # Professor Urls
 GRAD_SESSION_PROFESSOR_LIST = "/sessions/{sid:int}/professors"
+GRAD_SESSION_PROFESSOR_UPDATE = "/professors"
 
 # Professor Availabilities Urls
 GRAD_SESSION_PROF_AVAILABILITY_LIST = "/sessions/{sid:int}/availabilities"
-GRAD_SESSION_PROF_AVAILABILITY_CREATE = "/sessions/{sid:int}/availabilities"
+GRAD_SESSION_PROF_AVAILABILITY_UPDATE = "/sessions/{sid:int}/availabilities"
  
