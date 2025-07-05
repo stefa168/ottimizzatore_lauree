@@ -4,6 +4,8 @@ export interface ApiErrorResponse<TExtra = never> {
   status_code: number
 }
 
+export type PartialExcept<T, K extends keyof T> = Partial<T> & Pick<T, K>;
+
 export interface GradSession {
   id: number,
   title: string,
