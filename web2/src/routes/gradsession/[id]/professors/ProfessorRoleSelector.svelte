@@ -5,7 +5,7 @@
   interface Props {
     // row: BodyRow<Professor>;
     value: UniversityRole | string;
-    onUpdateValue?: (newRole: UniversityRole) => void;
+    onUpdateValue?: (newRole: UniversityRole) => Promise<void>;
   }
 
   let {value = $bindable(), onUpdateValue}: Props = $props();
@@ -23,7 +23,12 @@
     label: "Seleziona un ruolo"
   })
 
-  const onValueChange = (v: string) => onUpdateValue?.(v as UniversityRole);
+  const onValueChange = async (v: string) => {
+    if(!onUpdateValue)
+      return;
+
+    return await onUpdateValue(v as UniversityRole);
+  };
 </script>
 
 <Select.Root type="single" bind:value={value} {onValueChange}>
