@@ -42,9 +42,12 @@ export interface AvailabilityAndDate {
   updated_at: Date
 }
 
-export interface SessionProfessor extends NameSurname {
+export interface Professor extends NameSurname {
   id: number,
-  role: UniversityRole,
+  role: UniversityRole
+}
+
+export interface SessionProfessor extends Professor {
   availability: AvailabilityAndDate,
 }
 
