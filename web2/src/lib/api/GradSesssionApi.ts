@@ -2,7 +2,8 @@
 import {
   type ApiErrorResponse,
   type GradSession,
-  type GradSessionEntry, type SessionProfessor
+  type GradSessionEntry,
+  type ProfessorAvailability,
 } from "@/types";
 import {createMutation, createQuery, type QueryClient} from "@tanstack/svelte-query";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/schema/CommissionFormSchema";
 import {PUBLIC_BACKEND_URL} from "@/const";
 import {
+  type RawAvailabilityAndDate,
   type RawGradSession,
   type RawSessionProfessor,
   transformGradSession,
@@ -74,6 +76,17 @@ export const GradSessionApi = (customFetch = fetch) => ({
   getProfessors: async (session_id: number) => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/professors`);
     return (await response.json()) as RawSessionProfessor[];
+  },
+  updateProfessorAvailability: async (session_id: number, professor_id: number, availability: ProfessorAvailability) => {
+    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/availabilities`, {
+      method: 'PATCH',
+      body: JSON.stringify({professor_id, availability}),
+      headers: {'Content-Type': 'application/json'}
+    });
+    if (!response.ok)
+      throw await response.json();
+
+    return await response.json() as RawAvailabilityAndDate;
   }
 });
 

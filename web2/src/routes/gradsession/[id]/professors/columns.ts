@@ -1,12 +1,22 @@
+// Libraries
 import type {ColumnDef} from "@tanstack/table-core";
-import type {SessionProfessor, UniversityRole} from "@/types";
 import {renderComponent} from "@/components/ui/data-table";
+import {toast} from "svelte-sonner";
+
+// Project types
+import type {SessionProfessor, UniversityRole} from "@/types";
+import {transformAvailabilityAndDate} from "@/api/RawTypes";
+import type {SessionData} from "../../SessionData.svelte";
+
+// APIs
+import {ProfessorsApi} from "@/api/ProfessorsApi";
+import {GradSessionApi} from "@/api/GradSesssionApi";
+
+// Components
 import StyledFullName from "@/components/StyledFullName.svelte";
 import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
 import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
-import type {SessionData} from "../../SessionData.svelte";
-import {ProfessorsApi} from "@/api/ProfessorsApi";
-import {toast} from "svelte-sonner";
+import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
 
 export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: SessionData) => [
   {
@@ -38,7 +48,27 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
           })
     })
   }, {
-    header: "Disponibilità"
+    header: "Disponibilità",
+    cell: ({row}) => renderComponent(ProfessorAvailabilitySelector, {
+      value: row.original.availability.when,
+      onUpdateValue: async (newAvailability) =>
+        await GradSessionApi()
+          .updateProfessorAvailability(sd.session.id, row.original.id, newAvailability)
+          .then(transformAvailabilityAndDate)
+          .then((updatedAvailability) => {
+            let professor = sd.professorsMap.get(row.original.id)!;
+            console.log(updatedAvailability)
+            professor.availability = updatedAvailability
+            toast.success("Disponibilità del docente per la sessione aggiornata correttamente.")
+          })
+          .catch(err => {
+            console.error(err)
+            toast.error("Si è verificato un errore durante l'aggiornamento della disponibilità del docente", {
+              duration: Number.POSITIVE_INFINITY,
+              description: JSON.stringify(err)
+            })
+          })
+    })
   }, {
     header: "Carico",
     cell: ({row}) => renderComponent(ProfessorBurdenComponent, {burden: sd.professorsBurdens.get(row.original.id)})
