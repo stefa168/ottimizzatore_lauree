@@ -22,7 +22,8 @@ from v2.domain.grad_sessions.schemas import UpdateProfessorAvailability, Profess
 
 class ProfAvailabilityReadDTO(SQLAlchemyDTO[ProfessorAvailability]):
     config = DTOConfig(
-        max_nested_depth=0
+        max_nested_depth=0,
+        exclude={"created_at", "id"}
     )
 
 
