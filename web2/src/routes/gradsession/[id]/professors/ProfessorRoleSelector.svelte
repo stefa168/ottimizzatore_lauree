@@ -1,9 +1,8 @@
 <script lang="ts">
   import * as Select from '@/components/ui/select'
-  import type {SessionProfessor, UniversityRole} from "@/types";
+  import type {UniversityRole} from "@/types";
 
   interface Props {
-    // row: BodyRow<Professor>;
     value: UniversityRole | string;
     onUpdateValue?: (newRole: UniversityRole) => Promise<void>;
   }
@@ -24,10 +23,10 @@
   })
 
   const onValueChange = async (v: string) => {
-    if(!onUpdateValue)
+    if (!onUpdateValue)
       return;
 
-    return await onUpdateValue(v as UniversityRole);
+    await onUpdateValue(v as UniversityRole);
   };
 </script>
 
@@ -43,5 +42,4 @@
       {/each}
     </Select.Group>
   </Select.Content>
-  <!--  <Select.Input name="role"/>-->
 </Select.Root>
