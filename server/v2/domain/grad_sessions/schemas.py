@@ -23,7 +23,7 @@ class UpdateProfessorAvailability(BaseModel):
 
 
 class AvailabilityWithAudit(BaseModel):
-    when: TimeAvailability
+    availability: TimeAvailability
     updated_at: datetime.datetime
 
 
@@ -40,7 +40,7 @@ class ProfessorWithAvailability(BaseModel):
 
     @staticmethod
     def factory(professor: Professor, pa: ProfessorAvailability) -> ProfessorWithAvailability:
-        availability = AvailabilityWithAudit(when=pa.availability, updated_at=pa.updated_at)
+        availability = AvailabilityWithAudit(availability=pa.availability, updated_at=pa.updated_at)
         prof = ProfessorWithAvailability(
             id=professor.id,
             created_at=professor.created_at,
