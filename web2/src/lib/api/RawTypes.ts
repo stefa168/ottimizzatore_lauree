@@ -1,4 +1,10 @@
-import type {AvailabilityAndDate, GradSession, ProfessorAvailability, SessionProfessor, UniversityRole} from "@/types";
+import type {
+  AvailabilityAndDate,
+  GradSession,
+  Professor,
+  ProfessorAvailability,
+  SessionProfessor,
+} from "@/types";
 
 export interface RawGradSession {
   id: number;
@@ -14,21 +20,21 @@ export const transformGradSession = (raw: RawGradSession): GradSession => ({
 });
 
 export interface RawAvailabilityAndDate {
-  when: ProfessorAvailability,
+  availability: ProfessorAvailability,
   updated_at: string
 }
 
-export interface RawSessionProfessor {
-  id: number,
-  name: string,
-  surname: string,
-  role: UniversityRole,
+export interface RawSessionProfessor extends Professor {
   availability: RawAvailabilityAndDate,
 }
 
+export const transformAvailabilityAndDate = (raw: RawAvailabilityAndDate): AvailabilityAndDate => ({
+  when: raw.availability,
+  updated_at: new Date(raw.updated_at)
+})
+
 export const transformSessionProfessor = (raw: RawSessionProfessor): SessionProfessor => {
-  const av: AvailabilityAndDate = {when: raw.availability.when, updated_at: new Date(raw.availability.updated_at)};
-  return {...raw, availability: av};
+  return {...raw, availability: transformAvailabilityAndDate(raw.availability)};
 }
 
 export const transformSessionProfessorList = (raw: RawSessionProfessor[]): SessionProfessor[] => raw.map(transformSessionProfessor)
