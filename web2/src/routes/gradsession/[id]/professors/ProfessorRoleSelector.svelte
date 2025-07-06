@@ -32,8 +32,8 @@
 </script>
 
 <Select.Root type="single" bind:value={value} {onValueChange}>
-  <Select.Trigger style="height: 1.6rem">
-    {selectedLabel.label}
+  <Select.Trigger style="height: 1.6rem" class={{'bg-destructive/25': value === 'unspecified'}}>
+    <span class={{'text-destructive': value === 'unspecified'}}>{selectedLabel.label}</span>
   </Select.Trigger>
   <Select.Content>
     <Select.Group>
