@@ -65,11 +65,11 @@
           <span class="text-destructive"> {professorsWithoutRole.length} docenti </span> non hanno un ruolo
           didattico assegnato.
         {/if}
-        <button class="inline-flex items-center justify-center text-blue-500 hover:underline"
-                onclick={() => goto(`/gradsession/${session_id}/professors/`)}>
+        <a href={`/gradsession/${session_id}/professors/`}
+           class="inline-flex items-center justify-center text-blue-500 hover:underline">
           Vai alla sezione
           <IcOutlineKeyboardDoubleArrowRight/>
-        </button>
+        </a>
       </li>
     </ul>
   {:else}
