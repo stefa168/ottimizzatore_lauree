@@ -6,12 +6,10 @@ export const ProfessorsApi = (customFetch = fetch) => ({
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/professors`, {
       method: 'PATCH',
       body: JSON.stringify(prof),
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: {'Content-Type': 'application/json'}
     });
 
-    if(!response.ok)
+    if (!response.ok)
       throw (await response.json()) as ApiErrorResponse;
 
     return (await response.json()) as Professor;
