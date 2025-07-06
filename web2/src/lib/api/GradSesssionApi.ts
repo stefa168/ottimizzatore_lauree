@@ -59,7 +59,7 @@ export const GradSessionApi = (customFetch = fetch) => ({
       throw await response.json();
     }
 
-    return await response.json() as Promise<RawGradSession>
+    return await response.json() as RawGradSession;
   },
   delete: async (id: number) => {
     await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${id}`, {
