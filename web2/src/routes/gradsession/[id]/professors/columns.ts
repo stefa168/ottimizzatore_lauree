@@ -1,5 +1,5 @@
 // Libraries
-import type {ColumnDef} from "@tanstack/table-core";
+import type {Column, ColumnDef, InitialTableState} from "@tanstack/table-core";
 import {renderComponent} from "@/components/ui/data-table";
 import {toast} from "svelte-sonner";
 
@@ -17,16 +17,31 @@ import StyledFullName from "@/components/StyledFullName.svelte";
 import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
 import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
 import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
+import DataTableColumnButton from "./DataTableColumnButton.svelte";
+
+function orderableHeader<T>(title: string, column: Column<T>) {
+  return renderComponent(DataTableColumnButton, {
+    title, column,
+    onclick: column.getToggleSortingHandler(),
+  });
+}
+
+export const initialTableState: () => InitialTableState = () => ({
+  sorting: [{
+    id: 'surname',
+    desc: false
+  }]
+});
 
 export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: SessionData) => [
   {
     accessorKey: "surname",
-    header: "Cognome",
+    header: ({column}) => orderableHeader("Cognome", column),
     cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "surname"})
   }, {
     accessorKey: "first_name",
-    header: "Nome",
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "name"})
+    header: ({column}) => orderableHeader("Nome", column),
+    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "name"}),
   }, {
     accessorKey: "role",
     header: "Ruolo Didattico",

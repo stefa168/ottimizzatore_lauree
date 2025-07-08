@@ -2,8 +2,9 @@
   import {
     type ColumnDef,
     getCoreRowModel,
-    getPaginationRowModel,
+    getPaginationRowModel, getSortedRowModel, type InitialTableState,
     type PaginationState,
+    type SortingState,
     type Table as TableType
   } from "@tanstack/table-core";
 
@@ -21,34 +22,50 @@
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     singlePlural?: TextTemplates;
+    initialState?: InitialTableState;
   };
 
-  let {data, columns, singlePlural = {
-    singular: (n: number) => "È presente un solo elemento.",
-    plural: (n: number) => `Sono presenti un totale di ${n} elementi.`
-  }}: DataTableProps<TData, TValue> = $props();
+  let {
+    data, columns, singlePlural = {
+      singular: (n: number) => "È presente un solo elemento.",
+      plural: (n: number) => `Sono presenti un totale di ${n} elementi.`
+    }, ...otherProps
+  }: DataTableProps<TData, TValue> = $props();
 
   let pagination = $state<PaginationState>({pageIndex: 0, pageSize: 10});
+  let sorting = $state<SortingState>(otherProps.initialState?.sorting ?? []);
 
   const table = createSvelteTable({
     get data() {
       return data;
     },
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    // Remember: you cannot use the `initialState` field as it will be overridden by `state`.
     state: {
       get pagination() {
         return pagination;
       },
+      get sorting() {
+        return sorting;
+      },
     },
-    onPaginationChange: (updater) => {
+    onPaginationChange: updater => {
       if (typeof updater === 'function') {
         pagination = updater(pagination);
       } else {
         pagination = updater
       }
     },
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: updater => {
+      if (typeof updater === 'function') {
+        sorting = updater(sorting);
+      } else {
+        sorting = updater
+      }
+    },
   })
 </script>
 
