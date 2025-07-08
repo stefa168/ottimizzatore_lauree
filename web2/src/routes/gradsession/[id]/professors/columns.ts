@@ -17,7 +17,7 @@ import StyledFullName from "@/components/StyledFullName.svelte";
 import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
 import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
 import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
-import DataTableColumnButton from "./DataTableColumnButton.svelte";
+import DataTableColumnButton from "@/components/DataTableColumnButton.svelte";
 
 function orderableHeader<T>(title: string, column: Column<T>) {
   return renderComponent(DataTableColumnButton, {
