@@ -37,8 +37,8 @@ export const getDegreeLevelString = (s: GradSessionEntry) => {
   }
 }
 
-export const formatText = (templates: TextTemplates, count: number): string => {
-  return count === 1 ? templates.singular(count) : templates.plural(count);
+export const formatText = (templates: TextTemplates, count: number, total?: number): string => {
+  return count === 1 ? templates.singular(count, total ?? 0) : templates.plural(count, total ?? 0);
 }
 
 export const dateFormatter = new Intl.DateTimeFormat('it-IT', {

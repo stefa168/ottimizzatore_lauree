@@ -2,10 +2,14 @@
   import {
     type ColumnDef,
     getCoreRowModel,
-    getPaginationRowModel, getSortedRowModel, type InitialTableState,
+    getPaginationRowModel,
+    getSortedRowModel,
+    getFilteredRowModel,
+    type InitialTableState,
     type PaginationState,
     type SortingState,
-    type Table as TableType
+    type ColumnFiltersState,
+    type Table as TableType,
   } from "@tanstack/table-core";
 
   import {createSvelteTable, FlexRender} from "@/components/ui/data-table";
@@ -22,20 +26,31 @@
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     singlePlural?: TextTemplates;
+    filteredSinglePlural?: TextTemplates;
     initialState?: InitialTableState;
   };
 
   let {
-    data, columns, singlePlural = {
+    data, columns,
+    singlePlural = {
       singular: (n: number) => "È presente un solo elemento.",
-      plural: (n: number) => `Sono presenti un totale di ${n} elementi.`
-    }, ...otherProps
+      plural: (n: number) => `È presente un totale di ${n} elementi.`
+    },
+    filteredSinglePlural = {
+      singular: (n: number, total: number) => `È presente un solo elemento (su ${total}) che corrisponde ai criteri di ricerca.`,
+      plural: (n: number, total: number) => `Sono presenti ${n} elementi (su ${total}) che corrispondono ai criteri di ricerca.`
+    },
+
+    ...otherProps
   }: DataTableProps<TData, TValue> = $props();
 
   let pagination = $state<PaginationState>({pageIndex: 0, pageSize: 10});
+  // Remember: you cannot use the `initialState` field as it will be overridden by `state`.
+  // At the same time, we need to define it so that if the reset methods are called we have a default state.
   let sorting = $state<SortingState>(otherProps.initialState?.sorting ?? []);
+  let columnFilters = $state<ColumnFiltersState>([])
 
-  const table = createSvelteTable({
+  export const table = $state(createSvelteTable({
     get data() {
       return data;
     },
@@ -43,7 +58,7 @@
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    // Remember: you cannot use the `initialState` field as it will be overridden by `state`.
+    getFilteredRowModel: getFilteredRowModel(),
     state: {
       get pagination() {
         return pagination;
@@ -51,7 +66,11 @@
       get sorting() {
         return sorting;
       },
+      get columnFilters() {
+        return columnFilters;
+      },
     },
+    initialState: otherProps.initialState,
     onPaginationChange: updater => {
       if (typeof updater === 'function') {
         pagination = updater(pagination);
@@ -66,7 +85,14 @@
         sorting = updater
       }
     },
-  })
+    onColumnFiltersChange: (updater) => {
+      if (typeof updater === "function") {
+        columnFilters = updater(columnFilters);
+      } else {
+        columnFilters = updater;
+      }
+    },
+  }));
 </script>
 
 <div>
@@ -112,9 +138,11 @@
   </div>
   <div class="flex items-center justify-between px-2 py-4">
     <div class="text-muted-foreground flex-1 text-sm">
-      <!--{table.getFilteredSelectedRowModel().rows.length} of-->
-      <!--{table.getFilteredRowModel().rows.length} row(s) selected.-->
-      {formatText(singlePlural, table.getFilteredRowModel().rows.length)}
+      {#if columnFilters.length > 0}
+        {formatText(filteredSinglePlural, table.getFilteredRowModel().rows.length, table.getCoreRowModel().rows.length)}
+      {:else}
+        {formatText(singlePlural, table.getFilteredRowModel().rows.length)}
+      {/if}
     </div>
     <div class="flex items-center space-x-6 lg:space-x-8">
       <div class="flex items-center space-x-2">

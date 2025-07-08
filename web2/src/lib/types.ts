@@ -53,7 +53,7 @@ export interface SessionProfessor extends Professor {
   availability: AvailabilityAndDate,
 }
 
-export type TextTemplate = (count: number) => string;
+export type TextTemplate = (count: number, total: number) => string;
 
 export type TextTemplates = {
   singular: TextTemplate,
