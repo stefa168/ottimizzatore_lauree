@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Select from '@/components/ui/select'
   import type {UniversityRole} from "@/types";
+  import {UniversityRoles} from "@/const";
 
   interface Props {
     value: UniversityRole | string;
@@ -9,15 +10,7 @@
 
   let {value = $bindable(), onUpdateValue}: Props = $props();
 
-  const UniversityRoles: { value: string, label: string, disabled?: boolean }[] = [
-    {value: 'ordinary', label: 'Professore Ordinario'},
-    {value: 'associate', label: 'Professore Associato'},
-    {value: 'researcher', label: 'Ricercatore'},
-    // Disabled to avoid users removing a role from a Professor
-    {value: 'unspecified', label: 'Non Specificato', disabled: true}
-  ];
-
-  let selectedLabel = $derived(UniversityRoles.find(role => role.value === value) ?? {
+  let selectedLabel = $derived(UniversityRoles.get(value) ?? {
     value: '',
     label: "Seleziona un ruolo"
   })
@@ -37,7 +30,7 @@
   <Select.Content>
     <Select.Group>
       <Select.Label>Ruoli</Select.Label>
-      {#each UniversityRoles as role}
+      {#each UniversityRoles.values() as role}
         <Select.Item value={role.value} label={role.label} disabled={role.disabled}>{role.label}</Select.Item>
       {/each}
     </Select.Group>

@@ -64,3 +64,5 @@ export interface ProfessorBurden {
   asSupervisor: number,
   asCounterSupervisor: number
 }
+
+export type ValueLabelStructure = { value: string, label: string, disabled?: boolean };
