@@ -5,11 +5,13 @@
     getPaginationRowModel,
     getSortedRowModel,
     getFilteredRowModel,
+    getFacetedUniqueValues,
+    getFacetedRowModel,
     type InitialTableState,
     type PaginationState,
     type SortingState,
     type ColumnFiltersState,
-    type Table as TableType,
+    type Table as TableType
   } from "@tanstack/table-core";
 
   import {createSvelteTable, FlexRender} from "@/components/ui/data-table";
@@ -59,6 +61,8 @@
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    getFacetedRowModel: getFacetedRowModel(),
     state: {
       get pagination() {
         return pagination;

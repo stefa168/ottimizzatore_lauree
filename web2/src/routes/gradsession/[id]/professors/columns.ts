@@ -1,5 +1,5 @@
 // Libraries
-import type {Column, ColumnDef, InitialTableState} from "@tanstack/table-core";
+import type {Column, ColumnDef, FilterFn, InitialTableState} from "@tanstack/table-core";
 import {renderComponent} from "@/components/ui/data-table";
 import {toast} from "svelte-sonner";
 
@@ -18,6 +18,8 @@ import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
 import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
 import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
 import DataTableColumnButton from "@/components/DataTableColumnButton.svelte";
+import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
+import {AvailabilityOptions, UniversityRoles} from "@/const";
 
 function orderableHeader<T>(title: string, column: Column<T>) {
   return renderComponent(DataTableColumnButton, {
@@ -33,6 +35,16 @@ export const initialTableState: () => InitialTableState = () => ({
   }]
 });
 
+const arrayIncludesFilter: FilterFn<SessionProfessor> = (row, columnId, filterValue: string[]) => {
+  if (!filterValue || filterValue.length === 0) {
+    return true; // Show all rows if no filter is applied
+  }
+
+  const cellValue = row.getValue<string>(columnId);
+  return filterValue.includes(cellValue);
+};
+
+
 export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: SessionData) => [
   {
     accessorKey: "surname",
@@ -44,7 +56,12 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
     cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "name"}),
   }, {
     accessorKey: "role",
-    header: "Ruolo Didattico",
+    header: ({column}) => renderComponent(DataTableColumnFilterButton<SessionProfessor>, {
+      title: "Ruolo Didattico",
+      entriesMap: UniversityRoles,
+      column,
+    }),
+    filterFn: arrayIncludesFilter,
     cell: ({row}) => renderComponent(ProfessorRoleSelector, {
       value: row.original.role,
       onUpdateValue: async (newRole: UniversityRole) =>
@@ -63,7 +80,14 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
           })
     })
   }, {
-    header: "Disponibilità",
+    id: "availability",
+    header: ({column}) => renderComponent(DataTableColumnFilterButton<SessionProfessor>, {
+      title: "Disponibilità",
+      entriesMap: AvailabilityOptions,
+      column
+    }),
+    accessorFn: originalRow => originalRow.availability.when,
+    filterFn: arrayIncludesFilter,
     cell: ({row}) => renderComponent(ProfessorAvailabilitySelector, {
       value: row.original.availability.when,
       onUpdateValue: async (newAvailability) =>
@@ -72,7 +96,6 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
           .then(transformAvailabilityAndDate)
           .then((updatedAvailability) => {
             let professor = sd.professorsMap.get(row.original.id)!;
-            console.log(updatedAvailability)
             professor.availability = updatedAvailability
             toast.success("Disponibilità del docente per la sessione aggiornata correttamente.")
           })
