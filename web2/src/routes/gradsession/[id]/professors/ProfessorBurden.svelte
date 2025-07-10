@@ -8,7 +8,7 @@
   let {burden}: Props = $props();
 </script>
 
-<div class="font-bold">
+<div class="font-bold ms-6">
   {#if !burden || burden.asSupervisor === 0 && burden.asCounterSupervisor === 0}
     -
   {:else}
