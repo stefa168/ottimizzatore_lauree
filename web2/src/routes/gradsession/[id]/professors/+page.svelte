@@ -5,7 +5,8 @@
   import {Input} from "@/components/ui/input";
   import type {SessionProfessor} from "@/types";
   import {Button} from "@/components/ui/button";
-  import {LucideSearch} from "@lucide/svelte";
+  import LucideSearch from '~icons/lucide/search'
+  import TableTooltip from "@/components/TableTooltip.svelte";
 
   let sessionData = getSessionData();
 
@@ -15,7 +16,7 @@
   let table = $derived(t?.table)
 </script>
 
-<div class="flex items-center pb-4">
+<div class="flex pb-4">
   <div class="relative">
     <Input
         placeholder="Cerca un docente..."
@@ -36,6 +37,10 @@
       onclick={() => {table?.resetSorting(); table?.resetColumnFilters();}}>
     Resetta la tabella
   </Button>
+
+  <div class="place-self-end ms-auto me-2">
+    <TableTooltip/>
+  </div>
 </div>
 
 <DataTable
