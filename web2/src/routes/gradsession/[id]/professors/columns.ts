@@ -1,5 +1,5 @@
 // Libraries
-import type {Column, ColumnDef, FilterFn, InitialTableState} from "@tanstack/table-core";
+import type {Column, ColumnDef, FilterFn, InitialTableState, SortingFn} from "@tanstack/table-core";
 import {renderComponent} from "@/components/ui/data-table";
 import {toast} from "svelte-sonner";
 
@@ -21,7 +21,7 @@ import DataTableColumnButton from "@/components/DataTableColumnButton.svelte";
 import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
 import {AvailabilityOptions, UniversityRoles} from "@/const";
 
-function orderableHeader<T>(title: string, column: Column<T>) {
+function sortableHeader<T>(title: string, column: Column<T>) {
   return renderComponent(DataTableColumnButton, {
     title, column,
     onclick: column.getToggleSortingHandler(),
@@ -44,15 +44,25 @@ const arrayIncludesFilter: FilterFn<SessionProfessor> = (row, columnId, filterVa
   return filterValue.includes(cellValue);
 };
 
+const compareProfessorBurdens: (sd: SessionData) => SortingFn<SessionProfessor> = (sd) => (rowA, rowB) => {
+  const burdenA = sd.professorsBurdens.get(rowA.original.id)
+  const burdenB = sd.professorsBurdens.get(rowB.original.id)
+
+  const totalA = burdenA ? burdenA.asCounterSupervisor + burdenA.asSupervisor : 0;
+  const totalB = burdenB ? burdenB.asCounterSupervisor + burdenB.asSupervisor : 0;
+
+  return totalA - totalB;
+}
 
 export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: SessionData) => [
   {
     accessorKey: "surname",
-    header: ({column}) => orderableHeader("Cognome", column),
+    enableMultiSort: true,
+    header: ({column}) => sortableHeader("Cognome", column),
     cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "surname"})
   }, {
     accessorKey: "first_name",
-    header: ({column}) => orderableHeader("Nome", column),
+    header: ({column}) => sortableHeader("Nome", column),
     cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "name"}),
   }, {
     accessorKey: "role",
@@ -86,7 +96,7 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
       entriesMap: AvailabilityOptions,
       column
     }),
-    accessorFn: originalRow => originalRow.availability.when,
+    accessorFn: professor => professor.availability.when,
     filterFn: arrayIncludesFilter,
     cell: ({row}) => renderComponent(ProfessorAvailabilitySelector, {
       value: row.original.availability.when,
@@ -108,7 +118,11 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
           })
     })
   }, {
-    header: "Carico",
+    id: "burden",
+    header: ({column}) => sortableHeader("Carico", column),
+    accessorFn: professor => sd.professorsBurdens.get(professor.id),
+    sortingFn: compareProfessorBurdens(sd),
+    enableMultiSort: true,
     cell: ({row}) => renderComponent(ProfessorBurdenComponent, {burden: sd.professorsBurdens.get(row.original.id)})
   }
 ]
