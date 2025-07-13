@@ -53,9 +53,9 @@ class TimeAvailability(Hashable, enum.Enum):
 
 
 class SolverEnum(Hashable, enum.Enum):
-    CPLEX = 'cplex'
-    GLPK = 'glpk'
-    GUROBI = 'gurobi'
+    CPLEX = 'CPLEX'
+    GLPK = 'GLPK'
+    GUROBI = 'GUROBI'
 
     def hash(self):
         return Hashable.hash_data(self.value)
