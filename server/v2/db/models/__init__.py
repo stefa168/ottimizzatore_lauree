@@ -1,3 +1,6 @@
+from .optimization_configuration import OptimizationConfiguration
+from .optimization_log import OptimizationLog
+from .solution_commission import SolutionCommission
 from .student import Student
 from .professor import Professor
 from .enums import SolverEnum, TimeAvailability, UniversityRole, Degree
@@ -14,5 +17,8 @@ __all__ = [
     'Degree',
     'ProfessorAvailability',
     'SessionEntry',
-    'GradSession'
+    'GradSession',
+    'OptimizationConfiguration',
+    'OptimizationLog',
+    'SolutionCommission'
 ]

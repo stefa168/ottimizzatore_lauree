@@ -7,7 +7,7 @@ from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
-from v2.db.models import SessionEntry, ProfessorAvailability, Professor, TimeAvailability
+from v2.db.models import SessionEntry, ProfessorAvailability, Professor, TimeAvailability, OptimizationConfiguration
 
 
 @dataclass
@@ -29,8 +29,12 @@ class GradSession(IdentityAuditBase):
         cascade="all, delete-orphan",
         lazy="subquery"
     )
-
-    # configurations
+    configurations: Mapped[list['OptimizationConfiguration']] = relationship(
+        "OptimizationConfiguration",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="subquery"
+    )
 
     def availability_dict(self) -> dict[Professor, TimeAvailability]:
         avs = {}
