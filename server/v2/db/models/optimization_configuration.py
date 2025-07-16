@@ -25,7 +25,10 @@ class OptimizationConfiguration(IdentityAuditBase):
 
     # Session Foreign Key
     session_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("sessions.id"), nullable=False)
-    session: Mapped['GradSession'] = relationship("GradSession", back_populates="configurations", lazy="selectin")
+    session: Mapped['GradSession'] = relationship(
+        "GradSession",
+        back_populates="configurations",
+        lazy="selectin")
 
     max_duration: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='210', default=210)
     max_commissions_morning: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
@@ -46,14 +49,16 @@ class OptimizationConfiguration(IdentityAuditBase):
     optimization_gap: Mapped[float] = mapped_column(sa.Float, nullable=False, server_default='0.005', default=0.005)
     run_lock: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
 
-    optimization_log: Mapped[OptimizationLog] = relationship(
+    optimization_log: Mapped[OptimizationLog | None] = relationship(
         "OptimizationLog",
         back_populates="opt_config",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
 
-    commissions: Mapped[list['SolutionCommission']] = relationship(
+    commissions: Mapped[list['SolutionCommission'] | None] = relationship(
         "SolutionCommission",
         back_populates="opt_config",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
