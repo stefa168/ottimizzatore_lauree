@@ -8,11 +8,21 @@ from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
 
 from v2.config.settings import Settings
-from v2.domain.grad_sessions.controllers import GraduationSessionController, StudentController, ProfessorController
+from v2.domain.grad_sessions.controllers import (
+    GraduationSessionController,
+    StudentController,
+    ProfessorController,
+    OptimizationConfigurationController
+)
 
 base_router = Router(
     path="/api/v1",
-    route_handlers=[GraduationSessionController, StudentController, ProfessorController],
+    route_handlers=[
+        GraduationSessionController,
+        StudentController,
+        ProfessorController,
+        OptimizationConfigurationController
+    ],
 )
 
 

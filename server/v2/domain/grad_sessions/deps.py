@@ -5,7 +5,7 @@ from typing import TypeVar, Type
 from advanced_alchemy.repository import SQLAlchemyAsyncRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from v2.db.models import Professor, GradSession, SessionEntry, ProfessorAvailability
+from v2.db.models import Professor, GradSession, SessionEntry, ProfessorAvailability, OptimizationConfiguration
 
 
 class ProvideRepositoryMixin[T: SQLAlchemyAsyncRepository]:
@@ -28,3 +28,7 @@ class SessionEntryRepository(SQLAlchemyAsyncRepository[SessionEntry], ProvideRep
 
 class SessionProfessorAvailabilityRepository(SQLAlchemyAsyncRepository[ProfessorAvailability], ProvideRepositoryMixin):
     model_type = ProfessorAvailability
+
+
+class OptimizationConfigurationRepository(SQLAlchemyAsyncRepository[OptimizationConfiguration], ProvideRepositoryMixin):
+    model_type = OptimizationConfiguration

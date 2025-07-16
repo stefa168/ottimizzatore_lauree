@@ -1,0 +1,22 @@
+meta {
+  name: Update Configuration
+  type: http
+  seq: 3
+}
+
+patch {
+  url: 127.0.0.1:8000/api/v1/sessions/:sid/configuration/:cid
+  body: json
+  auth: inherit
+}
+
+params:path {
+  sid: 1
+  cid: 6
+}
+
+body:json {
+  {
+    "title":"Configurazione con titolo modificato"
+  }
+}
