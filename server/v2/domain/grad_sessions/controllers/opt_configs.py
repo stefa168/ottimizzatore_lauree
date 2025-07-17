@@ -1,15 +1,26 @@
+from __future__ import annotations
+
+import pathlib
+import shutil
+from typing import Final
+
+import structlog
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO
-from litestar import Controller, get, post, patch, delete
+from litestar import Controller, get, patch, delete
 from litestar.di import Provide
 from litestar.dto import DTOConfig, DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict
 
-from v2.db.models import OptimizationConfiguration, GradSession, Professor, Student, SolutionCommission, SolverEnum
+from v2.db.models import OptimizationConfiguration, SolverEnum
 from v2.domain.grad_sessions import urls
-from v2.domain.grad_sessions.deps import SessionEntryRepository, OptimizationConfigurationRepository, \
+from v2.domain.grad_sessions.deps import (
+    SessionEntryRepository,
+    OptimizationConfigurationRepository,
     GradSessionRepository
+)
+from v2.domain.grad_sessions.services import check_gs_exists_raise, get_opt_conf_raise
 
 
 class OptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
@@ -92,15 +103,10 @@ class OptimizationConfigurationController(Controller):
     }
 
     @get(urls.GRAD_SESSION_OPT_CONF_NEW, return_dto=OptConfDTO)
-    async def new_configuration(self,
-                                sid: int,
+    async def new_configuration(self, sid: int,
                                 grad_session_repository: GradSessionRepository,
                                 opt_conf_repo: OptimizationConfigurationRepository) -> OptimizationConfiguration:
-        if not await grad_session_repository.exists(GradSession.id == sid):
-            raise HTTPException(
-                detail="The specified Graduation Session does not exist",
-                status_code=http_statuses.HTTP_404_NOT_FOUND
-            )
+        await check_gs_exists_raise(grad_session_repository, sid)
 
         conf_count = await opt_conf_repo.count(OptimizationConfiguration.session_id == sid)
 
@@ -110,57 +116,35 @@ class OptimizationConfigurationController(Controller):
         return conf
 
     @get(urls.GRAD_SESSION_OPT_CONF_LIST, return_dto=OptConfListDTO)
-    async def configuration_list(self,
-                                 sid: int,
+    async def configuration_list(self, sid: int,
                                  grad_session_repository: GradSessionRepository,
                                  opt_conf_repo: OptimizationConfigurationRepository) -> list[OptimizationConfiguration]:
-        if not await grad_session_repository.exists(GradSession.id == sid):
-            raise HTTPException(
-                detail="The specified Graduation Session does not exist",
-                status_code=http_statuses.HTTP_404_NOT_FOUND
-            )
-
+        await check_gs_exists_raise(grad_session_repository, sid)
         return await opt_conf_repo.list(OptimizationConfiguration.session_id == sid)
 
     @patch(urls.GRAD_SESSION_OPT_CONF_UPDATE, dto=OptConfPatchDTO, return_dto=OptConfDTO)
-    async def update_configuration(self,
-                                   sid: int,
-                                   cid: int,
+    async def update_configuration(self, sid: int, cid: int,
                                    data: DTOData[OptimizationConfiguration],
                                    opt_conf_repo: OptimizationConfigurationRepository
                                    ) -> OptimizationConfiguration:
-        config: OptimizationConfiguration | None = await opt_conf_repo.get_one_or_none(
-            OptimizationConfiguration.id == cid,
-            OptimizationConfiguration.session_id == sid
-        )
-        if config is None:
-            raise HTTPException("Configuration not found", status_code=http_statuses.HTTP_404_NOT_FOUND)
-
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
         return data.update_instance(config)
 
     @delete(urls.GRAD_SESSION_OPT_CONF_UPDATE, status_code=http_statuses.HTTP_200_OK)
-    async def update_configuration(self,
-                                   sid: int,
-                                   cid: int,
+    async def update_configuration(self, sid: int, cid: int,
                                    opt_conf_repo: OptimizationConfigurationRepository
                                    ) -> None:
-        config: OptimizationConfiguration | None = await opt_conf_repo.get_one_or_none(
-            OptimizationConfiguration.id == cid,
-            OptimizationConfiguration.session_id == sid
-        )
-        if config is None:
-            raise HTTPException("Configuration not found", status_code=http_statuses.HTTP_404_NOT_FOUND)
-
+        await get_opt_conf_raise(cid, sid, opt_conf_repo)
         await opt_conf_repo.delete(cid)
 
     @get(urls.GRAD_SESSION_OPT_CONF_GET_COMPLETE)
-    async def get_complete_configuration(self,
-                                         sid: int,
-                                         cid: int,
+    async def get_complete_configuration(self, sid: int, cid: int,
                                          grad_session_repository: GradSessionRepository,
                                          opt_conf_repo: OptimizationConfigurationRepository
                                          ) -> OptConfCompleteDTO:
-        if not await grad_session_repository.exists(GradSession.id == sid):
+        await check_gs_exists_raise(grad_session_repository, sid)
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        return OptConfCompleteDTO.model_validate(config)
             raise HTTPException(
                 detail="The specified Graduation Session does not exist",
                 status_code=http_statuses.HTTP_404_NOT_FOUND
