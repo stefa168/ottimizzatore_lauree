@@ -1,10 +1,7 @@
-from typing import Any
-
 from advanced_alchemy.config import AsyncSessionConfig, AlembicAsyncConfig
 from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig
 
 from litestar.serialization import encode_json, decode_json
-from litestar.plugins.sqlalchemy import SQLAlchemyPlugin
 from pydantic import BaseModel, PostgresDsn
 from sqlalchemy import NullPool, event
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -44,18 +41,15 @@ class DatabaseSettings(BaseModel):
     def engine(self) -> AsyncEngine:
         return self.get_engine()
 
-    @property
-    def alchemy_plugin(self) -> SQLAlchemyPlugin:
-        return SQLAlchemyPlugin(config=SQLAlchemyAsyncConfig(
-            engine_instance=self.get_engine(),
-            before_send_handler="autocommit",
+    def config(self) -> SQLAlchemyAsyncConfig:
+        return SQLAlchemyAsyncConfig(
+            engine_instance=self.get_engine(), before_send_handler="autocommit",
             session_config=AsyncSessionConfig(expire_on_commit=False),
             alembic_config=AlembicAsyncConfig(
                 version_table_name=self.migration_ddl_version_table,
-                script_config=self.migration_config,
-                script_location=self.migration_path
+                script_config=self.migration_config, script_location=self.migration_path
             )
-        ))
+        )
 
     def get_engine(self) -> AsyncEngine:
         """Database session factory.

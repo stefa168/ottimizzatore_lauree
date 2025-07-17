@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+from advanced_alchemy.extensions.litestar import SQLAlchemyPlugin
 from litestar import Litestar, Router
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
@@ -38,7 +39,7 @@ def create_app() -> Litestar:
         cors_config=settings.cors_config,
         plugins=[
             settings.log.structlog_plugin,
-            settings.db.alchemy_plugin
+            SQLAlchemyPlugin(config=settings.db.config())
         ],
         openapi_config=OpenAPIConfig(
             title="Graduation Session Optimizer",
