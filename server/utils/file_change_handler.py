@@ -3,21 +3,22 @@ from collections.abc import Callable
 
 from watchdog.events import FileSystemEventHandler
 
-import logging
+from structlog import BoundLogger
 
 
 class FileChangeHandler(FileSystemEventHandler):
     """
     A class that handles file changes and notifies observers when the file is modified.
     """
-    logger: logging.Logger
+    logger: BoundLogger
     file_path: pathlib.Path
     file_position: int
     observers: list[Callable[[list[str]], None]]
 
-    def __init__(self, file_handler_logger: logging.Logger, file_path: pathlib.Path):
+    def __init__(self, file_handler_logger: BoundLogger, file_path: pathlib.Path):
         super().__init__()
         self.logger = file_handler_logger
+        self.logger.bind(event="FileWatcher")
         self.file_path = file_path.absolute()
         self.file_position = self._get_initial_file_position()
         self.observers = []
@@ -60,7 +61,7 @@ class FileChangeHandler(FileSystemEventHandler):
         """
         # Check if the modified file is the file we're interested in
         if not event.is_directory and pathlib.Path(event.src_path).absolute() == self.file_path:
-            self.logger.debug(f"File {self.file_path.name} has been modified. Reading new lines...")
+            # self.logger.debug(f"File {self.file_path.name} has been modified. Reading new lines...")
             with open(self.file_path, 'r') as file:
                 # Seek to the last known position
                 file.seek(self.file_position)
