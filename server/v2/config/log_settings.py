@@ -1,3 +1,4 @@
+import enum
 import logging
 import sys
 from functools import lru_cache
@@ -13,6 +14,19 @@ from litestar.middleware.logging import LoggingMiddlewareConfig
 from litestar.plugins.structlog import StructlogConfig, StructlogPlugin
 
 from pydantic import BaseModel
+from structlog.processors import CallsiteParameter
+from structlog.typing import EventDict
+
+
+class LoggingLevel(enum.Enum):
+    CRITICAL = "CRITICAL"
+    FATAL = "FATAL"
+    ERROR = "ERROR"
+    WARNING = "WARNING"
+    WARN = "WARN"
+    INFO = "INFO"
+    DEBUG = "DEBUG"
+    NOTSET = "NOTSET"
 
 
 class LogSettings(BaseModel):
@@ -27,7 +41,7 @@ class LogSettings(BaseModel):
     include_compressed_body: bool = False
     """Include 'body' of compressed responses in log output."""
 
-    level: int = 30
+    level: LoggingLevel = LoggingLevel.INFO
     """Stdlib log levels. Only emit logs at this level, or higher."""
 
     obfuscate_cookies: set[str] = {"session", "XSRF-TOKEN"}
@@ -64,50 +78,84 @@ class LogSettings(BaseModel):
     worker_event: str = "Worker"
     """Log event name for logs from SAQ worker."""
 
-    saq_level: int = 50
-    """Level to log SAQ logs."""
+    pyomo_level: LoggingLevel = LoggingLevel.CRITICAL
+    """Level to log Pyomo logs."""
 
-    sqlalchemy_level: int = 30
+    sqlalchemy_level: LoggingLevel = LoggingLevel.WARNING
     """Level to log SQLAlchemy logs."""
 
-    asgi_access_level: int = 30
+    asgi_access_level: LoggingLevel = LoggingLevel.WARNING
     """Level to log uvicorn access logs."""
 
-    asgi_error_level: int = 30
+    asgi_error_level: LoggingLevel = LoggingLevel.WARNING
     """Level to log uvicorn error logs."""
+
+    watchdog_level: LoggingLevel = LoggingLevel.WARNING
+    """Level to log watchdog logs."""
 
     @property
     def structlog_plugin(self) -> StructlogPlugin:
-        _render_as_json = not _is_tty()
-        _structlog_default_processors = default_structlog_processors(as_json=_render_as_json)
-        _structlog_default_processors.insert(1, structlog.processors.EventRenamer("message"))
-        _structlog_standard_lib_processors = default_structlog_standard_lib_processors(as_json=_render_as_json)
-        _structlog_standard_lib_processors.insert(1, structlog.processors.EventRenamer("message"))
+        render_as_json = not _is_tty()
+
+        cpa = structlog.processors.CallsiteParameterAdder({})
+
+        processors = [
+            cpa,
+            structlog.processors.EventRenamer("message"),
+            *default_structlog_processors(as_json=render_as_json)
+        ]
+
+        stdlib_processors = [
+            cpa,
+            structlog.processors.EventRenamer("message"),
+            *default_structlog_standard_lib_processors(as_json=render_as_json)
+        ]
 
         return StructlogPlugin(config=StructlogConfig(
             structlog_logging_config=StructLoggingConfig(
                 log_exceptions="always",
-                processors=_structlog_default_processors,
-                logger_factory=default_logger_factory(as_json=_render_as_json),
+                processors=processors,
+                logger_factory=default_logger_factory(as_json=render_as_json),
                 standard_lib_logging_config=LoggingConfig(
-                    root={"level": logging.getLevelName(self.level), "handlers": ["queue_listener"]},
+                    root={"level": self.level.value, "handlers": ["queue_listener"]},
                     formatters={
                         "standard": {
                             "()": structlog.stdlib.ProcessorFormatter,
-                            "processors": _structlog_standard_lib_processors,
+                            "processors": stdlib_processors,
                         },
                     },
                     loggers={
                         "sqlalchemy.engine": {
                             "propagate": False,
-                            "level": self.sqlalchemy_level,
+                            "level": self.sqlalchemy_level.value,
                             "handlers": ["queue_listener"],
                         },
                         "sqlalchemy.pool": {
                             "propagate": False,
-                            "level": self.sqlalchemy_level,
+                            "level": self.sqlalchemy_level.value,
                             "handlers": ["queue_listener"],
                         },
+                        "pyomo.core": {
+                            "propagate": False,
+                            "level": self.pyomo_level.value,
+                            "handlers": ["queue_listener"],
+                        },
+                        "watchdog": {
+                            "propagate": False,
+                            "level": self.watchdog_level.value,
+                            "handlers": ["queue_listener"],
+                        },
+                        "watchdog.observers": {
+                            "propagate": False,
+                            "level": self.watchdog_level.value,
+                            "handlers": ["queue_listener"],
+                        },
+                        "watchdog.observers.inotify_buffer": {
+                            "propagate": False,
+                            "level": self.watchdog_level.value,
+                            "handlers": ["queue_listener"],
+                        }
+
                     },
                 ),
             ),

@@ -129,9 +129,8 @@
           "type": "boolean"
         },
         "level": {
-          "default": 30,
-          "title": "Level",
-          "type": "integer"
+          "$ref": "#/$defs/LoggingLevel",
+          "default": "INFO"
         },
         "obfuscate_cookies": {
           "default": [
@@ -147,9 +146,9 @@
         },
         "obfuscate_headers": {
           "default": [
-            "X-API-KEY",
             "X-XSRF-TOKEN",
-            "Authorization"
+            "Authorization",
+            "X-API-KEY"
           ],
           "items": {
             "type": "string"
@@ -206,28 +205,38 @@
           "type": "string"
         },
         "saq_level": {
-          "default": 50,
-          "title": "Saq Level",
-          "type": "integer"
+          "$ref": "#/$defs/LoggingLevel",
+          "default": "CRITICAL"
         },
         "sqlalchemy_level": {
-          "default": 30,
-          "title": "Sqlalchemy Level",
-          "type": "integer"
+          "$ref": "#/$defs/LoggingLevel",
+          "default": "WARNING"
         },
         "asgi_access_level": {
-          "default": 30,
-          "title": "Asgi Access Level",
-          "type": "integer"
+          "$ref": "#/$defs/LoggingLevel",
+          "default": "WARNING"
         },
         "asgi_error_level": {
-          "default": 30,
-          "title": "Asgi Error Level",
-          "type": "integer"
+          "$ref": "#/$defs/LoggingLevel",
+          "default": "WARNING"
         }
       },
       "title": "LogSettings",
       "type": "object"
+    },
+    "LoggingLevel": {
+      "enum": [
+        "CRITICAL",
+        "FATAL",
+        "ERROR",
+        "WARNING",
+        "WARN",
+        "INFO",
+        "DEBUG",
+        "NOTSET"
+      ],
+      "title": "LoggingLevel",
+      "type": "string"
     },
     "ServerSettings": {
       "properties": {
@@ -272,7 +281,7 @@
       "default": {
         "url": "http://localhost:8000",
         "debug": false,
-        "secret_key": "ff07fa3078fa87c6e2b9020365ebf97a2b9a4abf9f787e3e2bb3ad02895f6e3f",
+        "secret_key": "d07667d3c37e8a4c6467bda6c6097b1ab012985fa9a5eea0b13b5c289575bd98",
         "name": "app",
         "allowed_cors_origins": [
           "*"
@@ -300,15 +309,15 @@
         "exclude_paths": "\\A(?!x)x",
         "http_event": "HTTP",
         "include_compressed_body": false,
-        "level": 30,
+        "level": "INFO",
         "obfuscate_cookies": [
           "XSRF-TOKEN",
           "session"
         ],
         "obfuscate_headers": [
-          "X-API-KEY",
           "X-XSRF-TOKEN",
-          "Authorization"
+          "Authorization",
+          "X-API-KEY"
         ],
         "job_fields": [
           "function",
@@ -332,10 +341,10 @@
           "status_code"
         ],
         "worker_event": "Worker",
-        "saq_level": 50,
-        "sqlalchemy_level": 30,
-        "asgi_access_level": 30,
-        "asgi_error_level": 30
+        "saq_level": "CRITICAL",
+        "sqlalchemy_level": "WARNING",
+        "asgi_access_level": "WARNING",
+        "asgi_error_level": "WARNING"
       }
     }
   },

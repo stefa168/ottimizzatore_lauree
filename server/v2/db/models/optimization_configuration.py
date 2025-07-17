@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from advanced_alchemy.base import IdentityAuditBase
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
@@ -16,6 +16,12 @@ from v2.db.models.enums import SolverEnum
 @dataclass
 class OptimizationConfiguration(IdentityAuditBase):
     __tablename__ = "optimization_configurations"
+    __table_args__ = (
+        CheckConstraint(
+            "NOT online OR (min_professor_number IS NOT NULL AND min_professor_number_masters IS NOT NULL AND max_professor_numer IS NOT NULL)",
+            name="ck_online_requires_professor_numbers"
+        ),
+    )
 
     title: Mapped[str] = mapped_column(
         sa.String(256),
@@ -37,7 +43,7 @@ class OptimizationConfiguration(IdentityAuditBase):
     online: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
     min_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     min_professor_number_masters: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
-    max_professor_numer: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
+    max_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
 
     solver: Mapped[SolverEnum] = mapped_column(
         sa.Enum(SolverEnum),

@@ -69,7 +69,7 @@ class OptConfCompleteDTO(BaseModel):
     online: bool
     min_professor_number: int | None
     min_professor_number_masters: int | None
-    max_professor_numer: int | None
+    max_professor_number: int | None
 
     solver: SolverEnum
 
