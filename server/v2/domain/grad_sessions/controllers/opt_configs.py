@@ -92,6 +92,17 @@ class OptConfCompleteDTO(BaseModel):
     commissions: list[None]
 
 
+logger = structlog.stdlib.get_logger()
+
+# Path to the directories that hold the datfiles and solutions produced.
+# Inside this directory there is a directory with this structure:
+# temp
+# |- [problem_id] - [config_id] --- cfg.dat
+# |_ ...                         |_ model.lp
+#                                |_ val.xls
+OPT_TMP_DIR: Final = ".temp/"
+
+
 class OptimizationConfigurationController(Controller):
     """Optimization Configuration Controller"""
 
@@ -145,20 +156,66 @@ class OptimizationConfigurationController(Controller):
         await check_gs_exists_raise(grad_session_repository, sid)
         config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
         return OptConfCompleteDTO.model_validate(config)
+
+    @get(urls.GRAD_SESSION_OPT_CONF_SOLVE, status_code=http_statuses.HTTP_202_ACCEPTED)
+    async def solve_configuration(self, session_id: int, config_id: int,
+                                  grad_session_repository: GradSessionRepository,
+                                  opt_conf_repo: OptimizationConfigurationRepository) -> None:
+        logger.info(f"Received request to solve commission {session_id} with configuration {config_id}")
+
+        # executor.queue.append("1345")
+        # logger.info(executor.queue.popleft())
+        # return
+
+        await check_gs_exists_raise(grad_session_repository, session_id)
+        config = await get_opt_conf_raise(config_id, session_id, opt_conf_repo)
+
+        # First we check if the configuration has already been solved
+        if len(config.commissions) > 0:
+            logger.error(f"Configuration with ID {config_id} already solved")
             raise HTTPException(
-                detail="The specified Graduation Session does not exist",
-                status_code=http_statuses.HTTP_404_NOT_FOUND
+                detail="Configuration already solved",
+                status_code=http_statuses.HTTP_409_CONFLICT
             )
 
-        config: OptimizationConfiguration | None = await opt_conf_repo.get_one_or_none(
-            OptimizationConfiguration.id == cid,
-            OptimizationConfiguration.session_id == sid,
-            # load=[
-            #     OptimizationConfiguration.optimization_log,
-            #     OptimizationConfiguration.commissions
-            # ]
-        )
-        if config is None:
-            raise HTTPException("Configuration not found", status_code=http_statuses.HTTP_404_NOT_FOUND)
+        # Then we check if the configuration is already running. If we're here, we're sure that we haven't saved a
+        # solution yet.
+        # todo we should return another kind of error if the lock is set but there is no future currently running
+        if config.run_lock:
+            logger.error(f"Configuration with ID {config_id} is already being solved")
+            raise HTTPException(
+                detail="Configuration with ID {config_id} is already being solved",
+                status_code=http_statuses.HTTP_409_CONFLICT
+            )
 
-        return OptConfCompleteDTO.model_validate(config)
+        logger.debug(f"Locking the configuration {config_id}")
+        # todo enable after testing
+        # config.run_lock = True
+        # await opt_conf_repo.update(config)
+
+        logger.debug(f"Setting up the optimization for session {session_id} and configuration {config_id}")
+        base_path = pathlib.Path(OPT_TMP_DIR)
+        cc_path = base_path / str(session_id) / str(config_id)
+
+        cc_path.mkdir(parents=True, exist_ok=True)
+
+        try:
+            config.create_dat_file(cc_path)
+
+            with (cc_path / "val.xls").open('wb') as f:
+                f.write(config.session.export_xls())
+        except Exception as e:
+            logger.error(f"Error during optimization files creation for session {session_id}, config {config_id}", e)
+            if cc_path.exists():
+                shutil.rmtree(cc_path)
+                logger.debug(f"Deleted directory {cc_path} due to export error")
+
+            raise
+
+        # tasks = BackgroundTasks([BackgroundTask(solver_wrapper, config, cc_path)])
+
+        # return Response(
+        #     background=tasks,
+        #     status_code=http_statuses.HTTP_202_ACCEPTED,
+        #     content=None
+        # )
