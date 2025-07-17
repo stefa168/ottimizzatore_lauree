@@ -1,5 +1,8 @@
 from __future__ import annotations
+
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
@@ -68,3 +71,62 @@ class OptimizationConfiguration(IdentityAuditBase):
         cascade="all, delete-orphan",
         lazy="selectin"
     )
+
+    def create_dat_file(self, base_path: Path) -> (Path, Path):
+        dat_file = base_path / "temp.dat"
+        excel_path = base_path / "val.xls"
+
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        morning_commissions = list(range(0, self.max_commissions_morning))
+        afternoon_commissions = list(range(
+            self.max_commissions_morning,
+            self.max_commissions_morning + self.max_commissions_afternoon
+        ))
+
+        with open(dat_file, "w") as dat_file:
+            dat_file.write(f"param max_durata := {self.max_duration};\n")
+            dat_file.write(f"set commissioni_mattina := {' '.join(map(str, morning_commissions))};\n")
+            dat_file.write(f"set commissioni_pomeriggio := {' '.join(map(str, afternoon_commissions))};\n")
+            dat_file.write(f"param excel_path := \"{excel_path.resolve()}\";\n")
+
+            if self.online:
+                dat_file.write(f"param minDocenti := {self.min_professor_number};\n")
+                dat_file.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
+                dat_file.write(f"param max_doc := {self.max_professor_numer};\n")
+
+        return base_path, dat_file
+
+    def create_virtual_dat_file(self, base_path: Path) -> (Path, tempfile.NamedTemporaryFile):
+        excel_path = base_path / "val.xls"
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        # Create a temporary file that will be automatically deleted
+        dat_file = tempfile.NamedTemporaryFile(
+            mode='w',
+            suffix='.dat',
+            prefix='temp_',
+            delete=True  # This is the default, file will be deleted when closed
+        )
+
+        morning_commissions = list(range(0, self.max_commissions_morning))
+        afternoon_commissions = list(range(
+            self.max_commissions_morning,
+            self.max_commissions_morning + self.max_commissions_afternoon
+        ))
+
+        dat_file.write(f"param max_durata := {self.max_duration};\n")
+        dat_file.write(f"set commissioni_mattina := {' '.join(map(str, morning_commissions))};\n")
+        dat_file.write(f"set commissioni_pomeriggio := {' '.join(map(str, afternoon_commissions))};\n")
+        dat_file.write(f"param excel_path := \"{excel_path.resolve()}\";\n")
+
+        if self.online:
+            dat_file.write(f"param minDocenti := {self.min_professor_number};\n")
+            dat_file.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
+            dat_file.write(f"param max_doc := {self.max_professor_numer};\n")
+
+        dat_file.flush()  # Ensure data is written to disk
+
+        # Return the base path and the temporary file object
+        # The file path can be accessed via dat_file.name
+        return base_path, dat_file
