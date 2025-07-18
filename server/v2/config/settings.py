@@ -3,10 +3,9 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from functools import lru_cache
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from litestar.config.cors import CORSConfig
 
 from v2.config.app import AppSettings
@@ -39,6 +38,8 @@ def save_schema_to_file(p: Path):
         json.dump(schema, f, indent=2)
     print(f"JSON Schema saved to {p}")
 
+
+settings = Settings.from_yaml(Path(os.getcwd()) / "v2" / "config.yaml")
 
 if __name__ == '__main__':
     save_schema_to_file(Path(os.getcwd()) / "schema.json")

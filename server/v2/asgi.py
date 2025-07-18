@@ -1,14 +1,10 @@
-# from __future__ import annotations
-
-import os
-from pathlib import Path
-
-from advanced_alchemy.extensions.litestar import SQLAlchemyPlugin
 from litestar import Litestar, Router
+from litestar.di import Provide
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
 
-from v2.config.settings import Settings
+from v2.config.settings import settings
+from v2.config.plugins import alchemy_plugin, structlog_plugin
 from v2.domain.grad_sessions.controllers import (
     GraduationSessionController,
     StudentController,
@@ -26,26 +22,17 @@ base_router = Router(
     ],
 )
 
-
-def create_app() -> Litestar:
-    settings = Settings.from_yaml(Path(os.getcwd()) / "v2" / "config.yaml")
-
-    app = Litestar(
-        debug=True,
-        dependencies={
-            # "logger": Provide(provide_logger)
-        },
-        route_handlers=[base_router],
-        cors_config=settings.cors_config,
-        plugins=[
-            settings.log.structlog_plugin,
-            SQLAlchemyPlugin(config=settings.db.config())
-        ],
-        openapi_config=OpenAPIConfig(
-            title="Graduation Session Optimizer",
-            version="0.1",
-            render_plugins=[SwaggerRenderPlugin()]
-        )
-    )
-
-    return app
+app = Litestar(
+    debug=settings.app.debug,
+    dependencies={
+        "executor": Provide(OptimizationExecutor.provide)
+    },
+    route_handlers=[base_router],
+    cors_config=settings.cors_config,
+    plugins=[alchemy_plugin, structlog_plugin],
+    openapi_config=OpenAPIConfig(
+        title="Graduation Session Optimizer",
+        version="0.1",
+        render_plugins=[SwaggerRenderPlugin()]
+    ),
+)

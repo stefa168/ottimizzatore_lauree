@@ -93,8 +93,7 @@ class LogSettings(BaseModel):
     watchdog_level: LoggingLevel = LoggingLevel.WARNING
     """Level to log watchdog logs."""
 
-    @property
-    def structlog_plugin(self) -> StructlogPlugin:
+    def structlog_config(self) -> StructlogConfig:
         render_as_json = not _is_tty()
 
         cpa = structlog.processors.CallsiteParameterAdder({})
@@ -111,7 +110,7 @@ class LogSettings(BaseModel):
             *default_structlog_standard_lib_processors(as_json=render_as_json)
         ]
 
-        return StructlogPlugin(config=StructlogConfig(
+        return StructlogConfig(
             structlog_logging_config=StructLoggingConfig(
                 log_exceptions="always",
                 processors=processors,
@@ -163,7 +162,7 @@ class LogSettings(BaseModel):
                 request_log_fields=self.request_fields,
                 response_log_fields=self.response_fields,
             ),
-        ))
+        )
 
 
 @lru_cache
