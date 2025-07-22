@@ -6,6 +6,7 @@ from typing import Final
 
 import structlog
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO
+from aio_pika import Message, DeliveryMode
 from litestar import Controller, get, patch, delete
 from litestar.di import Provide
 from litestar.dto import DTOConfig, DTOData
@@ -21,6 +22,7 @@ from v2.domain.grad_sessions.deps import (
     GradSessionRepository
 )
 from v2.domain.grad_sessions.services import check_gs_exists_raise, get_opt_conf_raise
+from v2.opt_manager import RabbitMessaging
 
 
 class OptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
@@ -92,7 +94,7 @@ class OptConfCompleteDTO(BaseModel):
     commissions: list[None]
 
 
-logger = structlog.stdlib.get_logger()
+logger = structlog.stdlib.get_logger(__name__)
 
 # Path to the directories that hold the datfiles and solutions produced.
 # Inside this directory there is a directory with this structure:
@@ -159,6 +161,7 @@ class OptimizationConfigurationController(Controller):
 
     @get(urls.GRAD_SESSION_OPT_CONF_SOLVE, status_code=http_statuses.HTTP_202_ACCEPTED)
     async def solve_configuration(self, session_id: int, config_id: int,
+                                  pika: RabbitMessaging,
                                   grad_session_repository: GradSessionRepository,
                                   opt_conf_repo: OptimizationConfigurationRepository) -> None:
         logger.info(f"Received request to solve commission {session_id} with configuration {config_id}")
@@ -211,6 +214,14 @@ class OptimizationConfigurationController(Controller):
                 logger.debug(f"Deleted directory {cc_path} due to export error")
 
             raise
+
+        await pika.channel.default_exchange.publish(
+            Message(
+                b"test",
+                delivery_mode=DeliveryMode.PERSISTENT
+            ),
+            routing_key="optimization"
+        )
 
         # tasks = BackgroundTasks([BackgroundTask(solver_wrapper, config, cc_path)])
 

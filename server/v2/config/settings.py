@@ -39,7 +39,8 @@ def save_schema_to_file(p: Path):
     print(f"JSON Schema saved to {p}")
 
 
-settings = Settings.from_yaml(Path(os.getcwd()) / "v2" / "config.yaml")
+settings_path = Path(os.getcwd()) / "v2" / "config.yaml"
+settings = Settings.from_yaml(settings_path)
 
 if __name__ == '__main__':
     save_schema_to_file(Path(os.getcwd()) / "schema.json")

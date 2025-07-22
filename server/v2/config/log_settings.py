@@ -1,5 +1,4 @@
 import enum
-import logging
 import sys
 from functools import lru_cache
 
@@ -15,7 +14,6 @@ from litestar.plugins.structlog import StructlogConfig, StructlogPlugin
 
 from pydantic import BaseModel
 from structlog.processors import CallsiteParameter
-from structlog.typing import EventDict
 
 
 class LoggingLevel(enum.Enum):
@@ -96,16 +94,18 @@ class LogSettings(BaseModel):
     def structlog_config(self) -> StructlogConfig:
         render_as_json = not _is_tty()
 
-        cpa = structlog.processors.CallsiteParameterAdder({})
+        cpa = structlog.processors.CallsiteParameterAdder({CallsiteParameter.PROCESS_NAME})
 
         processors = [
             cpa,
+            # structlog.stdlib.add_logger_name,
             structlog.processors.EventRenamer("message"),
             *default_structlog_processors(as_json=render_as_json)
         ]
 
         stdlib_processors = [
             cpa,
+            # structlog.stdlib.add_logger_name,
             structlog.processors.EventRenamer("message"),
             *default_structlog_standard_lib_processors(as_json=render_as_json)
         ]
@@ -153,6 +153,11 @@ class LogSettings(BaseModel):
                             "propagate": False,
                             "level": self.watchdog_level.value,
                             "handlers": ["queue_listener"],
+                        },
+                        "aiormq.connection": {
+                            "propagate": False,
+                            "level": "WARNING",
+                            "handlers": ["queue_listener"]
                         }
 
                     },

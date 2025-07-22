@@ -1,4 +1,7 @@
+# from asyncio import Event
+
 from litestar import Litestar, Router
+from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
@@ -11,6 +14,7 @@ from v2.domain.grad_sessions.controllers import (
     ProfessorController,
     OptimizationConfigurationController
 )
+from v2.opt_manager import OptimizationWorkersManager, RabbitMessaging
 
 base_router = Router(
     path="/api/v1",
@@ -25,7 +29,7 @@ base_router = Router(
 app = Litestar(
     debug=settings.app.debug,
     dependencies={
-        "executor": Provide(OptimizationExecutor.provide)
+        "pika": Provide(RabbitMessaging.provide)
     },
     route_handlers=[base_router],
     cors_config=settings.cors_config,
@@ -35,4 +39,9 @@ app = Litestar(
         version="0.1",
         render_plugins=[SwaggerRenderPlugin()]
     ),
+    lifespan=[
+        RabbitMessaging.lifespan,
+        OptimizationWorkersManager.lifespan
+    ],
+    state=State({"settings": settings})
 )

@@ -11,6 +11,7 @@ keys.json
 cplex*.bin
 venv
 db_data
+rabbitmq_data
 
 # Copilot
 .idea/copilot
