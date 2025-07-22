@@ -19,7 +19,7 @@ from v2.config.settings import Settings, settings_path
 logger = structlog.stdlib.get_logger()
 
 MANAGER_LIFESPAN_KEY: Final = "opt_manager"
-PIKA_LIFETIME_KEY = "pika"
+PIKA_LIFETIME_KEY: Final = "pika"
 OPTIMIZATION_CHANNEL_NAME: Final = "optimization"
 
 
@@ -84,20 +84,18 @@ class OptimizationWorkersManager:
             await loop.run_in_executor(None, stop_event.wait)
             logger.info("Shutting down")
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.stop_workers()
+
     @staticmethod
     @asynccontextmanager
     async def lifespan(app: Litestar) -> AsyncGenerator[None, None]:
-        manager: OptimizationWorkersManager | None = None
-
-        try:
-            manager = OptimizationWorkersManager(settings_path)
+        async with OptimizationWorkersManager(settings_path) as manager:
             app.state[MANAGER_LIFESPAN_KEY] = manager
-
             yield
-
-        finally:
-            if manager:
-                manager.stop_workers()
 
     @staticmethod
     async def provide(state: State) -> AsyncGenerator[OptimizationWorkersManager, None]:
