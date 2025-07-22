@@ -18,7 +18,9 @@ from v2.config.settings import Settings, settings_path
 
 logger = structlog.stdlib.get_logger()
 
-MANAGER_KEY: Final = "opt_manager"
+MANAGER_LIFESPAN_KEY: Final = "opt_manager"
+PIKA_LIFETIME_KEY = "pika"
+OPTIMIZATION_CHANNEL_NAME: Final = "optimization"
 
 
 class OptimizationWorkersManager:
@@ -89,7 +91,7 @@ class OptimizationWorkersManager:
 
         try:
             manager = OptimizationWorkersManager(settings_path)
-            app.state[MANAGER_KEY] = manager
+            app.state[MANAGER_LIFESPAN_KEY] = manager
 
             yield
 
@@ -99,7 +101,7 @@ class OptimizationWorkersManager:
 
     @staticmethod
     async def provide(state: State) -> AsyncGenerator[OptimizationWorkersManager, None]:
-        manager = state.get(MANAGER_KEY)
+        manager = state.get(MANAGER_LIFESPAN_KEY)
         if manager is None:
             raise RuntimeError("Optimization Processes Manager is missing in app State")
 
@@ -135,7 +137,7 @@ class RabbitMessaging:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=1)
 
-        opt_queue = await channel.declare_queue(name="optimization", durable=True)
+        opt_queue = await channel.declare_queue(name=OPTIMIZATION_CHANNEL_NAME, durable=True)
 
         return cls(connection, channel, opt_queue)
 
@@ -153,9 +155,13 @@ class RabbitMessaging:
     @asynccontextmanager
     async def lifespan(app: Litestar) -> AsyncGenerator[None, None]:
         async with await RabbitMessaging.create(app.state.get("settings")) as pika:
-            app.state["pika"] = pika
+            app.state[PIKA_LIFETIME_KEY] = pika
             yield
 
     @staticmethod
     async def provide(state: State) -> AsyncGenerator[RabbitMessaging, None]:
-        return state.get('pika')
+        pika = state.get(PIKA_LIFETIME_KEY)
+        if pika is None:
+            raise RuntimeError("Pika is missing in app State")
+
+        return pika
