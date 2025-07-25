@@ -1,98 +1,28 @@
 from __future__ import annotations
 
+import json
 import pathlib
 import shutil
 from typing import Final
 
 import structlog
-from advanced_alchemy.extensions.litestar import SQLAlchemyDTO
 from aio_pika import Message, DeliveryMode
 from litestar import Controller, get, patch, delete
 from litestar.di import Provide
-from litestar.dto import DTOConfig, DTOData
+from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
-from pydantic import BaseModel, ConfigDict
 
-from v2.db.models import OptimizationConfiguration, SolverEnum
+from v2.db.models import OptimizationConfiguration
 from v2.domain.grad_sessions import urls
 from v2.domain.grad_sessions.deps import (
     SessionEntryRepository,
     OptimizationConfigurationRepository,
     GradSessionRepository
 )
+from v2.domain.grad_sessions.schemas import OptConfDTO, OptConfPatchDTO, OptConfListDTO, OptConfCompleteDTO
 from v2.domain.grad_sessions.services import check_gs_exists_raise, get_opt_conf_raise
-from v2.opt_manager import RabbitMessaging
-
-
-class OptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
-    config = DTOConfig(
-        max_nested_depth=0
-    )
-
-
-class OptConfPatchDTO(SQLAlchemyDTO[OptimizationConfiguration]):
-    config = DTOConfig(
-        max_nested_depth=0,
-        partial=True,
-        exclude={"id", "created_at", "updated_at", "session_id"}
-    )
-
-
-class OptConfListDTO(SQLAlchemyDTO[OptimizationConfiguration]):
-    config = DTOConfig(
-        max_nested_depth=0,
-        include={"session_id", "id", "title", "created_at", "updated_at"}
-    )
-
-
-class OptimizationLogDTO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    opt_config_id: int
-
-
-class SolutionCommissionDTO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    order_key: int
-    morning: bool
-
-    session_id: int
-    opt_config_id: int
-
-    # professors_ids: list[int]
-    # students_ids: list[int]
-    # @computed_field
-    # def professors_ids(self) -> list[int]:
-    #     # `self` is the ORM object (since from_attributes=True)
-    #     return [p.id for p in self.professors]
-
-
-class OptConfCompleteDTO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    title: str
-    session_id: int
-
-    max_duration: int
-    max_commissions_morning: int
-    max_commissions_afternoon: int
-
-    online: bool
-    min_professor_number: int | None
-    min_professor_number_masters: int | None
-    max_professor_number: int | None
-
-    solver: SolverEnum
-
-    optimization_time_limit: int
-    optimization_gap: float
-    run_lock: bool
-
-    optimization_log: OptimizationLogDTO | None
-    commissions: list[None]
-
+from v2.opt_manager import RabbitMessaging, OPTIMIZATION_CHANNEL_NAME
 
 logger = structlog.stdlib.get_logger(__name__)
 

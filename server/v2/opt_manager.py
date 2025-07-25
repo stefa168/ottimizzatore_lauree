@@ -15,12 +15,16 @@ from litestar import Litestar
 from litestar.datastructures import State
 
 from v2.config.settings import Settings, settings_path
+from v2.domain.grad_sessions.schemas import OptConfCompleteDTO
+from v2.domain.grad_sessions.services import solver_wrapper
 
 logger = structlog.stdlib.get_logger()
 
 MANAGER_LIFESPAN_KEY: Final = "opt_manager"
 PIKA_LIFETIME_KEY: Final = "pika"
 OPTIMIZATION_CHANNEL_NAME: Final = "optimization"
+MAX_RETRIES: Final = 3
+RETRY_HEADER: Final = "x-retries"
 
 
 class OptimizationWorkersManager:
