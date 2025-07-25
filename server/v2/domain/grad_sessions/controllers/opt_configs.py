@@ -145,18 +145,17 @@ class OptimizationConfigurationController(Controller):
 
             raise
 
+        payload = {
+            "config": OptConfCompleteDTO.model_validate(config).model_dump(mode="json"),
+            "cc_path": str(cc_path.absolute())
+        }
+
         await pika.channel.default_exchange.publish(
             Message(
-                b"test",
-                delivery_mode=DeliveryMode.PERSISTENT
+                body=json.dumps(payload).encode("utf-8"),
+                content_type="application/json",
+                content_encoding="utf-8",
+                delivery_mode=DeliveryMode.PERSISTENT,
             ),
-            routing_key="optimization"
+            routing_key=OPTIMIZATION_CHANNEL_NAME
         )
-
-        # tasks = BackgroundTasks([BackgroundTask(solver_wrapper, config, cc_path)])
-
-        # return Response(
-        #     background=tasks,
-        #     status_code=http_statuses.HTTP_202_ACCEPTED,
-        #     content=None
-        # )

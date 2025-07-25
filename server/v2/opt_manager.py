@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import signal
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, AsyncExitStack
 from dataclasses import dataclass
 from multiprocessing import Process, Event
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Final, AsyncGenerator
 
 import aio_pika
 import structlog.stdlib
+from aio_pika import Message, DeliveryMode
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection, AbstractRobustChannel, AbstractRobustQueue
 from litestar import Litestar
 from litestar.datastructures import State
@@ -29,7 +31,7 @@ RETRY_HEADER: Final = "x-retries"
 
 class OptimizationWorkersManager:
     processes: list[Process] = []
-    stop_event = Event()
+    _stop_event = Event()
 
     def __init__(self, app_settings_path: Path, max_workers=1):
         app_settings = Settings.from_yaml(app_settings_path)
@@ -43,15 +45,16 @@ class OptimizationWorkersManager:
             logger.debug("Creating worker process", idx=i)
             p = Process(
                 target=OptimizationWorkersManager._worker_entry,
-                args=(app_settings, self.stop_event),
+                args=(app_settings, self._stop_event),
                 name=f"opt-worker-{i + 1}",
                 daemon=False)
             p.start()
+            logger.debug("Created process", pid=p.pid)
             self.processes.append(p)
 
     def stop_workers(self):
         logger.debug("Sending stop signal to workers")
-        self.stop_event.set()
+        self._stop_event.set()
         for p in self.processes:
             logger.debug("Joining worker", worker=p.name)
             p.join(timeout=5)
@@ -74,13 +77,49 @@ class OptimizationWorkersManager:
     async def _async_worker(app_settings: Settings, stop_event: Event):
         # noinspection PyShadowingNames
         logger = structlog.stdlib.get_logger()
+        db_conf = app_settings.db.config()
 
-        async with await RabbitMessaging.create(app_settings) as mq:
-            async def test(message: AbstractIncomingMessage):
-                logger.info("Got a message", info=message.info())
-                await message.ack()
+        # noinspection PyAbstractClass
+        async with AsyncExitStack() as stack:
+            mq = await stack.enter_async_context(await RabbitMessaging.create(app_settings))
 
-            await mq.opt_queue.consume(test)
+            async def solve(message: AbstractIncomingMessage):
+                body_str = message.body.decode("utf-8")
+                payload = json.loads(body_str)
+                config_dto = OptConfCompleteDTO.model_validate(payload["config"])
+                cc_path = Path(payload["cc_path"])
+
+                retries = int(message.headers.get(RETRY_HEADER, 0))  # type: ignore[arg-type]
+
+                print("Recovered DTO:", config_dto)
+                print("Solution files are in", cc_path)
+
+                try:
+                    # todo improve error management
+                    async with db_conf.get_session() as db_session:
+                        await solver_wrapper(db_session, config_dto, cc_path)
+
+                except Exception as e:
+                    logger.exception("Could not solve the optimization problem", e)
+                    if retries <= MAX_RETRIES:
+                        new_headers = dict(message.headers or {})
+                        new_headers[RETRY_HEADER] = retries + 1
+
+                        await mq.channel.default_exchange.publish(
+                            Message(
+                                body=message.body,
+                                headers=new_headers,
+                                delivery_mode=DeliveryMode.PERSISTENT
+                            ),
+                            routing_key=message.routing_key
+                        )
+                    else:
+                        logger.warning(f"Dropping message after {retries} retries")
+                        # todo log this issue somewhere...
+                finally:
+                    await message.ack()
+
+            await mq.opt_queue.consume(solve)
             # await stop_event.wait()
             loop = asyncio.get_running_loop()
 
@@ -141,7 +180,7 @@ class RabbitMessaging:
 
         opt_queue = await channel.declare_queue(name=OPTIMIZATION_CHANNEL_NAME, durable=True)
 
-        return cls(connection, channel, opt_queue)
+        return cls(connection, channel, opt_queue)  # type: ignore
 
     async def close(self):
         await self.channel.close()
@@ -156,7 +195,7 @@ class RabbitMessaging:
     @staticmethod
     @asynccontextmanager
     async def lifespan(app: Litestar) -> AsyncGenerator[None, None]:
-        async with await RabbitMessaging.create(app.state.get("settings")) as pika:
+        async with await RabbitMessaging.create(app.state["settings"]) as pika:
             app.state[PIKA_LIFETIME_KEY] = pika
             yield
 

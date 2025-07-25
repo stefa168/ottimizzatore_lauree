@@ -5,13 +5,17 @@ from typing import TypeVar, Type
 from advanced_alchemy.repository import SQLAlchemyAsyncRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from v2.db.models import Professor, GradSession, SessionEntry, ProfessorAvailability, OptimizationConfiguration
+from v2.db.models import Professor, GradSession, SessionEntry, ProfessorAvailability, OptimizationConfiguration, Student
 
 
 class ProvideRepositoryMixin[T: SQLAlchemyAsyncRepository]:
     @classmethod
     async def provide(cls: Type[T], db_session: AsyncSession) -> T:
         return cls(session=db_session)
+
+
+class StudentRepository(SQLAlchemyAsyncRepository[Student], ProvideRepositoryMixin):
+    model_type = Student
 
 
 class ProfessorRepository(SQLAlchemyAsyncRepository[Professor], ProvideRepositoryMixin):
