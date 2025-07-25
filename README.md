@@ -42,13 +42,18 @@ purposes.
    the database instance, which will need to be already set up.
    ```bash
    cd server
-   litestar --app=v2.asgi:create_app database upgrade
+   litestar --app=v2.asgi:app database upgrade
+   ```
+
+   If by any chance the migrations are not up to date, run
+   ```bash
+   litestar --app=v2.asgi:app database make-migrations
    ```
 
 2. Start the backend server
     ```bash
     cd server
-    litestar --app=v2.asgi:create_app run
+    litestar --app=v2.asgi:app run
     ```
 
 3. Start the frontend server
