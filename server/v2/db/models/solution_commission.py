@@ -36,6 +36,7 @@ class SolutionCommission(IdentityAuditBase):
     order_key: Mapped[int] = mapped_column(sa.Integer, nullable=False)
 
     morning: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
+    duration: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='0', default=0)
 
     # The commission that this solution is for
     session_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("sessions.id"), nullable=False)
