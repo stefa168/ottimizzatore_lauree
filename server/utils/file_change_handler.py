@@ -1,4 +1,4 @@
-import pathlib
+from pathlib import Path
 from collections.abc import Callable
 
 from watchdog.events import FileSystemEventHandler
@@ -11,11 +11,11 @@ class FileChangeHandler(FileSystemEventHandler):
     A class that handles file changes and notifies observers when the file is modified.
     """
     logger: BoundLogger
-    file_path: pathlib.Path
+    file_path: Path
     file_position: int
     observers: list[Callable[[list[str]], None]]
 
-    def __init__(self, file_handler_logger: BoundLogger, file_path: pathlib.Path):
+    def __init__(self, file_handler_logger: BoundLogger, file_path: Path):
         super().__init__()
         self.logger = file_handler_logger
         self.logger.bind(event="FileWatcher")
@@ -28,7 +28,7 @@ class FileChangeHandler(FileSystemEventHandler):
         Opens the file and seeks to the end to find the initial file position.
         :return: The initial file position.
         """
-        with open(self.file_path, 'r') as file:
+        with self.file_path.open('r') as file:
             file.seek(0, 2)  # Move to the end of the file
             return file.tell()
 
@@ -60,9 +60,9 @@ class FileChangeHandler(FileSystemEventHandler):
         :param event: The event that triggered the call.
         """
         # Check if the modified file is the file we're interested in
-        if not event.is_directory and pathlib.Path(event.src_path).absolute() == self.file_path:
+        if not event.is_directory and Path(event.src_path).absolute() == self.file_path:
             # self.logger.debug(f"File {self.file_path.name} has been modified. Reading new lines...")
-            with open(self.file_path, 'r') as file:
+            with self.file_path.open('r') as file:
                 # Seek to the last known position
                 file.seek(self.file_position)
                 # Read new lines and update the file position
@@ -77,5 +77,5 @@ class FileChangeHandler(FileSystemEventHandler):
         Reads the observed file and returns its content.
         :return: The content of the file.
         """
-        with open(self.file_path, 'r') as file:
+        with self.file_path.open('r') as file:
             return file.read()
