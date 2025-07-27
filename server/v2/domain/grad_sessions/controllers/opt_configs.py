@@ -53,7 +53,7 @@ class OptimizationConfigurationController(Controller):
 
         conf_count = await opt_conf_repo.count(OptimizationConfiguration.session_id == sid)
 
-        conf = await opt_conf_repo.add(OptimizationConfiguration(session_id=sid))
+        conf = await opt_conf_repo.add(OptimizationConfiguration(session_id=sid, online=False))
         conf.title += f" {conf_count + 1}"
 
         return conf
@@ -114,17 +114,13 @@ class OptimizationConfigurationController(Controller):
         # Then we check if the configuration is already running. If we're here, we're sure that we haven't saved a
         # solution yet.
         # todo we should return another kind of error if the lock is set but there is no future currently running
-        if config.run_lock:
+        logger.debug(f"Locking the configuration {config_id}")
+        if not await opt_conf_repo.acquire_lock(config_id):
             logger.error(f"Configuration with ID {config_id} is already being solved")
             raise HTTPException(
-                detail="Configuration with ID {config_id} is already being solved",
+                detail=f"Configuration with ID {config_id} is already being solved",
                 status_code=http_statuses.HTTP_409_CONFLICT
             )
-
-        logger.debug(f"Locking the configuration {config_id}")
-        # todo enable after testing
-        # config.run_lock = True
-        # await opt_conf_repo.update(config)
 
         logger.debug(f"Setting up the optimization for session {session_id} and configuration {config_id}")
         base_path = pathlib.Path(OPT_TMP_DIR)
