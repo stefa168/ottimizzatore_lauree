@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from typing import TypeVar, Type
+from typing import Type
 
 import structlog.stdlib
 from advanced_alchemy.repository import SQLAlchemyAsyncRepository
@@ -15,7 +14,7 @@ logger = structlog.stdlib.get_logger()
 
 class ProvideRepositoryMixin[T: SQLAlchemyAsyncRepository]:
     @classmethod
-    async def provide(cls: Type[T], db_session: AsyncSession) -> T:
+    async def provide(cls: Type[T], db_session: AsyncSession) -> T:  # type: ignore
         return cls(session=db_session)
 
 
