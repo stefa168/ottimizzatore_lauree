@@ -17,7 +17,7 @@ from v2.db.models import GradSession, OptimizationConfiguration, SolverEnum, Opt
 from v2.domain.grad_sessions.deps import GradSessionRepository, OptimizationConfigurationRepository, \
     StudentRepository, SessionProfessorRepository
 from v2.domain.grad_sessions.schemas import OptConfCompleteDTO
-from v2.utils.crud_helpers import get_one_or_raise
+from v2.utils.crud_helpers import get_one_or_raise, exists_or_raise
 
 logger: structlog.stdlib.BoundLogger = structlog.stdlib.get_logger()
 
@@ -42,13 +42,11 @@ async def check_gs_exists_raise(graduation_session_repo: GradSessionRepository,
     """
     logger.debug(f"Retrieving session {session_id}")
 
-    if not await graduation_session_repo.exists(GradSession.id == session_id):
-        logger.error(f"Session with ID {session_id} not found")
-
-        raise HTTPException(
-            detail="The specified Graduation Session does not exist",
-            status_code=http_statuses.HTTP_404_NOT_FOUND
-        )
+    await exists_or_raise(
+        graduation_session_repo,
+        GradSession.id == session_id,
+        not_found_msg="The specified Graduation Session does not exist"
+    )
 
 
 async def get_opt_conf_raise(configuration_id: int,
@@ -73,19 +71,28 @@ async def get_opt_conf_raise(configuration_id: int,
     :rtype: OptimizationConfiguration
     :raises HTTPException: If no matching configuration is found, with HTTP status 404.
     """
-    config: OptimizationConfiguration | None = await optimization_configuration_repo.get_one_or_none(
+    return await get_one_or_raise(
+        optimization_configuration_repo,
         OptimizationConfiguration.id == configuration_id,
         OptimizationConfiguration.session_id == session_id,
+        not_found_msg=f"Configuration with ID {configuration_id} (SID {session_id}) not found"
     )
-    if config is None:
-        logger.error(f"Configuration with ID {configuration_id} (SID {session_id}) not found")
-        raise HTTPException("Configuration not found", status_code=http_statuses.HTTP_404_NOT_FOUND)
-    return config
 
 
 async def get_session_professor_raise(session_id: int,
                                       session_professor_id: int,
                                       session_prof_repo: SessionProfessorRepository) -> SessionProfessor:
+    """
+    Retrieve the session professor details for the given session using the provided
+    repository. If the session professor is not found, this will raise an error.
+
+    :param session_id: The ID of the session.
+    :param session_professor_id: The ID of the session professor for the given session.
+    :param session_prof_repo: The repository to interface with session professor
+        data layer operations.
+    :return: An instance of `SessionProfessor` corresponding to the specified session
+        and professor IDs.
+    """
     return await get_one_or_raise(
         session_prof_repo,
         SessionProfessor.session_id == session_id,

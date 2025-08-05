@@ -13,6 +13,24 @@ logger: structlog.stdlib.BoundLogger = structlog.stdlib.get_logger()
 T = TypeVar("T", bound=ModelProtocol)
 
 
+async def exists_or_raise(
+        repo: SQLAlchemyAsyncRepository[T],
+        *filters: StatementFilter | ColumnElement[bool],
+        not_found_msg: str = "Resource not found",
+        status_code: int = http_statuses.HTTP_404_NOT_FOUND
+) -> bool:
+    """
+    Checks if an entity exists matching the given filters from `repo`.
+    Raises HTTPException(status_code) if none is found.
+    Returns True if entity exists.
+    """
+    exists = await repo.exists(*filters)
+    if not exists:
+        logger.error(f"{not_found_msg}; filters={filters}")
+        raise HTTPException(not_found_msg, status_code=status_code)
+    return exists
+
+
 async def get_one_or_raise(
         repo: SQLAlchemyAsyncRepository[T],
         *filters: StatementFilter | ColumnElement[bool],
