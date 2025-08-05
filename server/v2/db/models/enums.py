@@ -28,7 +28,8 @@ class UniversityRole(Hashable, enum.Enum):
         elif self == UniversityRole.RESEARCHER:
             return "RIC"
         else:
-            raise ValueError("Role not set.")
+            return "NS"
+            # raise ValueError("Role not set.")
 
     def hash(self):
         return Hashable.hash_data(self.value)
@@ -59,3 +60,9 @@ class SolverEnum(Hashable, enum.Enum):
 
     def hash(self):
         return Hashable.hash_data(self.value)
+
+
+class SessionProfessorRelation(str, enum.Enum):
+    ORIGINAL = "ORIGINAL"
+    SPLIT = "SPLIT"
+    SUBSTITUTE = "SUBSTITUTE"

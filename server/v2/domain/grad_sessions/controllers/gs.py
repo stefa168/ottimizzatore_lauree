@@ -13,14 +13,15 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
 from litestar.plugins.sqlalchemy import SQLAlchemyDTO
 import litestar.status_codes as http_statuses
+from sqlalchemy import select, tuple_
 
 from advanced_alchemy.exceptions import NotFoundError
 
-from v2.db.models import Student, Professor, Degree, SessionEntry, GradSession, ProfessorAvailability, TimeAvailability
+from v2.db.models import Student, Professor, Degree, SessionEntry, GradSession, SessionProfessor
 from v2.domain.grad_sessions.deps import (
     ProfessorRepository,
     GradSessionRepository,
-    SessionProfessorAvailabilityRepository
+    SessionProfessorRepository, SessionEntryRepository
 )
 from v2.domain.grad_sessions.schemas import NewCommissionForm
 from v2.domain.grad_sessions import urls
@@ -51,7 +52,8 @@ class GraduationSessionController(Controller):
     dependencies = {
         "grad_session_repository": Provide(GradSessionRepository.provide),
         "professor_repository": Provide(ProfessorRepository.provide),
-        "availability_repository": Provide(SessionProfessorAvailabilityRepository.provide),
+        "session_professor_repository": Provide(SessionProfessorRepository.provide),
+        "session_entry_repository": Provide(SessionEntryRepository.provide)
     }
 
     @get(urls.GRAD_SESSIONS_LIST, return_dto=SessionReadDTO)
@@ -73,115 +75,140 @@ class GraduationSessionController(Controller):
             self,
             data: Annotated[NewCommissionForm, Body(media_type=RequestEncodingType.MULTI_PART)],
             professor_repository: ProfessorRepository,
-            grad_session_repository: GradSessionRepository,
-            availability_repository: SessionProfessorAvailabilityRepository,
-            db_session: AsyncSession
+            grad_session_repository: GradSessionRepository
     ) -> GradSession:
         file = data.file
         file_data = await file.read()
 
-        if len(file_data) <= 0:
+        if not file_data:
             raise HTTPException(detail="File of 0 bytes uploaded.", status_code=http_statuses.HTTP_400_BAD_REQUEST)
 
-        # Check if content type is of excel or libreoffice
         if file.content_type not in EXCEL_MEDIA_TYPES:
             raise HTTPException(
                 detail="File is not an Excel file.",
                 status_code=http_statuses.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                extra={
-                    "content_type": file.content_type,
-                    "supported_content_types": EXCEL_MEDIA_TYPES
-                })
+                extra={"content_type": file.content_type, "supported_content_types": EXCEL_MEDIA_TYPES}
+            )
 
         excel = pd.read_excel(BytesIO(file_data)).fillna('None')
 
-        # Ensure that the file has ALL the expected columns
         expected_columns = {'MATRICOLA', 'COGNOME', 'NOME', 'CELLULARE', 'EMAIL', 'EMAIL_ATENEO',
-                            'TIPO_CORSO_DESCRIZIONE',
-                            'DATA_APPELLO', 'REL_COGNOME', 'REL_NOME', 'REL2_COGNOME', 'REL2_NOME', 'CORR_NOME',
-                            'CORR_COGNOME', 'CONTROREL_COGNOME', 'CONTROREL_NOME'}
-
-        actual_columns = set([col.upper() for col in excel.columns])
+                            'TIPO_CORSO_DESCRIZIONE', 'DATA_APPELLO', 'REL_COGNOME', 'REL_NOME', 'REL2_COGNOME',
+                            'REL2_NOME', 'CORR_NOME', 'CORR_COGNOME', 'CONTROREL_COGNOME', 'CONTROREL_NOME'}
+        actual_columns = {col.upper() for col in excel.columns}
         missing_columns = expected_columns - actual_columns
 
-        if len(missing_columns) > 0:
+        if missing_columns:
             raise HTTPException(
                 detail="Some expected columns are missing.",
                 status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
-                extra={
-                    "missing_columns": list(missing_columns)
-                })
-
-        session_name = data.title or file.filename.removesuffix(".xlsx").removesuffix(".xls")
-
-        async def get_or_create_professor(surname: str | None,
-                                          name: str | None,
-                                          prof_set: set[Professor]) -> Professor | None:
-            if is_missing(name) or is_missing(surname):
-                return None
-
-            prof = await professor_repository.upsert(
-                Professor(first_name=name, surname=surname),
-                match_fields=['surname', 'name'],
-                auto_commit=False
+                extra={"missing_columns": list(missing_columns)}
             )
 
-            prof_set.add(prof)
-            return prof
+        # Pass 1: Collect all unique professors
+        unique_professors = set()
+        prof_cols: Final = [
+            ('REL_COGNOME', 'REL_NOME'),
+            ('REL2_COGNOME', 'REL2_NOME'),
+            ('CORR_COGNOME', 'CORR_NOME'),
+            ('CONTROREL_COGNOME', 'CONTROREL_NOME')
+        ]
+        for _, row in excel.iterrows():
+            for surname_col, name_col in prof_cols:
+                surname, name = row[surname_col], row[name_col]
+                if not is_missing(surname) and not is_missing(name):
+                    unique_professors.add((str(surname), str(name)))
 
-        txn: AsyncSessionTransaction
-        async with db_session.begin():
-            grad_session = GradSession(title=session_name)
-            sp: set[Professor] = set()  # Session Professors
+        # 2. Query existing professors in one DB call
+        stmt = select(Professor).where(tuple_(Professor.surname, Professor.first_name).in_(unique_professors))
+        existing_professors = await professor_repository.list(statement=stmt)
 
-            for index, row in excel.iterrows():
-                student = Student(
-                    matriculation_number=int(row['MATRICOLA']),
-                    first_name=row['NOME'],
-                    surname=row['COGNOME'],
-                    phone_number=row['CELLULARE'],
-                    personal_email=row['EMAIL'],
-                    university_email=row['EMAIL_ATENEO']
-                )
+        # 2.1. Lookup map for quick access - (surname, name) -> Professor
+        type ProfessorTupleMap = dict[tuple[str, str], Professor]
+        professor_map: ProfessorTupleMap = {
+            (p.surname, p.first_name): p for p in existing_professors
+        }
 
-                supervisor = await get_or_create_professor(row['REL_COGNOME'], row['REL_NOME'], sp)
-                supervisor2 = await get_or_create_professor(row['REL2_COGNOME'], row['REL2_NOME'], sp)
-                supervisor_assistant = await get_or_create_professor(row['CORR_COGNOME'], row['CORR_NOME'], sp)
-                counter_supervisor = await get_or_create_professor(row['CONTROREL_COGNOME'], row['CONTROREL_NOME'], sp)
+        missing_professors = unique_professors - set(professor_map.keys())
 
-                # todo assert that the supervisor is not none
-
-                # lowercase contains "magistrale" then it's a master degree
-                if "magistrale" in row['TIPO_CORSO_DESCRIZIONE'].lower():
-                    degree = Degree.MASTERS
-                else:
-                    degree = Degree.BACHELORS
-
-                entry = SessionEntry(
-                    session=grad_session,
-                    candidate=student,
-                    supervisor=supervisor,
-                    supervisor2=supervisor2,
-                    supervisor_assistant=supervisor_assistant,
-                    counter_supervisor=counter_supervisor,
-                    degree_level=degree
-                )
-
-                grad_session.entries.append(entry)
-
-            await grad_session_repository.add(grad_session)
-
-            # Now that we've prepared all the entries and professors we can create all the default availabilities
-            availabilities = [
-                ProfessorAvailability(
-                    professor_id=professor.id,
-                    session_id=grad_session.id,
-                    availability=TimeAvailability.ALWAYS
-                ) for professor in sp
+        # 3. Build new Professor instances for what is missing
+        if missing_professors:
+            new_professors = [
+                Professor(first_name=first_name, surname=surname)
+                for surname, first_name in missing_professors
             ]
-            await availability_repository.add_many(availabilities)
 
-            return grad_session
+            added_professors = await professor_repository.add_many(new_professors)
+            for p in added_professors:
+                professor_map[(p.surname, p.first_name)] = p
+
+        # 4. Prepare all the students. This process requires also the construction of SessionProfessors.
+        session_name = data.title or file.filename.rsplit(".", 1)[0]
+        grad_session = await grad_session_repository.add(GradSession(title=session_name))
+
+        session_professor_map: dict[int, SessionProfessor] = {}
+
+        async def resolve_prof(surname: str | None, first_name: str | None,
+                               prof_map: ProfessorTupleMap, session: GradSession) -> SessionProfessor | None:
+            # Early return on blanks
+            if surname in MISSING or first_name in MISSING:
+                return None
+
+            professor = prof_map.get((surname, first_name))  # type: ignore[arg-type]
+            if not professor:
+                raise RuntimeError("Professor cache miss")
+
+            sp = session_professor_map.get(professor.id)
+
+            if sp is None:
+                sp = SessionProfessor(
+                    session=session,
+                    professor=professor,
+                )
+
+                session_professor_map[professor.id] = sp
+
+            return sp
+
+        entries: list[SessionEntry] = []
+        for student_row in excel.itertuples(index=False):
+            supervisor = await resolve_prof(str(student_row.REL_COGNOME), str(student_row.REL_NOME),
+                                            professor_map, grad_session)
+            if supervisor is None:
+                raise RuntimeError("Supervisor should not be none!!")
+
+            supervisor2 = await resolve_prof(str(student_row.REL2_COGNOME), str(student_row.REL2_NOME),
+                                             professor_map, grad_session)
+            supervisor_assistant = await resolve_prof(str(student_row.CORR_COGNOME), str(student_row.CORR_NOME),
+                                                      professor_map, grad_session)
+            counter_supervisor = await resolve_prof(str(student_row.CONTROREL_COGNOME), str(student_row.CONTROREL_NOME),
+                                                    professor_map, grad_session)
+
+            # Contains "magistrale" => it's a master degree student
+            degree = (Degree.MASTERS
+                      if "MAGISTRALE" in str(student_row.TIPO_CORSO_DESCRIZIONE).upper()
+                      else Degree.BACHELORS)
+
+            entry = SessionEntry(
+                candidate=Student(
+                    matriculation_number=int(student_row.MATRICOLA),  # type: ignore
+                    first_name=student_row.NOME, surname=student_row.COGNOME,  # type: ignore
+                    phone_number=student_row.CELLULARE,  # type: ignore
+                    personal_email=student_row.EMAIL,  # type: ignore
+                    university_email=student_row.EMAIL_ATENEO,  # type: ignore
+                ),
+                supervisor=supervisor,
+                supervisor2=supervisor2,
+                supervisor_assistant=supervisor_assistant,
+                counter_supervisor=counter_supervisor,
+                degree_level=degree,
+                session=grad_session
+            )
+            entries.append(entry)
+
+        grad_session.entries = entries
+
+        return await grad_session_repository.add(grad_session)
 
     @delete(urls.GRAD_SESSION_DELETE, status_code=http_statuses.HTTP_200_OK)
     async def delete_session(self, sid: int, grad_session_repository: GradSessionRepository) -> None:

@@ -7,7 +7,7 @@ from advanced_alchemy.repository import SQLAlchemyAsyncRepository
 from sqlalchemy import update, ChunkedIteratorResult, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from v2.db.models import Professor, GradSession, SessionEntry, ProfessorAvailability, OptimizationConfiguration, Student
+from v2.db.models import Professor, GradSession, SessionEntry, OptimizationConfiguration, Student, SessionProfessor
 
 logger = structlog.stdlib.get_logger()
 
@@ -34,8 +34,8 @@ class SessionEntryRepository(SQLAlchemyAsyncRepository[SessionEntry], ProvideRep
     model_type = SessionEntry
 
 
-class SessionProfessorAvailabilityRepository(SQLAlchemyAsyncRepository[ProfessorAvailability], ProvideRepositoryMixin):
-    model_type = ProfessorAvailability
+class SessionProfessorRepository(SQLAlchemyAsyncRepository[SessionProfessor], ProvideRepositoryMixin):
+    model_type = SessionProfessor
 
 
 class OptimizationConfigurationRepository(SQLAlchemyAsyncRepository[OptimizationConfiguration], ProvideRepositoryMixin):
@@ -44,19 +44,7 @@ class OptimizationConfigurationRepository(SQLAlchemyAsyncRepository[Optimization
     async def acquire_lock(self, config_id: int) -> bool:
         """
         Atomically sets run_lock=True if and only if it was False.
-        Uses SELECT FOR UPDATE within a transaction for proper locking.
         """
-        # Ensure we're in a transaction
-        if not self.session.in_transaction():
-            # If no transaction is active, start one
-            async with self.session.begin():
-                return await self._acquire_lock_impl(config_id)
-        else:
-            # If already in a transaction, just execute
-            return await self._acquire_lock_impl(config_id)
-
-    async def _acquire_lock_impl(self, config_id: int) -> bool:
-        """Internal implementation of lock acquisition."""
         try:
             # Select and lock the row ONLY if it exists AND run_lock is False
             select_stmt = (

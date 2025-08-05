@@ -5,9 +5,8 @@ import pandas as pd
 import sqlalchemy as sa
 from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.orm.collections import attribute_mapped_collection
 
-from v2.db.models import SessionEntry, ProfessorAvailability, Professor, TimeAvailability, OptimizationConfiguration
+from v2.db.models import SessionEntry, Professor, TimeAvailability, OptimizationConfiguration, SessionProfessor
 
 
 @dataclass
@@ -22,15 +21,14 @@ class GradSession(IdentityAuditBase):
         cascade="all, delete-orphan",
         lazy="subquery"
     )
-    availabilities: Mapped[dict[int, 'ProfessorAvailability']] = relationship(
-        "ProfessorAvailability",
+    configurations: Mapped[list['OptimizationConfiguration']] = relationship(
+        "OptimizationConfiguration",
         back_populates="session",
-        collection_class=attribute_mapped_collection("professor_id"),
         cascade="all, delete-orphan",
         lazy="subquery"
     )
-    configurations: Mapped[list['OptimizationConfiguration']] = relationship(
-        "OptimizationConfiguration",
+    session_professors_entries: Mapped[list['SessionProfessor']] = relationship(
+        "SessionProfessor",
         back_populates="session",
         cascade="all, delete-orphan",
         lazy="subquery"
@@ -38,8 +36,8 @@ class GradSession(IdentityAuditBase):
 
     def availability_dict(self) -> dict[Professor, TimeAvailability]:
         avs = {}
-        for av in self.availabilities.values():
-            avs[av.professor] = av.availability
+        for p in self.session_professors_entries:
+            avs[p.professor] = p.availability
         return avs
 
     def __repr__(self):
@@ -55,7 +53,7 @@ class GradSession(IdentityAuditBase):
         # A better solution has to be discussed. fixme
         students_by_professor: dict[Professor, list[SessionEntry]] = {}
         for entry in self.entries:
-            p = entry.supervisor
+            p = entry.supervisor.professor
 
             if p not in students_by_professor:
                 students_by_professor[p] = []
@@ -73,7 +71,7 @@ class GradSession(IdentityAuditBase):
                 morning_supervisor_availability: bool
                 afternoon_supervisor_availability: bool
 
-                supervisor = entry.supervisor
+                supervisor = entry.supervisor.professor
 
                 if should_split:
                     # Corrected logic for splitting more evenly (e.g. 5 students -> 3 morning, 2 afternoon)
@@ -88,7 +86,7 @@ class GradSession(IdentityAuditBase):
                     afternoon_supervisor_availability = availabilities[supervisor].available_afternoon
 
                 try:
-                    current_supervisor = entry.supervisor
+                    current_supervisor = entry.supervisor.professor
                     entity = [
                         entry.candidate.id,
                         entry.candidate.surname,
@@ -102,11 +100,11 @@ class GradSession(IdentityAuditBase):
                     ]
                 except AttributeError as e:
                     raise ValueError(
-                        f"Professor '{entry.supervisor.full_name}' "
+                        f"Professor '{entry.supervisor.professor.full_name}' "
                         f"might be missing role information or other attributes.") from e
 
                 if entry.counter_supervisor is not None:
-                    cs = entry.counter_supervisor
+                    cs = entry.counter_supervisor.professor
                     try:
                         entity.extend([
                             cs.id,
@@ -117,7 +115,7 @@ class GradSession(IdentityAuditBase):
                         ])
                     except AttributeError as e:  # Changed from ValueError
                         raise ValueError(
-                            f"Professor '{entry.counter_supervisor.full_name}' "
+                            f"Professor '{entry.counter_supervisor.professor.full_name}' "
                             f"might be missing role information or other attributes.") from e
 
                 # todo do the same for the supervisor assistant

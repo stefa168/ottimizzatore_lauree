@@ -6,23 +6,27 @@ from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
-from litestar.plugins.pydantic import PydanticDTO
 from litestar.plugins.sqlalchemy import SQLAlchemyDTO
 
-from v2.db.models import ProfessorAvailability, SessionEntry, Professor
+from v2.db.models import Professor, SessionProfessor
 from v2.domain.grad_sessions import urls
 from v2.domain.grad_sessions.deps import (
-    SessionProfessorAvailabilityRepository,
     SessionEntryRepository,
-    ProfessorRepository
+    ProfessorRepository, SessionProfessorRepository, GradSessionRepository
 )
-from v2.domain.grad_sessions.schemas import UpdateProfessorAvailability, ProfessorWithAvailability
+from v2.domain.grad_sessions.services import get_session_professor_raise, check_gs_exists_raise
 
 
-class ProfAvailabilityReadDTO(SQLAlchemyDTO[ProfessorAvailability]):
-    config = DTOConfig(
-        max_nested_depth=0,
-        exclude={"created_at", "id"}
+class SessionProfessorReadDTO(SQLAlchemyDTO[SessionProfessor]):
+    config = SQLAlchemyDTOConfig(
+        exclude={"session", "children", "parent"},
+    )
+
+
+class SessionProfessorPatchDTO(SQLAlchemyDTO[SessionProfessor]):
+    config = SQLAlchemyDTOConfig(
+        partial=True,
+        include={"derived_from_id", "availability", "user_note"}
     )
 
 
@@ -38,59 +42,38 @@ class ProfessorController(Controller):
 
     tags = ["Graduation Sessions", "Availabilities", "Professors"]
     dependencies = {
-        "availability_repository": Provide(SessionProfessorAvailabilityRepository.provide),
         "session_entry_repository": Provide(SessionEntryRepository.provide),
-        "professor_repository": Provide(ProfessorRepository.provide)
+        "professor_repository": Provide(ProfessorRepository.provide),
+        "session_professor_repository": Provide(SessionProfessorRepository.provide),
+        "grad_session_repo": Provide(GradSessionRepository.provide)
     }
 
-    @get(urls.GRAD_SESSION_PROFESSOR_LIST)
+    @get(urls.SESSION_PROFESSOR_LIST, return_dto=SessionProfessorReadDTO)
     async def get_session_professors(self,
                                      sid: int,
-                                     availability_repository: SessionProfessorAvailabilityRepository
-                                     ) -> list[ProfessorWithAvailability]:
-        # entries = await session_entry_repository.list(
-        #     SessionEntry.session_id == sid
-        # )
-        #
-        # # We could also check if the session id actually corresponds to an existing entry in its own table,
-        # # however we already have all the session entries and they only exist when a session exists,
-        # # so this shouldn't be an issue in any case.
-        # if len(entries) <= 0:
-        #     raise HTTPException(
-        #         detail="The specified Graduation Session doesn't exist.",
-        #         status_code=http_statuses.HTTP_404_NOT_FOUND
-        #     )
-        #
-        # prof_ids = [
-        #     [entry.supervisor_id, entry.counter_supervisor_id, entry.supervisor2_id, entry.supervisor_assistant_id]
-        #     for entry in entries
-        # ]
-        #
-        # prof_ids = set(filter(None, itertools.chain.from_iterable(prof_ids)))
-        #
-        # professor_repository.list()
+                                     session_professor_repository: SessionProfessorRepository,
+                                     grad_session_repo: GradSessionRepository
+                                     ) -> list[SessionProfessor]:
+        await check_gs_exists_raise(grad_session_repo, sid)
 
-        # I'm keeping the above (partial) implementation in case we need to do some more complex queries when I'll add
-        # `split professors` and professor substitutes...
-        availabilities = await availability_repository.list(
-            ProfessorAvailability.session_id == sid,
-            load=ProfessorAvailability.professor
+        profs = await session_professor_repository.list(
+            SessionProfessor.session_id == sid,
+            load=[SessionProfessor.professor]
         )
 
-        return [ProfessorWithAvailability.factory(av.professor, av) for av in availabilities]
+        return profs
 
-    @get(urls.GRAD_SESSION_PROF_AVAILABILITY_LIST, return_dto=ProfAvailabilityReadDTO)
-    async def get_session_availabilities(
-            self,
-            sid: int,
-            availability_repository: SessionProfessorAvailabilityRepository
-    ) -> list[ProfessorAvailability]:
-        availabilities = await availability_repository.list(
-            ProfessorAvailability.session_id == sid
-        )
-        return availabilities
+    @patch(urls.SESSION_PROFESSOR_UPDATE, dto=SessionProfessorPatchDTO, return_dto=SessionProfessorReadDTO)
+    async def update_session_professor(self,
+                                       data: DTOData[SessionProfessor],
+                                       sid: int,
+                                       session_professor_id: int,
+                                       session_professor_repository: SessionProfessorRepository
+                                       ) -> SessionProfessor:
+        sp = await get_session_professor_raise(sid, session_professor_id, session_professor_repository)
+        return data.update_instance(sp)
 
-    @patch(urls.GRAD_SESSION_PROFESSOR_UPDATE, dto=ProfessorDTO)
+    @patch(urls.PROFESSOR_UPDATE, dto=ProfessorDTO)
     async def update_professor(
             self,
             data: DTOData[Professor],
@@ -107,25 +90,3 @@ class ProfessorController(Controller):
 
         # This method actually updates `professor`, not the `data` variable
         return data.update_instance(professor)
-
-        # return professor
-
-    @patch(urls.GRAD_SESSION_PROF_AVAILABILITY_UPDATE, return_dto=ProfAvailabilityReadDTO)
-    async def update_professor_availability(
-            self,
-            sid: int,
-            data: UpdateProfessorAvailability,
-            availability_repository: SessionProfessorAvailabilityRepository
-    ) -> ProfessorAvailability:
-        old_av = await availability_repository.get_one_or_none(
-            ProfessorAvailability.session_id == sid, ProfessorAvailability.professor_id == data.professor_id
-        )
-
-        if old_av is None:
-            raise HTTPException(
-                detail="Specified Availability Entry does not exist.",
-                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY
-            )
-
-        old_av.availability = data.availability
-        return await availability_repository.update(old_av)

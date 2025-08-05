@@ -7,6 +7,8 @@ from advanced_alchemy.base import IdentityAuditBase, DefaultBase
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
+from v2.db.models import SessionProfessor
+
 if TYPE_CHECKING:
     from v2.db.models import GradSession, OptimizationConfiguration, Professor, Student
 
@@ -15,7 +17,7 @@ if TYPE_CHECKING:
 class SolutionCommissionProfessor(DefaultBase):
     __tablename__ = 'solution_commission_professors'
     solution_commission_id = mapped_column(sa.Integer, ForeignKey('solution_commissions.id'), primary_key=True)
-    professor_id = mapped_column(sa.Integer, ForeignKey('professors.id'), primary_key=True)
+    professor_id = mapped_column(sa.Integer, ForeignKey('session_professors.id'), primary_key=True)
 
 
 @dataclass
@@ -46,7 +48,8 @@ class SolutionCommission(IdentityAuditBase):
     opt_config_id = mapped_column(sa.Integer, ForeignKey('optimization_configurations.id'), nullable=False)
     opt_config: Mapped[OptimizationConfiguration] = relationship("OptimizationConfiguration")
 
-    # Originally this class was intended to have a composite primary key, but it is bringing more problems than it
-    # solves. So we are going to use a single primary key and just foreign keys to the other tables.
-    professors: Mapped[list['Professor']] = relationship("Professor", secondary="solution_commission_professors")
+    # Originally this class was intended to have a composite primary key, but it was bringing more problems than it
+    # solved. So we are going to use a single primary key and just foreign keys to the other tables.
+    professors: Mapped[list['SessionProfessor']] = relationship(
+        "SessionProfessor", secondary="solution_commission_professors")
     students: Mapped[list['Student']] = relationship("Student", secondary="solution_commission_students")

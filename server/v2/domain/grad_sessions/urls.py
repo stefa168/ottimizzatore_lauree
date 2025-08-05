@@ -10,12 +10,9 @@ GRAD_SESSION_DELETE = "/sessions/{sid:int}"
 GRAD_SESSION_ENTRY_LIST = "/sessions/{sid:int}/students"
 
 # Professor Urls
-GRAD_SESSION_PROFESSOR_LIST = "/sessions/{sid:int}/professors"
-GRAD_SESSION_PROFESSOR_UPDATE = "/professors"
-
-# Professor Availabilities Urls
-GRAD_SESSION_PROF_AVAILABILITY_LIST = "/sessions/{sid:int}/availabilities"
-GRAD_SESSION_PROF_AVAILABILITY_UPDATE = "/sessions/{sid:int}/availabilities"
+SESSION_PROFESSOR_LIST = "/sessions/{sid:int}/professors"
+SESSION_PROFESSOR_UPDATE = "/sessions/{sid:int}/professors/{session_professor_id:int}"
+PROFESSOR_UPDATE = "/professors"
 
 # Optimization Configurations Urls
 GRAD_SESSION_OPT_CONF_NEW = "/sessions/{sid:int}/configuration/new"

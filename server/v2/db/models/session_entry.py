@@ -8,7 +8,7 @@ from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from v2.db.models import Degree
+from v2.db.models import Degree, SessionProfessor
 
 if TYPE_CHECKING:
     from v2.db.models import Student, Professor, GradSession
@@ -35,18 +35,22 @@ class SessionEntry(IdentityAuditBase):
     degree_level: Mapped[Degree] = mapped_column(sa.Enum(Degree), nullable=False)
 
     # Professor-Entry Relationships
-    supervisor_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey('professors.id'), nullable=False)
-    supervisor: Mapped[Professor] = relationship('Professor', foreign_keys=[supervisor_id])
+    supervisor_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey('session_professors.id'), nullable=False)
+    supervisor: Mapped[SessionProfessor] = relationship('SessionProfessor', foreign_keys=[supervisor_id])
 
-    supervisor2_id: Mapped[int | None] = mapped_column(sa.BigInteger, ForeignKey('professors.id'), nullable=True)
-    supervisor2: Mapped[Professor | None] = relationship('Professor', foreign_keys=[supervisor2_id])
+    supervisor2_id: Mapped[int | None] = mapped_column(
+        sa.BigInteger, ForeignKey('session_professors.id'), nullable=True)
+    supervisor2: Mapped[SessionProfessor | None] = relationship('SessionProfessor', foreign_keys=[supervisor2_id])
 
-    supervisor_assistant_id: Mapped[int | None] = mapped_column(sa.BigInteger, ForeignKey('professors.id'),
-                                                                nullable=True)
-    supervisor_assistant: Mapped[Professor | None] = relationship('Professor', foreign_keys=[supervisor_assistant_id])
+    supervisor_assistant_id: Mapped[int | None] = mapped_column(
+        sa.BigInteger, ForeignKey('session_professors.id'), nullable=True)
+    supervisor_assistant: Mapped[SessionProfessor | None] = relationship(
+        'SessionProfessor', foreign_keys=[supervisor_assistant_id])
 
-    counter_supervisor_id: Mapped[int | None] = mapped_column(sa.BigInteger, ForeignKey('professors.id'), nullable=True)
-    counter_supervisor: Mapped[Professor | None] = relationship('Professor', foreign_keys=[counter_supervisor_id])
+    counter_supervisor_id: Mapped[int | None] = mapped_column(
+        sa.BigInteger, ForeignKey('session_professors.id'), nullable=True)
+    counter_supervisor: Mapped[SessionProfessor | None] = relationship(
+        'SessionProfessor', foreign_keys=[counter_supervisor_id])
 
     def get_duration(self) -> int:
         return 15 if self.degree_level == Degree.BACHELORS else 20 if self.counter_supervisor is None else 30

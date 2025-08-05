@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from typing import Any, cast, Iterable
 
@@ -6,18 +5,19 @@ import structlog
 from litestar import status_codes as http_statuses
 from litestar.exceptions import HTTPException
 from pandas import DataFrame
-from pyomo.core import AbstractModel, ConcreteModel
+from pyomo.core import ConcreteModel
 from pyomo.core.base.set import OrderedScalarSet
 from pyomo.opt import SolverFactory, SolverResults, SolverStatus, TerminationCondition, OptSolver
 from sqlalchemy.ext.asyncio import AsyncSession
-from watchdog.observers import Observer
 
 from optimization.models import create_min_durata_model, create_max_durata_model
 from utils import FileChangeHandler
-from v2.db.models import GradSession, OptimizationConfiguration, SolverEnum, OptimizationLog, SolutionCommission
+from v2.db.models import GradSession, OptimizationConfiguration, SolverEnum, OptimizationLog, SolutionCommission, \
+    SessionProfessor
 from v2.domain.grad_sessions.deps import GradSessionRepository, OptimizationConfigurationRepository, \
-    ProfessorRepository, StudentRepository
+    StudentRepository, SessionProfessorRepository
 from v2.domain.grad_sessions.schemas import OptConfCompleteDTO
+from v2.utils.crud_helpers import get_one_or_raise
 
 logger: structlog.stdlib.BoundLogger = structlog.stdlib.get_logger()
 
@@ -83,6 +83,18 @@ async def get_opt_conf_raise(configuration_id: int,
     return config
 
 
+async def get_session_professor_raise(session_id: int,
+                                      session_professor_id: int,
+                                      session_prof_repo: SessionProfessorRepository) -> SessionProfessor:
+    return await get_one_or_raise(
+        session_prof_repo,
+        SessionProfessor.session_id == session_id,
+        SessionProfessor.id == session_professor_id,
+        load=[SessionProfessor.professor],
+        not_found_msg=f"SessionProfessor with {session_professor_id} (SID {session_id}) not found"
+    )
+
+
 async def solver_wrapper(
         db_session: AsyncSession,
         config_dto: OptConfCompleteDTO,
@@ -128,8 +140,7 @@ async def solve_model(config: OptimizationConfiguration, cc_path: Path, db_sessi
     model.write(str(model_filename), io_options={'symbolic_solver_labels': True})
     logger.debug(f"Model written to file ${model_filename}")
 
-    solver_arguments = dict()
-    solver_arguments['options'] = dict()
+    solver_arguments: dict[str, Any] = {'options': {}}
 
     if config.solver == SolverEnum.CPLEX:
         solver_arguments['options']['timelimit'] = config.optimization_time_limit
@@ -165,7 +176,7 @@ async def solve_model(config: OptimizationConfiguration, cc_path: Path, db_sessi
     # observer.start()
     logger.info("Running solver...")
     opt_log = OptimizationLog(
-        opt_config_id=config.id
+        opt_config=config
     )
 
     opt_log.started()
@@ -211,12 +222,20 @@ async def generate_commissions_from_model(
         model: ConcreteModel,
         db_session: AsyncSession
 ) -> tuple[list[SolutionCommission], list[SolutionCommission]]:
-    prof_repo = ProfessorRepository(session=db_session)
+    session_prof_repo = SessionProfessorRepository(session=db_session)
     students_repo = StudentRepository(session=db_session)
 
-    morning_commissions = await extract_commissions(prof_repo, students_repo, model, model.commissioni_mattina)
-    afternoon_commissions = await extract_commissions(prof_repo, students_repo, model, model.commissioni_pomeriggio,
-                                                      morning=False, commission_count_offset=len(morning_commissions))
+    morning_commissions = await extract_commissions(
+        config,
+        session_prof_repo, students_repo,
+        model, model.commissioni_mattina
+    )
+    afternoon_commissions = await extract_commissions(
+        config,
+        session_prof_repo, students_repo,
+        model, model.commissioni_pomeriggio,
+        morning=False, commission_count_offset=len(morning_commissions)
+    )
 
     # Set the configuration id of each commissionsolution
     for comm in morning_commissions + afternoon_commissions:
@@ -227,7 +246,8 @@ async def generate_commissions_from_model(
 
 
 async def extract_commissions(
-        prof_repo: ProfessorRepository,
+        config: OptimizationConfiguration,
+        session_prof_repo: SessionProfessorRepository,
         students_repo: StudentRepository,
         model: ConcreteModel,
         commission_model: OrderedScalarSet,
@@ -236,6 +256,7 @@ async def extract_commissions(
 ) -> list[SolutionCommission]:
     from pyomo.environ import value
     commissions: list[SolutionCommission] = []
+    session_id = config.session_id
 
     # commission: int
     for commission_id, commission in enumerate(commission_model):
@@ -243,7 +264,15 @@ async def extract_commissions(
 
         for index, professor in cast(DataFrame, model.docenti).iterrows():
             if value(model.z[professor['Relatore'], commission]) > 0.8:
-                session_professor = await prof_repo.get(int(professor['ID']))
+                professor_id = int(professor['ID'])
+                session_professor = await session_prof_repo.get_one(
+                    SessionProfessor.professor_id == professor_id,
+                    SessionProfessor.session_id == session_id
+                )
+
+                if session_professor is None:
+                    raise RuntimeError("Missing Session Professor entry")
+
                 new_commission.professors.append(session_professor)
 
         for candidate in cast(Iterable[int], model.candidati):

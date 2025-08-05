@@ -1,0 +1,26 @@
+meta {
+  name: Update Session Professor
+  type: http
+  seq: 2
+}
+
+patch {
+  url: 127.0.0.1:8000/api/v1/sessions/:sid/professors/:session_professor_id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  sid: 24
+  session_professor_id: 54
+}
+
+body:json {
+  {
+    "availability": "morning"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
