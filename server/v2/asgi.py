@@ -11,7 +11,7 @@ from v2.config.plugins import alchemy_plugin, structlog_plugin
 from v2.domain.grad_sessions.controllers import (
     GraduationSessionController,
     StudentController,
-    ProfessorController,
+    SessionProfessorController,
     OptimizationConfigurationController
 )
 from v2.opt_manager import OptimizationWorkersManager, RabbitMessaging
@@ -21,7 +21,7 @@ base_router = Router(
     route_handlers=[
         GraduationSessionController,
         StudentController,
-        ProfessorController,
+        SessionProfessorController,
         OptimizationConfigurationController
     ],
 )

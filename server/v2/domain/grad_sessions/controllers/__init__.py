@@ -1,11 +1,11 @@
 from .gs import GraduationSessionController
 from .students import StudentController
-from .professors import ProfessorController
+from .session_professors import SessionProfessorController
 from .opt_configs import OptimizationConfigurationController
 
 __all__ = [
     "GraduationSessionController",
     "StudentController",
-    "ProfessorController",
+    "SessionProfessorController",
     "OptimizationConfigurationController"
 ]

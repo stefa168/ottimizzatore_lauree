@@ -37,7 +37,7 @@ class ProfessorDTO(SQLAlchemyDTO[Professor]):
     )
 
 
-class ProfessorController(Controller):
+class SessionProfessorController(Controller):
     """Professor Controller"""
 
     tags = ["Graduation Sessions", "Availabilities", "Professors"]
