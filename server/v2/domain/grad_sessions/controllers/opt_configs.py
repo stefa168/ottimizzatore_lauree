@@ -74,7 +74,7 @@ class OptimizationConfigurationController(Controller):
         return data.update_instance(config)
 
     @delete(urls.GRAD_SESSION_OPT_CONF_UPDATE, status_code=http_statuses.HTTP_200_OK)
-    async def update_configuration(self, sid: int, cid: int,
+    async def delete_configuration(self, sid: int, cid: int,
                                    opt_conf_repo: OptimizationConfigurationRepository
                                    ) -> None:
         await get_opt_conf_raise(cid, sid, opt_conf_repo)
@@ -95,10 +95,6 @@ class OptimizationConfigurationController(Controller):
                                   grad_session_repository: GradSessionRepository,
                                   opt_conf_repo: OptimizationConfigurationRepository) -> None:
         logger.info(f"Received request to solve commission {session_id} with configuration {config_id}")
-
-        # executor.queue.append("1345")
-        # logger.info(executor.queue.popleft())
-        # return
 
         await check_gs_exists_raise(grad_session_repository, session_id)
         config = await get_opt_conf_raise(config_id, session_id, opt_conf_repo)
