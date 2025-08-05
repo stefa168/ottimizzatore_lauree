@@ -21,7 +21,7 @@ class OptimizationConfiguration(IdentityAuditBase):
     __tablename__ = "optimization_configurations"
     __table_args__ = (
         CheckConstraint(
-            "NOT online OR (min_professor_number IS NOT NULL AND min_professor_number_masters IS NOT NULL AND max_professor_numer IS NOT NULL)",
+            "NOT online OR (min_professor_number IS NOT NULL AND min_professor_number_masters IS NOT NULL AND max_professor_number IS NOT NULL)",
             name="ck_online_requires_professor_numbers"
         ),
     )
@@ -84,16 +84,16 @@ class OptimizationConfiguration(IdentityAuditBase):
             self.max_commissions_morning + self.max_commissions_afternoon
         ))
 
-        with open(dat_file, "w") as dat_file:
-            dat_file.write(f"param max_durata := {self.max_duration};\n")
-            dat_file.write(f"set commissioni_mattina := {' '.join(map(str, morning_commissions))};\n")
-            dat_file.write(f"set commissioni_pomeriggio := {' '.join(map(str, afternoon_commissions))};\n")
-            dat_file.write(f"param excel_path := \"{excel_path.resolve()}\";\n")
+        with dat_file.open("w") as f:
+            f.write(f"param max_durata := {self.max_duration};\n")
+            f.write(f"set commissioni_mattina := {' '.join(map(str, morning_commissions))};\n")
+            f.write(f"set commissioni_pomeriggio := {' '.join(map(str, afternoon_commissions))};\n")
+            f.write(f"param excel_path := \"{excel_path.resolve()}\";\n")
 
             if self.online:
-                dat_file.write(f"param minDocenti := {self.min_professor_number};\n")
-                dat_file.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
-                dat_file.write(f"param max_doc := {self.max_professor_numer};\n")
+                f.write(f"param minDocenti := {self.min_professor_number};\n")
+                f.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
+                f.write(f"param max_doc := {self.max_professor_number};\n")
 
         return base_path, dat_file
 
@@ -123,7 +123,7 @@ class OptimizationConfiguration(IdentityAuditBase):
         if self.online:
             dat_file.write(f"param minDocenti := {self.min_professor_number};\n")
             dat_file.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
-            dat_file.write(f"param max_doc := {self.max_professor_numer};\n")
+            dat_file.write(f"param max_doc := {self.max_professor_number};\n")
 
         dat_file.flush()  # Ensure data is written to disk
 
