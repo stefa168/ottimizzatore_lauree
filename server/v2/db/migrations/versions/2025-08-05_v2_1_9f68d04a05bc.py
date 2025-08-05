@@ -1,8 +1,8 @@
-"""db v2
+"""v2.1
 
-Revision ID: dde3fff52df2
+Revision ID: 9f68d04a05bc
 Revises: 
-Create Date: 2025-08-03 16:51:00.795701
+Create Date: 2025-08-05 17:00:44.174125
 
 """
 
@@ -27,7 +27,7 @@ sa.EncryptedText = EncryptedText
 sa.StoredObject = StoredObject
 
 # revision identifiers, used by Alembic.
-revision = 'dde3fff52df2'
+revision = '9f68d04a05bc'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -53,7 +53,7 @@ def schema_upgrades() -> None:
     op.create_table('professors',
     sa.Column('first_name', sa.String(length=128), nullable=False),
     sa.Column('surname', sa.String(length=128), nullable=False),
-    sa.Column('role', sa.Enum('ORDINARY', 'ASSOCIATE', 'RESEARCHER', 'UNSPECIFIED', name='universityrole'), server_default='UNSPECIFIED', nullable=False),
+    sa.Column('role', sa.Enum('ORDINARY', 'ASSOCIATE', 'RESEARCHER', 'UNSPECIFIED', name='university_role_enum'), server_default='UNSPECIFIED', nullable=False),
     sa.Column('id', sa.BigInteger().with_variant(sa.Integer(), 'sqlite'), autoincrement=True, nullable=False),
     sa.Column('created_at', sa.DateTimeUTC(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTimeUTC(timezone=True), nullable=False),
@@ -91,7 +91,7 @@ def schema_upgrades() -> None:
     sa.Column('min_professor_number', sa.Integer(), nullable=True),
     sa.Column('min_professor_number_masters', sa.Integer(), nullable=True),
     sa.Column('max_professor_number', sa.Integer(), nullable=True),
-    sa.Column('solver', sa.Enum('CPLEX', 'GLPK', 'GUROBI', name='solverenum'), server_default='CPLEX', nullable=False),
+    sa.Column('solver', sa.Enum('CPLEX', 'GLPK', 'GUROBI', name='solver_enum'), server_default='CPLEX', nullable=False),
     sa.Column('optimization_time_limit', sa.Integer(), server_default='60', nullable=False),
     sa.Column('optimization_gap', sa.Float(), server_default='0.005', nullable=False),
     sa.Column('run_lock', sa.Boolean(), server_default='False', nullable=False),
@@ -105,17 +105,17 @@ def schema_upgrades() -> None:
     op.create_table('session_professors',
     sa.Column('session_id', sa.BigInteger(), nullable=False),
     sa.Column('professor_id', sa.BigInteger(), nullable=False),
-    sa.Column('relation', sa.Enum('ORIGINAL', 'SPLIT', 'SUBSTITUTE', name='sessionprofessorrelation'), nullable=False),
+    sa.Column('relation', sa.Enum('ORIGINAL', 'SPLIT', 'SUBSTITUTE', name='session_professor_relation_enum'), nullable=False),
     sa.Column('derived_from_id', sa.BigInteger(), nullable=True),
-    sa.Column('availability', sa.Enum('MORNING', 'AFTERNOON', 'ALWAYS', 'SPLIT', name='timeavailability'), nullable=False),
+    sa.Column('availability', sa.Enum('MORNING', 'AFTERNOON', 'ALWAYS', name='time_availability_enum'), nullable=False),
     sa.Column('user_note', sa.String(length=256), nullable=True),
     sa.Column('id', sa.BigInteger().with_variant(sa.Integer(), 'sqlite'), autoincrement=True, nullable=False),
     sa.Column('created_at', sa.DateTimeUTC(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTimeUTC(timezone=True), nullable=False),
     sa.CheckConstraint("(relation = 'ORIGINAL' AND derived_from_id IS NULL) OR (relation <> 'ORIGINAL' AND derived_from_id IS NOT NULL)", name=op.f('ck_session_professors_chk_parent_presence')),
     sa.ForeignKeyConstraint(['derived_from_id'], ['session_professors.id'], name=op.f('fk_session_professors_derived_from_id_session_professors'), ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['professor_id'], ['professors.id'], name=op.f('fk_session_professors_professor_id_professors')),
-    sa.ForeignKeyConstraint(['session_id'], ['sessions.id'], name=op.f('fk_session_professors_session_id_sessions')),
+    sa.ForeignKeyConstraint(['professor_id'], ['professors.id'], name=op.f('fk_session_professors_professor_id_professors'), ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['session_id'], ['sessions.id'], name=op.f('fk_session_professors_session_id_sessions'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_session_professors'))
     )
     with op.batch_alter_table('session_professors', schema=None) as batch_op:
@@ -139,7 +139,7 @@ def schema_upgrades() -> None:
     op.create_table('session_entries',
     sa.Column('session_id', sa.BigInteger(), nullable=False),
     sa.Column('candidate_id', sa.BigInteger(), nullable=False),
-    sa.Column('degree_level', sa.Enum('BACHELORS', 'MASTERS', name='degree'), nullable=False),
+    sa.Column('degree_level', sa.Enum('BACHELORS', 'MASTERS', name='degree_enum'), nullable=False),
     sa.Column('supervisor_id', sa.BigInteger(), nullable=False),
     sa.Column('supervisor2_id', sa.BigInteger(), nullable=True),
     sa.Column('supervisor_assistant_id', sa.BigInteger(), nullable=True),

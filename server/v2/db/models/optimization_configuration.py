@@ -10,6 +10,8 @@ from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy import ForeignKey, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from v2.utils.auto_named_enum import auto_named_enum
+
 if TYPE_CHECKING:
     from v2.db.models import GradSession, OptimizationLog, SolutionCommission
 
@@ -49,7 +51,7 @@ class OptimizationConfiguration(IdentityAuditBase):
     max_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
 
     solver: Mapped[SolverEnum] = mapped_column(
-        sa.Enum(SolverEnum),
+        auto_named_enum(SolverEnum),
         nullable=False,
         default=SolverEnum.CPLEX,
         server_default=SolverEnum.CPLEX.value)

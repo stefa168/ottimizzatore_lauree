@@ -7,6 +7,7 @@ from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .enums import UniversityRole
+from ...utils.auto_named_enum import auto_named_enum
 
 
 @dataclass
@@ -27,7 +28,7 @@ class Professor(IdentityAuditBase):
 
     first_name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     surname: Mapped[str] = mapped_column(sa.String(128), nullable=False)
-    role: Mapped[UniversityRole] = mapped_column(sa.Enum(UniversityRole),
+    role: Mapped[UniversityRole] = mapped_column(auto_named_enum(UniversityRole),
                                                  nullable=False,
                                                  default=UniversityRole.UNSPECIFIED,
                                                  server_default="UNSPECIFIED")

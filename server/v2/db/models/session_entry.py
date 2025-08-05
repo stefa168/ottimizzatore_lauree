@@ -9,9 +9,10 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from v2.db.models import Degree, SessionProfessor
+from v2.utils.auto_named_enum import auto_named_enum
 
 if TYPE_CHECKING:
-    from v2.db.models import Student, Professor, GradSession
+    from v2.db.models import Student, GradSession
 
 
 @dataclass
@@ -32,7 +33,7 @@ class SessionEntry(IdentityAuditBase):
         lazy="joined"
     )
 
-    degree_level: Mapped[Degree] = mapped_column(sa.Enum(Degree), nullable=False)
+    degree_level: Mapped[Degree] = mapped_column(auto_named_enum(Degree), nullable=False)
 
     # Professor-Entry Relationships
     supervisor_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey('session_professors.id'), nullable=False)

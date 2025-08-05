@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from v2.db.models.enums import TimeAvailability, SessionProfessorRelation
+from v2.utils.auto_named_enum import auto_named_enum
 
 if TYPE_CHECKING:
     from v2.db.models.graduation_session import GradSession
@@ -33,7 +34,7 @@ class SessionProfessor(IdentityAuditBase):
     )
 
     relation: Mapped[SessionProfessorRelation] = mapped_column(
-        sa.Enum(SessionProfessorRelation),
+        auto_named_enum(SessionProfessorRelation),
         default=SessionProfessorRelation.ORIGINAL,
         nullable=False
     )
@@ -43,7 +44,7 @@ class SessionProfessor(IdentityAuditBase):
         nullable=True
     )
     availability: Mapped[TimeAvailability] = mapped_column(
-        sa.Enum(TimeAvailability),
+        auto_named_enum(TimeAvailability),
         default=TimeAvailability.ALWAYS,
         nullable=False
     )
