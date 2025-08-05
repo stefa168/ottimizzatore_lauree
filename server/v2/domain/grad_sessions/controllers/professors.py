@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import itertools
-
+from advanced_alchemy.extensions.litestar import SQLAlchemyDTOConfig
 from litestar import get, Controller, patch
 from litestar.di import Provide
-from litestar.dto import DTOConfig, DTOData
+from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
 from litestar.plugins.pydantic import PydanticDTO
@@ -28,7 +27,7 @@ class ProfAvailabilityReadDTO(SQLAlchemyDTO[ProfessorAvailability]):
 
 
 class ProfessorDTO(SQLAlchemyDTO[Professor]):
-    config = DTOConfig(
+    config = SQLAlchemyDTOConfig(
         partial=True,
         exclude={"created_at", "updated_at"}
     )
