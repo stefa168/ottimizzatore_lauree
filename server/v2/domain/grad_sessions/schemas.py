@@ -3,9 +3,8 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 
-from advanced_alchemy.extensions.litestar import SQLAlchemyDTO
+from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
 from litestar.datastructures import UploadFile
-from litestar.dto import DTOConfig
 
 from pydantic import BaseModel, ConfigDict
 
@@ -60,13 +59,13 @@ class ProfessorWithAvailability(BaseModel):
 # Optimization Configuration DTOs
 
 class OptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
-    config = DTOConfig(
+    config = SQLAlchemyDTOConfig(
         max_nested_depth=0
     )
 
 
 class OptConfPatchDTO(SQLAlchemyDTO[OptimizationConfiguration]):
-    config = DTOConfig(
+    config = SQLAlchemyDTOConfig(
         max_nested_depth=0,
         partial=True,
         exclude={"id", "created_at", "updated_at", "session_id"}
@@ -74,7 +73,7 @@ class OptConfPatchDTO(SQLAlchemyDTO[OptimizationConfiguration]):
 
 
 class OptConfListDTO(SQLAlchemyDTO[OptimizationConfiguration]):
-    config = DTOConfig(
+    config = SQLAlchemyDTOConfig(
         max_nested_depth=0,
         include={"session_id", "id", "title", "created_at", "updated_at"}
     )
