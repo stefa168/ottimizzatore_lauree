@@ -65,7 +65,7 @@ class OptimizationConfiguration(IdentityAuditBase):
         lazy="selectin"
     )
 
-    commissions: Mapped[list['SolutionCommission'] | None] = relationship(
+    commissions: Mapped[list['SolutionCommission']] = relationship(
         "SolutionCommission",
         back_populates="opt_config",
         cascade="all, delete-orphan",
