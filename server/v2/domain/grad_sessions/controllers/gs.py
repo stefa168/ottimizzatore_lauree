@@ -7,15 +7,13 @@ import pandas as pd
 
 from litestar import post, get, delete, Controller
 from litestar.di import Provide
-from litestar.dto import DTOConfig
+from advanced_alchemy.extensions.litestar import SQLAlchemyDTOConfig
 from litestar.params import Body
 from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
 from litestar.plugins.sqlalchemy import SQLAlchemyDTO
 import litestar.status_codes as http_statuses
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.asyncio.session import AsyncSessionTransaction
 from advanced_alchemy.exceptions import NotFoundError
 
 from v2.db.models import Student, Professor, Degree, SessionEntry, GradSession, ProfessorAvailability, TimeAvailability
@@ -41,7 +39,7 @@ def is_missing(v: Any) -> bool:
 
 
 class SessionReadDTO(SQLAlchemyDTO[GradSession]):
-    config = DTOConfig(
+    config = SQLAlchemyDTOConfig(
         max_nested_depth=0
     )
 
