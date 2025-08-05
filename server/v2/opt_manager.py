@@ -6,6 +6,7 @@ import signal
 from contextlib import asynccontextmanager, AsyncExitStack
 from dataclasses import dataclass
 from multiprocessing import Process, Event
+from multiprocessing.synchronize import Event as EventType
 from pathlib import Path
 from typing import Final, AsyncGenerator
 
@@ -64,7 +65,7 @@ class OptimizationWorkersManager:
         logger.debug("Terminated all worker processes", count=len(self.processes))
 
     @staticmethod
-    def _worker_entry(app_settings: Settings, stop_event: Event) -> None:
+    def _worker_entry(app_settings: Settings, stop_event: EventType) -> None:
         """
         Synchronous entry-point executed by multiprocessing.Process.
         Spins up an event loop and runs the *real* async worker inside it.
@@ -74,7 +75,7 @@ class OptimizationWorkersManager:
         asyncio.run(OptimizationWorkersManager._async_worker(app_settings, stop_event))
 
     @staticmethod
-    async def _async_worker(app_settings: Settings, stop_event: Event):
+    async def _async_worker(app_settings: Settings, stop_event: EventType):
         # noinspection PyShadowingNames
         logger = structlog.stdlib.get_logger()
         db_conf = app_settings.db.config()
@@ -105,6 +106,7 @@ class OptimizationWorkersManager:
                         new_headers = dict(message.headers or {})
                         new_headers[RETRY_HEADER] = retries + 1
 
+                        assert message.routing_key is not None
                         await mq.channel.default_exchange.publish(
                             Message(
                                 body=message.body,

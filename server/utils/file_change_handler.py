@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 from watchdog.events import FileSystemEventHandler
 
-from structlog import BoundLogger
+from structlog.stdlib import BoundLogger
 
 
 class FileChangeHandler(FileSystemEventHandler):

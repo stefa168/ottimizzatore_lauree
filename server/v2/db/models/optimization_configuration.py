@@ -3,7 +3,7 @@ from __future__ import annotations
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TextIO
 
 import sqlalchemy as sa
 from advanced_alchemy.base import IdentityAuditBase
@@ -72,7 +72,7 @@ class OptimizationConfiguration(IdentityAuditBase):
         lazy="selectin"
     )
 
-    def create_dat_file(self, base_path: Path) -> (Path, Path):
+    def create_dat_file(self, base_path: Path) -> tuple[Path, Path]:
         dat_file = base_path / "temp.dat"
         excel_path = base_path / "val.xls"
 
@@ -97,7 +97,7 @@ class OptimizationConfiguration(IdentityAuditBase):
 
         return base_path, dat_file
 
-    def create_virtual_dat_file(self, base_path: Path) -> (Path, tempfile.NamedTemporaryFile):
+    def create_virtual_dat_file(self, base_path: Path) -> tuple[Path, TextIO]:
         excel_path = base_path / "val.xls"
         base_path.mkdir(parents=True, exist_ok=True)
 
@@ -129,4 +129,4 @@ class OptimizationConfiguration(IdentityAuditBase):
 
         # Return the base path and the temporary file object
         # The file path can be accessed via dat_file.name
-        return base_path, dat_file
+        return base_path, dat_file  # type: ignore
