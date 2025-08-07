@@ -41,11 +41,11 @@ class TimeAvailability(Hashable, enum.Enum):
     ALWAYS = "always"
 
     @property
-    def available_morning(self):
+    def available_morning(self) -> bool:
         return self not in [TimeAvailability.AFTERNOON]
 
     @property
-    def available_afternoon(self):
+    def available_afternoon(self) -> bool:
         return self not in [TimeAvailability.MORNING]
 
     def hash(self):
