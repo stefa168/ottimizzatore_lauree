@@ -14,7 +14,8 @@ from v2.domain.grad_sessions.controllers import (
     SessionProfessorController,
     OptimizationConfigurationController
 )
-from v2.opt_manager import OptimizationWorkersManager, RabbitMessaging
+from v2.opt_manager import OptimizationWorkersManager
+from v2.utils.rabbit_messaging import RabbitMessaging
 
 base_router = Router(
     path="/api/v1",

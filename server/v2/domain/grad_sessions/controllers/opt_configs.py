@@ -22,7 +22,7 @@ from v2.domain.grad_sessions.deps import (
 )
 from v2.domain.grad_sessions.schemas import OptConfDTO, OptConfPatchDTO, OptConfListDTO, OptConfCompleteDTO
 from v2.domain.grad_sessions.services import check_gs_exists_raise, get_opt_conf_raise
-from v2.opt_manager import RabbitMessaging, OPTIMIZATION_CHANNEL_NAME
+from v2.utils.rabbit_messaging import RabbitMessaging, OPTIMIZATION_CHANNEL_NAME
 
 logger = structlog.stdlib.get_logger(__name__)
 
