@@ -36,20 +36,29 @@ class SessionEntry(IdentityAuditBase):
     degree_level: Mapped[Degree] = mapped_column(auto_named_enum(Degree), nullable=False)
 
     # Professor-Entry Relationships
-    supervisor_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey('session_professors.id'), nullable=False)
+    supervisor_id: Mapped[int] = mapped_column(
+        sa.BigInteger,
+        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        nullable=False)
     supervisor: Mapped[SessionProfessor] = relationship('SessionProfessor', foreign_keys=[supervisor_id])
 
     supervisor2_id: Mapped[int | None] = mapped_column(
-        sa.BigInteger, ForeignKey('session_professors.id'), nullable=True)
+        sa.BigInteger,
+        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        nullable=True)
     supervisor2: Mapped[SessionProfessor | None] = relationship('SessionProfessor', foreign_keys=[supervisor2_id])
 
     supervisor_assistant_id: Mapped[int | None] = mapped_column(
-        sa.BigInteger, ForeignKey('session_professors.id'), nullable=True)
+        sa.BigInteger,
+        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        nullable=True)
     supervisor_assistant: Mapped[SessionProfessor | None] = relationship(
         'SessionProfessor', foreign_keys=[supervisor_assistant_id])
 
     counter_supervisor_id: Mapped[int | None] = mapped_column(
-        sa.BigInteger, ForeignKey('session_professors.id'), nullable=True)
+        sa.BigInteger,
+        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        nullable=True)
     counter_supervisor: Mapped[SessionProfessor | None] = relationship(
         'SessionProfessor', foreign_keys=[counter_supervisor_id])
 

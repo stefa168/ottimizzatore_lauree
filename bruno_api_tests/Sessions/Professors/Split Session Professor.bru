@@ -1,0 +1,35 @@
+meta {
+  name: Split Session Professor
+  type: http
+  seq: 3
+}
+
+patch {
+  url: 127.0.0.1:8000/api/v1/sessions/:session_id/professors/:session_professor_id/split
+  body: json
+  auth: inherit
+}
+
+params:path {
+  session_professor_id: 1
+  session_id: 1
+}
+
+body:json {
+  [
+    {
+      "when": "morning",
+      "note": "",
+      "students": [1, 88]
+    },
+    {
+      "when": "afternoon",
+      "note": "",
+      "students": [102, 110]
+    }
+  ]
+}
+
+settings {
+  encodeUrl: true
+}

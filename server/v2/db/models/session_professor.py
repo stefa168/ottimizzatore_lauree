@@ -41,6 +41,7 @@ class SessionProfessor(IdentityAuditBase):
     derived_from_id: Mapped[int | None] = mapped_column(
         sa.BigInteger,
         sa.ForeignKey("session_professors.id", ondelete="CASCADE"),
+        index=True,
         nullable=True
     )
     availability: Mapped[TimeAvailability] = mapped_column(
