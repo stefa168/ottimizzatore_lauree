@@ -86,6 +86,10 @@ class SessionProfessor(IdentityAuditBase):
         cascade="all, delete-orphan",
         lazy='selectin'
     )
+    # Using trigger `trg_session_professors_guard_split` we're also ensuring that:
+    # - the split professor tree has only one level (no split of a split)
+    # - no substitute can be split
+    # - there cannot be a substitute of a substitute
 
     professor: Mapped["Professor"] = relationship(
         "Professor",
@@ -96,3 +100,14 @@ class SessionProfessor(IdentityAuditBase):
         back_populates="session_professors_entries",
         lazy='selectin'
     )
+
+    async def collect_descendants_ids(self) -> set[int]:
+        collected: set[int] = {self.id}
+        children: list[SessionProfessor] = await self.awaitable_attrs.children
+        stack = list(children)  # start with direct children
+        while stack:
+            node = stack.pop()
+            if node.id not in collected:
+                collected.add(node.id)
+                stack.extend(node.children)
+        return collected

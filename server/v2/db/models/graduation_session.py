@@ -47,13 +47,9 @@ class GradSession(IdentityAuditBase):
         def si_no(yes: bool) -> str:
             return 'SI' if yes else 'NO'
 
-        # There is a specific possibility that has been intentionally omitted:
-        # It might happen that we have a professor that has to be split, however he/she also is a counter-supervisor.
-        # This could cause the problem to be unsolvable.
-        # A better solution has to be discussed. fixme
-        students_by_professor: dict[Professor, list[SessionEntry]] = {}
+        students_by_professor: dict[SessionProfessor, list[SessionEntry]] = {}
         for entry in self.entries:
-            p = entry.supervisor.professor
+            p = entry.supervisor
 
             if p not in students_by_professor:
                 students_by_professor[p] = []
@@ -65,49 +61,32 @@ class GradSession(IdentityAuditBase):
 
         for p in students_by_professor:
             pe = students_by_professor[p]
-            should_split = availabilities[p] == TimeAvailability.SPLIT
 
             for index, entry in enumerate(pe):
-                morning_supervisor_availability: bool
-                afternoon_supervisor_availability: bool
-
                 supervisor = entry.supervisor.professor
 
-                if should_split:
-                    # Corrected logic for splitting more evenly (e.g. 5 students -> 3 morning, 2 afternoon)
-                    if index < (len(pe) + 1) // 2:
-                        morning_supervisor_availability = True
-                        afternoon_supervisor_availability = False
-                    else:
-                        morning_supervisor_availability = False
-                        afternoon_supervisor_availability = True
-                else:
-                    morning_supervisor_availability = availabilities[supervisor].available_morning
-                    afternoon_supervisor_availability = availabilities[supervisor].available_afternoon
-
                 try:
-                    current_supervisor = entry.supervisor.professor
                     entity = [
                         entry.candidate.id,
                         entry.candidate.surname,
                         entry.candidate.first_name,
                         entry.get_duration(),
-                        current_supervisor.id,
-                        current_supervisor.full_name,
-                        current_supervisor.role.abbr,
-                        si_no(morning_supervisor_availability),
-                        si_no(afternoon_supervisor_availability)
+                        entry.supervisor.id,
+                        supervisor.full_name,
+                        supervisor.role.abbr,
+                        si_no(availabilities[supervisor].available_morning),
+                        si_no(availabilities[supervisor].available_afternoon)
                     ]
                 except AttributeError as e:
                     raise ValueError(
-                        f"Professor '{entry.supervisor.professor.full_name}' "
+                        f"Professor '{supervisor.full_name}' "
                         f"might be missing role information or other attributes.") from e
 
                 if entry.counter_supervisor is not None:
-                    cs = entry.counter_supervisor.professor
+                    cs: Professor = entry.counter_supervisor.professor
                     try:
                         entity.extend([
-                            cs.id,
+                            entry.counter_supervisor.id,
                             cs.full_name,
                             cs.role.abbr,
                             si_no(availabilities[cs].available_morning),
@@ -115,7 +94,7 @@ class GradSession(IdentityAuditBase):
                         ])
                     except AttributeError as e:  # Changed from ValueError
                         raise ValueError(
-                            f"Professor '{entry.counter_supervisor.professor.full_name}' "
+                            f"Professor '{cs.full_name}' "
                             f"might be missing role information or other attributes.") from e
 
                 # todo do the same for the supervisor assistant

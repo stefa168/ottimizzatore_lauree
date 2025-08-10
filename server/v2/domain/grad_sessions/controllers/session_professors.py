@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import itertools
+from itertools import combinations
+
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTOConfig
 from litestar import get, Controller, patch
 from litestar.di import Provide
@@ -7,8 +10,10 @@ from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
 from litestar.plugins.sqlalchemy import SQLAlchemyDTO
+from pydantic import BaseModel, ConfigDict
 
-from v2.db.models import Professor, SessionProfessor
+from v2.db.models import Professor, SessionProfessor, TimeAvailability, SessionEntry
+from v2.db.models.enums import SessionProfessorRelation
 from v2.domain.grad_sessions import urls
 from v2.domain.grad_sessions.deps import (
     SessionEntryRepository,
@@ -26,7 +31,7 @@ class SessionProfessorReadDTO(SQLAlchemyDTO[SessionProfessor]):
 class SessionProfessorPatchDTO(SQLAlchemyDTO[SessionProfessor]):
     config = SQLAlchemyDTOConfig(
         partial=True,
-        include={"derived_from_id", "availability", "user_note"}
+        include={"availability", "user_note"}
     )
 
 
@@ -35,6 +40,14 @@ class ProfessorDTO(SQLAlchemyDTO[Professor]):
         partial=True,
         exclude={"created_at", "updated_at"}
     )
+
+
+class SessionProfessorSplit(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    when: TimeAvailability
+    note: str | None
+    students: set[int]
 
 
 class SessionProfessorController(Controller):
@@ -104,6 +117,97 @@ class SessionProfessorController(Controller):
         """
         sp = await get_session_professor_raise(sid, session_professor_id, session_professor_repository)
         return data.update_instance(sp)
+
+    @patch("/sessions/{session_id:int}/professors/{session_professor_id:int}/split")
+    async def split_session_professor(self,
+                                      data: list[SessionProfessorSplit],
+                                      session_id: int,
+                                      session_professor_id: int,
+                                      session_professor_repository: SessionProfessorRepository,
+                                      session_entry_repository: SessionEntryRepository
+                                      ) -> None:
+        """
+        Draft documentation: this endpoint will REPLACE all the children SessionProfessors with the new configuration
+        supplied with the request.
+        """
+        # 1. Get the referred Session Professor
+        original_sp = await get_session_professor_raise(session_id, session_professor_id,
+                                                        session_professor_repository)
+
+        # 1.1 The list of new splits must have len > 1
+        if len(data) <= 1:
+            raise HTTPException(
+                detail="Cannot split a professor with less than two virtual professors.",
+                status_code=http_statuses.HTTP_400_BAD_REQUEST
+            )
+
+        # 1.2 This is a bad request if you ask me to split something that isn't original.
+        if original_sp.relation is not SessionProfessorRelation.ORIGINAL:
+            raise HTTPException(
+                detail="Can only split an ORIGINAL Session Professor",
+                status_code=http_statuses.HTTP_409_CONFLICT
+            )
+
+        # 2. Check that the students of the different splits are not shared
+        student_sets = [split.students for split in data]
+        repeated_students: set[int] = set()
+
+        for set1, set2 in combinations(student_sets, 2):
+            intersection = set1 & set2
+            if intersection:
+                repeated_students.update(intersection)
+
+        if repeated_students:
+            raise HTTPException(
+                detail="Some students have been repeated",
+                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
+                extra={"repeated_students": repeated_students}
+            )
+
+        # 3. Recover all the students owned by this professor.
+        # We have two possible situations:
+        #   a) the professor has never been split or doesn't have a substitute
+        #   b) we have some splits or substitutes (or splits with SPs that substitute some of them)
+        sp_ids = await original_sp.collect_descendants_ids()
+        owned_students = await session_entry_repository.list(
+            SessionEntry.session_id == original_sp.session_id,
+            SessionEntry.supervisor_id.in_(sp_ids)
+        )
+        owned_students_dict = {s.id: s for s in owned_students}
+
+        # 4. Verify that the students we received from the request are actually handled by this Session Professor
+        request_students: set[int] = set(itertools.chain.from_iterable(student_sets))
+        foreign_students = request_students - set(owned_students_dict.keys())
+        if foreign_students:
+            raise HTTPException(
+                detail="Some students are not owned by the specified Session Professor",
+                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
+                extra={"foreign_students": foreign_students}
+            )
+
+        # 4. We're all set! Let's make the new session professors and assign the students.
+        splits: list[SessionProfessor] = []
+        for split in data:
+            split_session_professor = SessionProfessor(
+                parent=original_sp,
+                relation=SessionProfessorRelation.SPLIT,
+                professor=original_sp.professor,
+                session=original_sp.session,
+                availability=split.when,
+                user_note=split.note
+            )
+
+            splits.append(split_session_professor)
+
+            for student_se in split.students:
+                session_entry = owned_students_dict[student_se]
+                session_entry.supervisor = split_session_professor
+
+        await session_professor_repository.add_many(splits)
+
+        # Maybe we could improve this section, but it works fine for now.
+        if len(sp_ids) > 1:
+            await session_professor_repository.delete_many(list(sp_ids - {original_sp.id}))
 
     # todo move to a separate Professors Controller
     @patch(urls.PROFESSOR_UPDATE, dto=ProfessorDTO)
