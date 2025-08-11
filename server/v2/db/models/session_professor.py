@@ -74,18 +74,24 @@ class SessionProfessor(IdentityAuditBase):
         "SessionProfessor",
         remote_side=lambda: SessionProfessor.id,
         foreign_keys=lambda: SessionProfessor.derived_from_id,
-        back_populates="children",
+        back_populates="_children",
         lazy='selectin'
     )
 
     # 2) Children collection (all splits & substitutes derived from this row)
-    children: Mapped[list[SessionProfessor]] = relationship(
+    _children: Mapped[list[SessionProfessor]] = relationship(
         "SessionProfessor",
         foreign_keys=lambda: SessionProfessor.derived_from_id,
         back_populates="parent",
         cascade="all, delete-orphan",
         lazy='selectin'
     )
+
+    @property
+    async def children(self):
+        # noinspection PyProtectedMember
+        return await self.awaitable_attrs._children
+
     # Using trigger `trg_session_professors_guard_split` we're also ensuring that:
     # - the split professor tree has only one level (no split of a split)
     # - no substitute can be split
@@ -103,11 +109,11 @@ class SessionProfessor(IdentityAuditBase):
 
     async def collect_descendants_ids(self) -> set[int]:
         collected: set[int] = {self.id}
-        children: list[SessionProfessor] = await self.awaitable_attrs.children
+        children: list[SessionProfessor] = await self.children
         stack = list(children)  # start with direct children
         while stack:
             node = stack.pop()
             if node.id not in collected:
                 collected.add(node.id)
-                stack.extend(node.children)
+                stack.extend(await node.children)
         return collected
