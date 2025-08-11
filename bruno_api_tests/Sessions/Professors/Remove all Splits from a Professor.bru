@@ -1,0 +1,24 @@
+meta {
+  name: Remove all Splits from a Professor
+  type: http
+  seq: 4
+}
+
+patch {
+  url: 127.0.0.1:8000/api/v1/sessions/:session_id/professors/:session_professor_id/split
+  body: json
+  auth: inherit
+}
+
+params:path {
+  session_professor_id: 1
+  session_id: 1
+}
+
+body:json {
+  []
+}
+
+settings {
+  encodeUrl: true
+}

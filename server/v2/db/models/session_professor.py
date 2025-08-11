@@ -107,13 +107,13 @@ class SessionProfessor(IdentityAuditBase):
         lazy='selectin'
     )
 
-    async def collect_descendants_ids(self) -> set[int]:
-        collected: set[int] = {self.id}
+    async def collect_descendants_ids(self) -> dict[int, SessionProfessorRelation]:
+        collected: dict[int, SessionProfessorRelation] = {self.id: self.relation}
         children: list[SessionProfessor] = await self.children
         stack = list(children)  # start with direct children
         while stack:
             node = stack.pop()
             if node.id not in collected:
-                collected.add(node.id)
+                collected[node.id] = node.relation
                 stack.extend(await node.children)
         return collected

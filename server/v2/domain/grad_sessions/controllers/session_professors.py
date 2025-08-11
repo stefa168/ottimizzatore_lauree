@@ -134,35 +134,38 @@ class SessionProfessorController(Controller):
         original_sp = await get_session_professor_raise(session_id, session_professor_id,
                                                         session_professor_repository)
 
-        # 1.1 The list of new splits must have len > 1
-        if len(data) <= 1:
-            raise HTTPException(
-                detail="Cannot split a professor with less than two virtual professors.",
-                status_code=http_statuses.HTTP_400_BAD_REQUEST
-            )
-
-        # 1.2 This is a bad request if you ask me to split something that isn't original.
+        # 1.1 This is a bad request if you ask me to split something that isn't original.
         if original_sp.relation is not SessionProfessorRelation.ORIGINAL:
             raise HTTPException(
                 detail="Can only split an ORIGINAL Session Professor",
                 status_code=http_statuses.HTTP_409_CONFLICT
             )
 
-        # 2. Check that the students of the different splits are not shared
-        student_sets = [split.students for split in data]
-        repeated_students: set[int] = set()
-
-        for set1, set2 in combinations(student_sets, 2):
-            intersection = set1 & set2
-            if intersection:
-                repeated_students.update(intersection)
-
-        if repeated_students:
+        student_sets: list[set[int]] = []
+        # We do this only if we have at least two virtual professors. If we received a request with no virtual
+        # professors, then it means that we want to remove all the splits.
+        # 1.2 The list of new splits must have len > 1
+        if len(data) == 1:
             raise HTTPException(
-                detail="Some students have been repeated",
-                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
-                extra={"repeated_students": repeated_students}
+                detail="Cannot split a professor with less than two virtual professors.",
+                status_code=http_statuses.HTTP_400_BAD_REQUEST
             )
+        elif len(data) >= 2:
+            # 2. Check that the students of the different splits are not shared
+            student_sets = [split.students for split in data]
+            repeated_students: set[int] = set()
+
+            for set1, set2 in combinations(student_sets, 2):
+                intersection = set1 & set2
+                if intersection:
+                    repeated_students.update(intersection)
+
+            if repeated_students:
+                raise HTTPException(
+                    detail="Some students have been repeated",
+                    status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
+                    extra={"repeated_students": repeated_students}
+                )
 
         # 3. Recover all the students owned by this professor.
         # We have two possible situations:
@@ -171,43 +174,50 @@ class SessionProfessorController(Controller):
         sp_ids = await original_sp.collect_descendants_ids()
         owned_students = await session_entry_repository.list(
             SessionEntry.session_id == original_sp.session_id,
-            SessionEntry.supervisor_id.in_(sp_ids)
+            SessionEntry.supervisor_id.in_(sp_ids.keys())
         )
         owned_students_dict = {s.id: s for s in owned_students}
 
-        # 4. Verify that the students we received from the request are actually handled by this Session Professor
-        request_students: set[int] = set(itertools.chain.from_iterable(student_sets))
-        foreign_students = request_students - set(owned_students_dict.keys())
-        if foreign_students:
-            raise HTTPException(
-                detail="Some students are not owned by the specified Session Professor",
-                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
-                extra={"foreign_students": foreign_students}
-            )
+        if len(data) >= 2:
+            # If we're here, we are creating or updating the SessionProfessor hierarchy.
+            # 4. Verify that the students we received from the request are actually handled by this Session Professor.
+            request_students: set[int] = set(itertools.chain.from_iterable(student_sets))
+            foreign_students = request_students - set(owned_students_dict.keys())
+            if foreign_students:
+                raise HTTPException(
+                    detail="Some students are not owned by the specified Session Professor",
+                    status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
+                    extra={"foreign_students": foreign_students}
+                )
 
-        # 4. We're all set! Let's make the new session professors and assign the students.
-        splits: list[SessionProfessor] = []
-        for split in data:
-            split_session_professor = SessionProfessor(
-                parent=original_sp,
-                relation=SessionProfessorRelation.SPLIT,
-                professor=original_sp.professor,
-                session=original_sp.session,
-                availability=split.when,
-                user_note=split.note
-            )
+            # 5. We're all set! Let's make the new session professors and assign the students.
+            splits: list[SessionProfessor] = []
+            for split in data:
+                split_session_professor = SessionProfessor(
+                    parent=original_sp,
+                    relation=SessionProfessorRelation.SPLIT,
+                    professor=original_sp.professor,
+                    session=original_sp.session,
+                    availability=split.when,
+                    user_note=split.note
+                )
 
-            splits.append(split_session_professor)
+                splits.append(split_session_professor)
 
-            for student_se in split.students:
-                session_entry = owned_students_dict[student_se]
-                session_entry.supervisor = split_session_professor
+                for student_se in split.students:
+                    session_entry = owned_students_dict[student_se]
+                    session_entry.supervisor = split_session_professor
 
-        await session_professor_repository.add_many(splits)
+            await session_professor_repository.add_many(splits)
 
-        # Maybe we could improve this section, but it works fine for now.
+        else:
+            # If we're here, we're moving all the students back to the root SessionProfessor.
+            for s in owned_students:
+                s.supervisor = original_sp
+
+        # Finally, remove all the virtual SPs created in the past.
         if len(sp_ids) > 1:
-            await session_professor_repository.delete_many(list(sp_ids - {original_sp.id}))
+            await session_professor_repository.delete_many(list(sp_ids.keys() - {original_sp.id}))
 
     # todo move to a separate Professors Controller
     @patch(urls.PROFESSOR_UPDATE, dto=ProfessorDTO)

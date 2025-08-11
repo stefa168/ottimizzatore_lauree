@@ -38,26 +38,26 @@ class SessionEntry(IdentityAuditBase):
     # Professor-Entry Relationships
     supervisor_id: Mapped[int] = mapped_column(
         sa.BigInteger,
-        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        ForeignKey('session_professors.id', ondelete="RESTRICT", deferrable=True, initially="DEFERRED"),
         nullable=False)
     supervisor: Mapped[SessionProfessor] = relationship('SessionProfessor', foreign_keys=[supervisor_id])
 
     supervisor2_id: Mapped[int | None] = mapped_column(
         sa.BigInteger,
-        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        ForeignKey('session_professors.id', ondelete="RESTRICT", deferrable=True, initially="DEFERRED"),
         nullable=True)
     supervisor2: Mapped[SessionProfessor | None] = relationship('SessionProfessor', foreign_keys=[supervisor2_id])
 
     supervisor_assistant_id: Mapped[int | None] = mapped_column(
         sa.BigInteger,
-        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        ForeignKey('session_professors.id', ondelete="RESTRICT", deferrable=True, initially="DEFERRED"),
         nullable=True)
     supervisor_assistant: Mapped[SessionProfessor | None] = relationship(
         'SessionProfessor', foreign_keys=[supervisor_assistant_id])
 
     counter_supervisor_id: Mapped[int | None] = mapped_column(
         sa.BigInteger,
-        ForeignKey('session_professors.id', ondelete="RESTRICT"),
+        ForeignKey('session_professors.id', ondelete="RESTRICT", deferrable=True, initially="DEFERRED"),
         nullable=True)
     counter_supervisor: Mapped[SessionProfessor | None] = relationship(
         'SessionProfessor', foreign_keys=[counter_supervisor_id])

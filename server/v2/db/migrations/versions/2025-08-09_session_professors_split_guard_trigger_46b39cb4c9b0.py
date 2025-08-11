@@ -163,9 +163,10 @@ prof_owner_trigger_ddl = (
     -- Create (or replace) the trigger
     DROP TRIGGER IF EXISTS trg_session_entries_guard_supervisor ON session_entries;
 
-    CREATE TRIGGER trg_session_entries_guard_supervisor
-        BEFORE INSERT OR UPDATE OF supervisor_id
+    CREATE CONSTRAINT TRIGGER trg_session_entries_guard_supervisor
+        AFTER INSERT OR UPDATE OF supervisor_id
         ON session_entries
+        DEFERRABLE INITIALLY DEFERRED 
         FOR EACH ROW
     EXECUTE FUNCTION session_entries_guard_supervisor_leaf(); \
     """
