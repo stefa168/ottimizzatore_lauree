@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from v2.db.models.professor import Professor
 
 
-@dataclass
+@dataclass(eq=False)
 class SessionProfessor(IdentityAuditBase):
     __tablename__ = "session_professors"
 
@@ -117,3 +117,20 @@ class SessionProfessor(IdentityAuditBase):
                 collected[node.id] = node.relation
                 stack.extend(await node.children)
         return collected
+
+    def __repr__(self):
+        return f"SessionProfessor({self.id}, {self.session_id}, {self.professor}, {self.availability}, {self.relation}, {self.derived_from_id})"
+
+    def __hash__(self) -> int:
+        # Hash based on the primary key once persisted
+        if getattr(self, "id", None) is None:
+            # Unpersisted instances are not hashable to avoid duplicates in sets/dicts
+            raise TypeError("SessionProfessor is not hashable until persisted")
+        return hash(self.id)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SessionProfessor):
+            return NotImplemented
+        if getattr(self, "id", None) is None or getattr(other, "id", None) is None:
+            return False
+        return self.id == other.id
