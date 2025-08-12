@@ -86,7 +86,12 @@ class OptimizationConfigurationController(Controller):
                                          opt_conf_repo: OptimizationConfigurationRepository
                                          ) -> OptConfCompleteDTO:
         await check_gs_exists_raise(grad_session_repository, sid)
-        config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo, load=[
+            selectinload(OptimizationConfiguration.commissions).options(
+                selectinload(SolutionCommission.professors),
+                selectinload(SolutionCommission.students)
+            )
+        ])
         return OptConfCompleteDTO.model_validate(config)
 
     @get(urls.GRAD_SESSION_OPT_CONF_SOLVE, status_code=http_statuses.HTTP_202_ACCEPTED)

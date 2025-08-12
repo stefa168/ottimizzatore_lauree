@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import Any, cast, Iterable
+from typing import Any, cast, Iterable, Optional
 
 import structlog
+from advanced_alchemy.repository import LoadSpec
 from litestar import status_codes as http_statuses
 from litestar.exceptions import HTTPException
 from pandas import DataFrame
@@ -51,7 +52,8 @@ async def check_gs_exists_raise(graduation_session_repo: GradSessionRepository,
 
 async def get_opt_conf_raise(configuration_id: int,
                              session_id: int,
-                             optimization_configuration_repo: OptimizationConfigurationRepository
+                             optimization_configuration_repo: OptimizationConfigurationRepository,
+                             load: Optional[LoadSpec] = None,
                              ) -> OptimizationConfiguration:
     """
     Retrieve an optimization configuration for a given configuration ID and session ID.
@@ -61,6 +63,7 @@ async def get_opt_conf_raise(configuration_id: int,
     If no configuration is found, an HTTPException with a "Configuration not found" message
     is raised, and the HTTP 404 NOT FOUND status code is returned.
 
+    :param load: Optional argument indicating additional optimization configuration loading specifications.
     :param configuration_id: The unique identifier for the configuration to fetch.
     :type configuration_id: int
     :param session_id: The session identifier associated with the configuration.
@@ -75,6 +78,7 @@ async def get_opt_conf_raise(configuration_id: int,
         optimization_configuration_repo,
         OptimizationConfiguration.id == configuration_id,
         OptimizationConfiguration.session_id == session_id,
+        load=load,
         not_found_msg=f"Configuration with ID {configuration_id} (SID {session_id}) not found"
     )
 

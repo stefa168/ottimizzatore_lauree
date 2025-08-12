@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
 from litestar.datastructures import UploadFile
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from v2.db.models import OptimizationConfiguration, SolverEnum
+from v2.db.models import OptimizationConfiguration, SolverEnum, Degree
 
 
 @dataclass
 class NewCommissionForm:
     file: UploadFile
     title: str | None = None
+    only: Degree | None = None
+    # date
 
 
 # Optimization Configuration DTOs
@@ -46,20 +49,36 @@ class OptimizationLogDTO(BaseModel):
 
 
 class SolutionCommissionDTO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)  # from_attributes is crucial
 
     order_key: int
     morning: bool
+    duration: int
 
     session_id: int
     opt_config_id: int
 
-    # professors_ids: list[int]
-    # students_ids: list[int]
-    # @computed_field
-    # def professors_ids(self) -> list[int]:
-    #     # `self` is the ORM object (since from_attributes=True)
-    #     return [p.id for p in self.professors]
+    # Use an alias to map from the ORM's attribute name
+    professor_ids: list[int] = Field(..., alias='professors')
+    student_ids: list[int] = Field(..., alias='students')
+
+    # noinspection PyNestedDecorators
+    @field_validator('professor_ids', 'student_ids', mode='before')
+    @staticmethod
+    def convert_objects_to_ids(v: Any) -> list[int]:
+        """
+        This validator runs before type validation and converts a list of ORM objects
+        into a list of their IDs.
+
+        Works only if the values are already present. If they're awaitable, please load them before
+        """
+        if isinstance(v, list):
+            # Handles the case where the input is already a list of ints
+            if not v or isinstance(v[0], int):
+                return v
+            # Assumes a list of objects with an 'id' attribute
+            return [obj.id for obj in v]
+        return v  # Should not happen with from_attributes, but good practice
 
 
 class OptConfCompleteDTO(BaseModel):
@@ -85,4 +104,4 @@ class OptConfCompleteDTO(BaseModel):
     run_lock: bool
 
     optimization_log: OptimizationLogDTO | None
-    commissions: list[None]
+    commissions: list[SolutionCommissionDTO]
