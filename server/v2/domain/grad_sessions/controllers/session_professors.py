@@ -124,15 +124,15 @@ class SessionProfessorController(Controller):
                                       session_id: int,
                                       session_professor_id: int,
                                       session_professor_repository: SessionProfessorRepository,
-                                      session_entry_repository: SessionEntryRepository
-                                      ) -> None:
+                                      session_entry_repository: SessionEntryRepository,
+                                      ignore_substitutes: bool | None = None,
+                                      ) -> list[SessionProfessor]:
         """
         Draft documentation: this endpoint will REPLACE all the children SessionProfessors with the new configuration
         supplied with the request.
         """
         # 1. Get the referred Session Professor
-        original_sp = await get_session_professor_raise(session_id, session_professor_id,
-                                                        session_professor_repository)
+        original_sp = await get_session_professor_raise(session_id, session_professor_id, session_professor_repository)
 
         # 1.1 This is a bad request if you ask me to split something that isn't original.
         if original_sp.relation is not SessionProfessorRelation.ORIGINAL:
@@ -172,12 +172,27 @@ class SessionProfessorController(Controller):
         #   a) the professor has never been split or doesn't have a substitute
         #   b) we have some splits or substitutes (or splits with SPs that substitute some of them)
         sp_ids = await original_sp.collect_descendants_ids()
+
+        substitute_ids = [idx for idx, rel in sp_ids.items() if rel is SessionProfessorRelation.SUBSTITUTE]
+
+        if ignore_substitutes is False and substitute_ids:
+            raise HTTPException(
+                detail="Substitutes exist; operation cannot proceed. "
+                       "Set query parameter `ignore_substitutes` to true to ignore this constraint and remove them",
+                status_code=http_statuses.HTTP_409_CONFLICT,
+                extra={
+                    "substitute_session_professor_ids": substitute_ids,
+                    "had_substitutes": True,
+                }
+            )
+
         owned_students = await session_entry_repository.list(
             SessionEntry.session_id == original_sp.session_id,
             SessionEntry.supervisor_id.in_(sp_ids.keys())
         )
         owned_students_dict = {s.id: s for s in owned_students}
 
+        splits: list[SessionProfessor] = []
         if len(data) >= 2:
             # If we're here, we are creating or updating the SessionProfessor hierarchy.
             # 4. Verify that the students we received from the request are actually handled by this Session Professor.
@@ -191,7 +206,6 @@ class SessionProfessorController(Controller):
                 )
 
             # 5. We're all set! Let's make the new session professors and assign the students.
-            splits: list[SessionProfessor] = []
             for split in data:
                 split_session_professor = SessionProfessor(
                     parent=original_sp,
@@ -219,6 +233,7 @@ class SessionProfessorController(Controller):
         if len(sp_ids) > 1:
             await session_professor_repository.delete_many(list(sp_ids.keys() - {original_sp.id}))
 
+        return splits
     # todo move to a separate Professors Controller
     @patch(urls.PROFESSOR_UPDATE, dto=ProfessorDTO)
     async def update_professor(
