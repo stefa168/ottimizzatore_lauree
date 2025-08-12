@@ -144,6 +144,7 @@ async def solve_model(config: OptimizationConfiguration, cc_path: Path, db_sessi
     else:
         # maxdurata
         model = create_max_durata_model(dat_path)
+        raise RuntimeError("Max durata model deprecated")
     logger.debug("Optimization model created")
 
     model_filename = cc_path / "model.lp"
@@ -269,29 +270,29 @@ async def extract_commissions(
     commissions: list[SolutionCommission] = []
     session_id = config.session_id
 
-    # commission: int
     for commission_id, commission in enumerate(commission_model):
         new_commission = SolutionCommission(morning=morning, duration=0)
 
-        for index, professor in cast(DataFrame, model.docenti).iterrows():
-            if value(model.z[professor['Relatore'], commission]) > 0.8:
-                professor_id = int(professor['ID'])
-                session_professor = await session_prof_repo.get_one(
-                    SessionProfessor.professor_id == professor_id,
+        # Professors selected for this commission: check z[SP_ID, commission]
+        for _, prof_row in cast(DataFrame, model.docenti).iterrows():
+            sp_id = int(prof_row["SP_ID"])
+            if value(model.z[sp_id, commission]) > 0.8:
+                session_professor = await session_prof_repo.get_one_or_none(
+                    SessionProfessor.id == sp_id,
                     SessionProfessor.session_id == session_id
                 )
 
                 if session_professor is None:
-                    raise RuntimeError("Missing Session Professor entry")
-
+                    raise RuntimeError(f"Missing Session Professor entry for SP_ID={sp_id}")
                 new_commission.professors.append(session_professor)
 
-        for candidate in cast(Iterable[int], model.candidati):
+        # Students assigned to this commission
+        for candidate in cast(Iterable[int], model.Candidati):
             if value(model.x[candidate, commission]) > 0.8:
                 session_candidate = await students_repo.get(int(candidate))
 
                 new_commission.students.append(session_candidate)
-                new_commission.duration += int(model.tesisti['Durata'][candidate])
+                new_commission.duration += int(model.tesisti.loc[candidate, 'Durata'])
 
         commissions.append(new_commission)
 

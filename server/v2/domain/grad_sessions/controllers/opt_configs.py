@@ -12,7 +12,9 @@ from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
+from sqlalchemy.orm import selectinload
 
+from v2.db.models import SolutionCommission
 from v2.db.models import OptimizationConfiguration
 from v2.domain.grad_sessions import urls
 from v2.domain.grad_sessions.deps import (
@@ -109,6 +111,12 @@ class OptimizationConfigurationController(Controller):
             logger.error(f"Configuration with ID {config_id} already solved")
             raise HTTPException(
                 detail="Configuration already solved",
+                status_code=http_statuses.HTTP_409_CONFLICT
+            )
+
+        if not config.online:
+            raise HTTPException(
+                detail="Optimization for configurations that are not online is deprecated.",
                 status_code=http_statuses.HTTP_409_CONFLICT
             )
 

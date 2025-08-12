@@ -47,23 +47,24 @@ class GradSession(IdentityAuditBase):
         def si_no(yes: bool) -> str:
             return 'SI' if yes else 'NO'
 
-        students_by_professor: dict[SessionProfessor, list[SessionEntry]] = {}
+        def availability_flags(sp: SessionProfessor) -> tuple[str, str]:
+            av = sp.availability
+            # TimeAvailability exposes booleans for morning/afternoon
+            return si_no(av.available_morning), si_no(av.available_afternoon)
+
+        # Group students by SessionProfessor to keep things deterministic
+        students_by_session_prof: dict[SessionProfessor, list[SessionEntry]] = {}
         for entry in self.entries:
-            p = entry.supervisor
+            sp = entry.supervisor
+            students_by_session_prof.setdefault(sp, []).append(entry)
 
-            if p not in students_by_professor:
-                students_by_professor[p] = []
-
-            students_by_professor[p].append(entry)
-
-        availabilities = self.availability_dict()
         data_rows: list[list[str | int | bool]] = []
 
-        for p in students_by_professor:
-            pe = students_by_professor[p]
-
-            for index, entry in enumerate(pe):
-                supervisor = entry.supervisor.professor
+        for sp, entries in students_by_session_prof.items():
+            for entry in entries:
+                supervisor_sp: SessionProfessor = entry.supervisor
+                supervisor_prof: Professor = supervisor_sp.professor
+                rel_morn, rel_aft = availability_flags(supervisor_sp)
 
                 try:
                     entity = [
@@ -71,40 +72,54 @@ class GradSession(IdentityAuditBase):
                         entry.candidate.surname,
                         entry.candidate.first_name,
                         entry.get_duration(),
-                        entry.supervisor.id,
-                        supervisor.full_name,
-                        supervisor.role.abbr,
-                        si_no(availabilities[supervisor].available_morning),
-                        si_no(availabilities[supervisor].available_afternoon)
+
+                        # Supervisor (SessionProfessor + Professor IDs)
+                        supervisor_sp.id,
+                        supervisor_prof.id,
+                        supervisor_prof.full_name,
+                        supervisor_prof.role.abbr,
+                        rel_morn,
+                        rel_aft,
                     ]
                 except AttributeError as e:
                     raise ValueError(
-                        f"Professor '{supervisor.full_name}' "
-                        f"might be missing role information or other attributes.") from e
+                        f"Professor '{supervisor_prof.full_name}' "
+                        f"might be missing role information or other attributes."
+                    ) from e
 
+                # Counter-supervisor (optional)
                 if entry.counter_supervisor is not None:
-                    cs: Professor = entry.counter_supervisor.professor
+                    cs_sp: SessionProfessor = entry.counter_supervisor
+                    cs_prof: Professor = cs_sp.professor
+                    cs_morn, cs_aft = availability_flags(cs_sp)
+
                     try:
                         entity.extend([
-                            entry.counter_supervisor.id,
-                            cs.full_name,
-                            cs.role.abbr,
-                            si_no(availabilities[cs].available_morning),
-                            si_no(availabilities[cs].available_afternoon)
+                            cs_sp.id,
+                            cs_prof.id,
+                            cs_prof.full_name,
+                            cs_prof.role.abbr,
+                            cs_morn,
+                            cs_aft
                         ])
-                    except AttributeError as e:  # Changed from ValueError
+                    except AttributeError as e:
                         raise ValueError(
-                            f"Professor '{cs.full_name}' "
-                            f"might be missing role information or other attributes.") from e
-
-                # todo do the same for the supervisor assistant
+                            f"Professor '{cs_prof.full_name}' "
+                            f"might be missing role information or other attributes."
+                        ) from e
 
                 data_rows.append(entity)
 
         df = pd.DataFrame(
             data_rows,
-            columns=["ID_Studente", "Cognome", "Nome", "Durata", "ID_Relatore", "Relatore", "Ruolo", "Mattina",
-                     "Pomeriggio", "ID_Controrelatore", "Controrelatore", "Ruolo", "Mattina", "Pomeriggio"]
+            columns=[
+                "ID_Studente", "Cognome", "Nome", "Durata",
+                # Supervisor columns (SessionProfessor + Professor)
+                "ID_Relatore", "PID_Relatore", "Relatore", "Ruolo_Relatore", "Relatore_Mattina", "Relatore_Pomeriggio",
+                # Counter-supervisor columns (optional; if absent the row cells will be NaN and are handled downstream)
+                "ID_Controrelatore", "PID_Controrelatore", "Controrelatore", "Ruolo_Controrelatore",
+                "Controrelatore_Mattina", "Controrelatore_Pomeriggio"
+            ]
         )
 
         # Create an in-memory binary stream
