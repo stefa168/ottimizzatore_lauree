@@ -66,5 +66,5 @@ class SessionEntry(IdentityAuditBase):
         return 15 if self.degree_level == Degree.BACHELORS else 20 if self.counter_supervisor is None else 30
 
     def __repr__(self):
-        return f"CommissionEntry({self.id=}, {self.session_id=}, {self.candidate=}, {self.degree_level=}, " \
+        return f"CommissionEntry({self.id=}, {self.session_id=}, {self.candidate.full_name}, {self.degree_level=}, " \
                f"{self.supervisor=} {self.supervisor2=} {self.supervisor_assistant=}, {self.counter_supervisor=})"
