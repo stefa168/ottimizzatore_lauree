@@ -82,6 +82,37 @@ split_trigger_ddl = (
                     USING ERRCODE = '23514',
                         CONSTRAINT = 'chk_no_sub_under_sub';
             END IF;
+
+            -- NEW: Forbid adding a SUBSTITUTE if the parent already has ANY children (SPLIT or SUBSTITUTE)
+            IF (NEW.relation)::text = 'SUBSTITUTE' THEN
+                IF EXISTS (
+                    SELECT 1
+                    FROM session_professors c
+                    WHERE c.derived_from_id = NEW.derived_from_id
+                      AND c.id IS DISTINCT FROM NEW.id
+                ) THEN
+                    RAISE EXCEPTION 'Invalid relationship: cannot add a SUBSTITUTE under a parent (id %) that already has derived entries',
+                        NEW.derived_from_id
+                        USING ERRCODE = '23514',
+                            CONSTRAINT = 'chk_no_sub_when_children_exist';
+                END IF;
+            END IF;
+
+            -- NEW: Forbid adding a SPLIT if the parent already has a SUBSTITUTE child
+            IF (NEW.relation)::text = 'SPLIT' THEN
+                IF EXISTS (
+                    SELECT 1
+                    FROM session_professors c
+                    WHERE c.derived_from_id = NEW.derived_from_id
+                      AND (c.relation)::text = 'SUBSTITUTE'
+                      AND c.id IS DISTINCT FROM NEW.id
+                ) THEN
+                    RAISE EXCEPTION 'Invalid relationship: cannot add a SPLIT under a parent (id %) that already has a SUBSTITUTE',
+                        NEW.derived_from_id
+                        USING ERRCODE = '23514',
+                            CONSTRAINT = 'chk_no_split_when_sub_exists';
+                END IF;
+            END IF;
         END IF;
 
         -- Parent-side validation
