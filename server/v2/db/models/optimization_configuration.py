@@ -93,9 +93,9 @@ class OptimizationConfiguration(IdentityAuditBase):
             f.write(f"param excel_path := \"{excel_path.resolve()}\";\n")
 
             if self.online:
-                f.write(f"param minDocenti := {self.min_professor_number};\n")
-                f.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
-                f.write(f"param max_doc := {self.max_professor_number};\n")
+                f.write(f"param min_docenti := {self.min_professor_number};\n")
+                f.write(f"param min_docenti_magistrale := {self.min_professor_number_masters};\n")
+                f.write(f"param max_docenti := {self.max_professor_number};\n")
 
         return base_path, dat_file
 
@@ -123,9 +123,9 @@ class OptimizationConfiguration(IdentityAuditBase):
         dat_file.write(f"param excel_path := \"{excel_path.resolve()}\";\n")
 
         if self.online:
-            dat_file.write(f"param minDocenti := {self.min_professor_number};\n")
-            dat_file.write(f"param minDocentiMag := {self.min_professor_number_masters};\n")
-            dat_file.write(f"param max_doc := {self.max_professor_number};\n")
+            dat_file.write(f"param min_docenti := {self.min_professor_number};\n")
+            dat_file.write(f"param min_docenti_magistrale := {self.min_professor_number_masters};\n")
+            dat_file.write(f"param max_docenti := {self.max_professor_number};\n")
 
         dat_file.flush()  # Ensure data is written to disk
 
