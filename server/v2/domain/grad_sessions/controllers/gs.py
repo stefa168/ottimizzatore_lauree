@@ -92,6 +92,18 @@ class GraduationSessionController(Controller):
 
         excel = pd.read_excel(BytesIO(file_data)).fillna('None')
 
+        if data.only:
+            # Use == for Enum comparison (more robust and clear)
+            # mode = 'MAGISTRALE' if data.only == Degree.MASTERS else 'TRIENNALE'
+            mask = excel['TIPO_CORSO_DESCRIZIONE'].astype(str).str.upper().str.contains('MAGISTRALE')
+            excel = excel[mask if data.only == Degree.MASTERS else ~mask]
+
+        if len(excel) <= 0:
+            raise HTTPException(
+                detail="The excel file contains no rows or the specified filter returns no students",
+                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+
         expected_columns = {'MATRICOLA', 'COGNOME', 'NOME', 'CELLULARE', 'EMAIL', 'EMAIL_ATENEO',
                             'TIPO_CORSO_DESCRIZIONE', 'DATA_APPELLO', 'REL_COGNOME', 'REL_NOME', 'REL2_COGNOME',
                             'REL2_NOME', 'CORR_NOME', 'CORR_COGNOME', 'CONTROREL_COGNOME', 'CONTROREL_NOME'}
