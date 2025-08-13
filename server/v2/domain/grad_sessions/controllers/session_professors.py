@@ -4,7 +4,7 @@ import itertools
 from itertools import combinations
 
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTOConfig
-from litestar import get, Controller, patch
+from litestar import get, Controller, patch, delete
 from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
@@ -20,6 +20,7 @@ from v2.domain.grad_sessions.deps import (
     ProfessorRepository, SessionProfessorRepository, GradSessionRepository
 )
 from v2.domain.grad_sessions.services import get_session_professor_raise, check_gs_exists_raise
+from v2.utils.crud_helpers import get_one_or_raise
 
 
 class SessionProfessorReadDTO(SQLAlchemyDTO[SessionProfessor]):
@@ -48,6 +49,13 @@ class SessionProfessorSplit(BaseModel):
     when: TimeAvailability
     note: str | None
     students: set[int]
+
+
+class SessionProfessorSubstitute(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    availability: TimeAvailability = TimeAvailability.ALWAYS
+    note: str = ""
 
 
 class SessionProfessorController(Controller):
@@ -118,7 +126,7 @@ class SessionProfessorController(Controller):
         sp = await get_session_professor_raise(sid, session_professor_id, session_professor_repository)
         return data.update_instance(sp)
 
-    @patch("/sessions/{session_id:int}/professors/{session_professor_id:int}/split")
+    @patch(urls.SESSION_PROFESSOR_SPLIT)
     async def split_session_professor(self,
                                       data: list[SessionProfessorSplit],
                                       session_id: int,
@@ -234,6 +242,101 @@ class SessionProfessorController(Controller):
             await session_professor_repository.delete_many(list(sp_ids.keys() - {original_sp.id}))
 
         return splits
+
+    @patch(urls.SESSION_PROFESSOR_SUBSTITUTE)
+    async def substitute_session_professor(self,
+                                           session_id: int,
+                                           session_professor_id: int,
+                                           substitute_professor_id: int,
+                                           session_professor_repository: SessionProfessorRepository,
+                                           session_entry_repository: SessionEntryRepository,
+                                           professor_repository: ProfessorRepository,
+                                           data: SessionProfessorSubstitute = SessionProfessorSubstitute()
+                                           ) -> SessionProfessor:
+        # 1. Get the referred Session Professor
+        original_sp = await get_session_professor_raise(session_id, session_professor_id, session_professor_repository)
+
+        if original_sp.professor.id == substitute_professor_id:
+            raise HTTPException(
+                detail="The specified Professor is already substituting the specified Session Professor",
+                status_code=http_statuses.HTTP_400_BAD_REQUEST
+            )
+
+        substitute_prof = await get_one_or_raise(professor_repository,
+                                                 Professor.id == substitute_professor_id,
+                                                 not_found_msg="The specified Professor doesn't exist")
+
+        # 2. Is this a substitute? If so, just replace the SessionEntry.supervisor
+        if original_sp.relation is SessionProfessorRelation.SUBSTITUTE:
+            original_sp.professor = substitute_prof
+            return await session_professor_repository.update(original_sp)
+
+        sp_children = await original_sp.collect_descendants_ids()
+        sp_children.pop(original_sp.id)  # -1 because the method returns also the original_sp's id
+        if len(sp_children) > 0:
+            raise HTTPException(
+                detail="Cannot add a substitute to a Professor that has substitutes or SPLITs",
+                status_code=http_statuses.HTTP_409_CONFLICT,
+                extra={"children": sp_children}
+            )
+
+        substitute_sp = SessionProfessor(
+            session=original_sp.session,
+            professor=substitute_prof,
+            relation=SessionProfessorRelation.SUBSTITUTE,
+            parent=original_sp,
+            availability=data.availability,
+            user_note=data.note
+        )
+
+        substitute_sp = await session_professor_repository.add(substitute_sp)
+
+        students = await session_entry_repository.list(
+            SessionEntry.supervisor_id == original_sp.id,
+            SessionEntry.session_id == original_sp.session_id
+        )
+
+        for student in students:
+            student.supervisor = substitute_sp
+
+        await session_entry_repository.update_many(students)
+
+        return substitute_sp
+
+    @delete("/sessions/{session_id:int}/professors/{session_professor_id:int}/substitute")
+    async def delete_substitute_session_professor(self,
+                                                  session_id: int,
+                                                  session_professor_id: int,
+                                                  session_professor_repository: SessionProfessorRepository,
+                                                  session_entry_repository: SessionEntryRepository,
+                                                  ) -> None:
+        substitute_sp = await get_session_professor_raise(session_id, session_professor_id,
+                                                          session_professor_repository)
+
+        if substitute_sp.parent is None:
+            raise HTTPException(
+                detail="Substitute undefined",
+                status_code=http_statuses.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        if substitute_sp.relation is not SessionProfessorRelation.SUBSTITUTE:
+            raise HTTPException(
+                detail="The specified Session Professor is not a substitute",
+                status_code=http_statuses.HTTP_409_CONFLICT,
+                extra={"relation": substitute_sp.relation}
+            )
+
+        students = await session_entry_repository.list(
+            SessionEntry.supervisor_id == substitute_sp.id,
+            SessionEntry.session_id == substitute_sp.session_id
+        )
+
+        for student in students:
+            student.supervisor = substitute_sp.parent
+
+        await session_entry_repository.update_many(students)
+        await session_professor_repository.delete(substitute_sp)
+
     # todo move to a separate Professors Controller
     @patch(urls.PROFESSOR_UPDATE, dto=ProfessorDTO)
     async def update_professor(

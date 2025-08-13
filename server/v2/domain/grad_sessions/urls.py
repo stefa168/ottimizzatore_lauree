@@ -12,6 +12,8 @@ GRAD_SESSION_ENTRY_LIST = "/sessions/{sid:int}/students"
 # Professor Urls
 SESSION_PROFESSOR_LIST = "/sessions/{sid:int}/professors"
 SESSION_PROFESSOR_UPDATE = "/sessions/{sid:int}/professors/{session_professor_id:int}"
+SESSION_PROFESSOR_SPLIT = "/sessions/{session_id:int}/professors/{session_professor_id:int}/split"
+SESSION_PROFESSOR_SUBSTITUTE = "/sessions/{session_id:int}/professors/{session_professor_id:int}/substitute/{substitute_sesssion_professor_id:int}"
 PROFESSOR_UPDATE = "/professors"
 
 # Optimization Configurations Urls
