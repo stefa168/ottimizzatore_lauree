@@ -6,16 +6,21 @@ export interface ApiErrorResponse<TExtra = never> {
 
 export type PartialExcept<T, K extends keyof T> = Partial<T> & Pick<T, K>;
 
-export interface GradSession {
-  id: number,
-  title: string,
+export interface CreationUpdateDate {
   created_at: Date,
   updated_at: Date
 }
 
+// Graduation Session
+export interface GradSession extends CreationUpdateDate {
+  id: number,
+  title: string
+}
+
+// Graduation Session Entry
 export type DegreeLevel = 'bachelors' | 'masters';
 
-export interface GradSessionEntry {
+export interface GradSessionEntry extends CreationUpdateDate {
   id: number,
   candidate: Student,
   degree_level: DegreeLevel,
@@ -30,27 +35,36 @@ export interface NameSurname {
   surname: string
 }
 
-export interface Student extends NameSurname {
+// Student
+export interface Student extends NameSurname, CreationUpdateDate {
   id: number,
   matriculation_number: number,
   university_email: string,
 }
 
+// Professor
 export type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
-export type ProfessorAvailability = 'always' | 'morning' | 'afternoon' | 'split'
+export type ProfessorAvailability = 'always' | 'morning' | 'afternoon'
+export type SessionProfessorRelation = 'original' | 'split' | 'substitute'
 
-export interface AvailabilityAndDate {
-  when: ProfessorAvailability,
-  updated_at: Date
-}
-
-export interface Professor extends NameSurname {
+export interface Professor extends NameSurname, CreationUpdateDate {
   id: number,
   role: UniversityRole
 }
 
-export interface SessionProfessor extends Professor {
-  availability: AvailabilityAndDate,
+export interface SessionProfessor extends CreationUpdateDate{
+  id: number,
+  session_id: number,
+  professor: Professor
+  availability: ProfessorAvailability,
+  user_note: string | null,
+  derived_from_id: number | null,
+  relation: SessionProfessorRelation
+}
+
+export interface ProfessorBurden {
+  asSupervisor: number,
+  asCounterSupervisor: number
 }
 
 export type TextTemplate = (count: number, total: number) => string;
@@ -59,10 +73,5 @@ export type TextTemplates = {
   singular: TextTemplate,
   plural: TextTemplate
 };
-
-export interface ProfessorBurden {
-  asSupervisor: number,
-  asCounterSupervisor: number
-}
 
 export type ValueLabelStructure = { value: string, label: string, disabled?: boolean };

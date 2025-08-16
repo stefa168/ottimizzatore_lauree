@@ -17,5 +17,4 @@ export const AvailabilityOptions = new Map<string, ValueLabelStructure>([
   ["always", {value: 'always', label: 'Tutto il giorno'}],
   ["morning", {value: 'morning', label: 'Solo la Mattina'}],
   ["afternoon", {value: 'afternoon', label: 'Solo il Pomeriggio'}],
-  ["split", {value: 'split', label: 'Sdoppia il docente'}],
 ]);
