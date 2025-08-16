@@ -2,6 +2,7 @@
   import * as Select from '@/components/ui/select'
   import type {ProfessorAvailability} from "@/types";
   import {AvailabilityOptions} from "@/const";
+  import SuspenseOverlay from "@/components/SuspenseOverlay.svelte";
 
   interface Props {
     value: ProfessorAvailability | string;
@@ -12,24 +13,28 @@
 
   let selectedLabel = $derived(AvailabilityOptions.get(value) ?? AvailabilityOptions.values().next().value!);
 
+  let overlay: SuspenseOverlay;
+
   const onValueChange = async (v: string) => {
     if (!onUpdateValue)
       return;
 
-    await onUpdateValue(v as ProfessorAvailability);
+    await overlay.waitFor(onUpdateValue(v as ProfessorAvailability));
   };
 </script>
 
-<Select.Root type="single" bind:value={value} {onValueChange}>
-  <Select.Trigger style="height: 1.6rem">
-    <span>{selectedLabel.label}</span>
-  </Select.Trigger>
-  <Select.Content>
-    <Select.Group>
-      <Select.Label>Disponibilità</Select.Label>
-      {#each AvailabilityOptions.values() as opt}
-        <Select.Item value={opt.value} label={opt.label} disabled={opt.disabled}>{opt.label}</Select.Item>
-      {/each}
-    </Select.Group>
-  </Select.Content>
-</Select.Root>
+<SuspenseOverlay bind:this={overlay}>
+  <Select.Root type="single" bind:value={value} {onValueChange}>
+    <Select.Trigger style="height: 1.6rem">
+      <span>{selectedLabel.label}</span>
+    </Select.Trigger>
+    <Select.Content>
+      <Select.Group>
+        <Select.Label>Disponibilità</Select.Label>
+        {#each AvailabilityOptions.values() as opt}
+          <Select.Item value={opt.value} label={opt.label} disabled={opt.disabled}>{opt.label}</Select.Item>
+        {/each}
+      </Select.Group>
+    </Select.Content>
+  </Select.Root>
+</SuspenseOverlay>
