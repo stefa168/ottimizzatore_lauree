@@ -9,6 +9,8 @@
   import type {LayoutProps} from "./$types";
   import {page} from '$app/state';
   import {setSessionData} from "../SessionData.svelte";
+  import Inspect from "svelte-inspect-value";
+  import {debugEnabled} from "@/store.svelte";
 
   let {children, data}: LayoutProps = $props();
   let sessionData = setSessionData(data.session, data.student_entries, data.professors);
@@ -44,6 +46,10 @@
       {/each}
     </ul>
   </div>
+
+  {#if debugEnabled}
+    <Inspect value={sessionData} elementView="simple"/>
+  {/if}
 
   {@render children?.()}
 </div>
