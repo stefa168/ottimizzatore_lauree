@@ -23,7 +23,7 @@
 <div>
   <h2 class="text-2xl border-b-2 mt-6 mb-4 flex items-center">
     <IcBaselineInfo class="align-baseline"/>
-    <span class="ms-2">Informazioni sulla sessione</span>
+    <span class="ms-2">Riepilogo della sessione</span>
   </h2>
   <ul class="list-disc list-outside ms-4">
     <li>
@@ -34,7 +34,7 @@
           <p>Di questi, {bachelorStudents.filter((s) => s.supervisor_assistant_id !== null).length} hanno un
             co-relatore</p>
         </li>
-        <li>
+        <li hidden={masterStudents.length <=0}>
           <p>{masterStudents.length} studenti magistrali</p>
           <p>Di questi {masterStudents.filter((s) => s.supervisor_assistant_id !== null).length} hanno un
             co-relatore e {masterStudents.filter((s) => s.counter_supervisor_id !== null).length} hanno un
@@ -42,7 +42,7 @@
         </li>
       </ul>
     </li>
-    <li>Alla commissione parteciperanno {professors.length} docenti.</li>
+    <li>Alla sessione parteciperanno {professors.length} docenti.</li>
   </ul>
 </div>
 
