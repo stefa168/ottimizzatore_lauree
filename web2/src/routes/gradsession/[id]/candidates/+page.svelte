@@ -6,4 +6,4 @@
   let sessionData = getSessionData();
 </script>
 
-<DataTable data={sessionData.student_entries} columns={columns(sessionData.professorsMap)}/>
+<DataTable data={sessionData.student_entries} columns={columns(sessionData.sessionProfessorsMap)}/>

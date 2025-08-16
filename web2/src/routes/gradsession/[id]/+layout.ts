@@ -1,8 +1,8 @@
 import type {LayoutLoad} from "./$types";
 import {GradSessionApi} from "@/api/GradSesssionApi";
-import {transformGradSession, transformSessionProfessorList} from "@/api/RawTypes";
+import {fromRawDates, fromRawList} from "@/api/RawTypes";
 import {error} from "@sveltejs/kit";
-import type {ApiErrorResponse} from "@/types";
+import type {ApiErrorResponse, GradSession, GradSessionEntry, SessionProfessor} from "@/types";
 
 export const load: LayoutLoad = async ({params, parent, fetch}) => {
   const session_id = Number.parseInt(params.id);
@@ -10,13 +10,13 @@ export const load: LayoutLoad = async ({params, parent, fetch}) => {
 
   try {
     const [session, student_entries, professors] = await Promise.all([
-      api.getById(session_id).then(transformGradSession),
-      api.getStudents(session_id),
-      api.getProfessors(session_id).then(transformSessionProfessorList)
+      api.getById(session_id).then(fromRawDates<GradSession>),
+      api.getStudents(session_id).then(fromRawList<GradSessionEntry>),
+      api.getSessionProfessors(session_id).then(fromRawList<SessionProfessor>)
     ]);
 
     return {
-      session_id: session_id,
+      session_id,
       session,
       student_entries,
       professors,

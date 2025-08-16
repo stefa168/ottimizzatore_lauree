@@ -1,40 +1,31 @@
 import type {
-  AvailabilityAndDate,
-  GradSession,
-  Professor,
-  ProfessorAvailability,
-  SessionProfessor,
+  CreationUpdateDate,
+  GradSession, GradSessionEntry, Professor,
+  SessionProfessor, Student,
 } from "@/types";
 
-export interface RawGradSession {
-  id: number;
-  title: string;
-  created_at: string;
-  updated_at: string;
-}
+export type UpdateSessonProfessor = Pick<SessionProfessor, 'availability' | 'user_note'>
+// Generic date helpers
+export type OmitDateFields<T> = Omit<T, keyof CreationUpdateDate>;
+export type RawDateFields = { created_at: string; updated_at: string };
+export type WithRawDates<T extends CreationUpdateDate> = OmitDateFields<T> & RawDateFields;
 
-export const transformGradSession = (raw: RawGradSession): GradSession => ({
-  ...raw,
-  created_at: new Date(raw.created_at),
-  updated_at: new Date(raw.updated_at)
-});
+// Generic transformers
+export const fromRawDates = <T extends CreationUpdateDate>(raw: WithRawDates<T>): T => {
+  const {created_at, updated_at, ...rest} = raw as RawDateFields & Record<string, unknown>;
+  return {
+    ...(rest as Omit<T, keyof CreationUpdateDate>),
+    created_at: new Date(created_at),
+    updated_at: new Date(updated_at),
+  } as T;
+};
 
-export interface RawAvailabilityAndDate {
-  availability: ProfessorAvailability,
-  updated_at: string
-}
+export const fromRawList = <T extends CreationUpdateDate>(rawArr: WithRawDates<T>[]): T[] =>
+  rawArr.map(fromRawDates);
 
-export interface RawSessionProfessor extends Professor {
-  availability: RawAvailabilityAndDate,
-}
 
-export const transformAvailabilityAndDate = (raw: RawAvailabilityAndDate): AvailabilityAndDate => ({
-  when: raw.availability,
-  updated_at: new Date(raw.updated_at)
-})
-
-export const transformSessionProfessor = (raw: RawSessionProfessor): SessionProfessor => {
-  return {...raw, availability: transformAvailabilityAndDate(raw.availability)};
-}
-
-export const transformSessionProfessorList = (raw: RawSessionProfessor[]): SessionProfessor[] => raw.map(transformSessionProfessor)
+export type RawGradSession = WithRawDates<GradSession>;
+export type RawGradSessionEntry = WithRawDates<GradSessionEntry>;
+export type RawSessionProfessor = WithRawDates<SessionProfessor>;
+export type RawStudent = WithRawDates<Student>;
+export type RawProfessor = WithRawDates<Professor>;

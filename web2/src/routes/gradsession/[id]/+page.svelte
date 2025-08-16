@@ -14,7 +14,7 @@
   let bachelorStudents = $derived(studentEntries.filter(e => e.degree_level === 'bachelors'));
   let masterStudents = $derived(studentEntries.filter(e => e.degree_level === 'masters'));
 
-  let professors = $derived(sessionData.professors);
+  let professors = $derived(sessionData.sessionProfessors);
   let professorsWithoutRole = $derived(professors.filter(p => p.role === 'unspecified'));
 
   let problemsPresent = $derived(professorsWithoutRole.length > 0)

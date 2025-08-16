@@ -27,18 +27,18 @@ export const columns: (professorMap: Map<number, SessionProfessor>) => ColumnDef
     id: "supervisor",
     header: "Relatore",
     accessorKey: "supervisor_id",
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: professorMap.get(row.original.supervisor_id)})
+    cell: ({row}) => renderComponent(StyledFullName, {fullName: professorMap.get(row.original.supervisor_id)?.professor})
   },
   {
     id: "supervisor_assistant",
     header: "Co-Relatore",
     accessorKey: "supervisor_assistant_id",
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: professorMap.get(row.original.supervisor_assistant_id ?? -1)})
+    cell: ({row}) => renderComponent(StyledFullName, {fullName: professorMap.get(row.original.supervisor_assistant_id ?? -1)?.professor})
   },
   {
     id: "counter_supervisor",
     header: "Controrelatore",
     accessorKey: "counter_supervisor_id",
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: professorMap.get(row.original.counter_supervisor_id ?? -1)})
+    cell: ({row}) => renderComponent(StyledFullName, {fullName: professorMap.get(row.original.counter_supervisor_id ?? -1)?.professor})
   }
 ]

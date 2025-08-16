@@ -45,7 +45,7 @@
 
 <DataTable
     bind:this={t}
-    data={sessionData.professors}
+    data={sessionData.sessionProfessors}
     columns={columns(sessionData)}
     {initialState}
 />

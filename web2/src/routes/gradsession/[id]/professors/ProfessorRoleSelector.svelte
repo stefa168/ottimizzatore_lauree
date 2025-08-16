@@ -16,8 +16,7 @@
   })
 
   const onValueChange = async (v: string) => {
-    if (!onUpdateValue)
-      return;
+    if (!onUpdateValue) return;
 
     await onUpdateValue(v as UniversityRole);
   };

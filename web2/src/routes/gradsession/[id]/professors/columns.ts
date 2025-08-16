@@ -5,7 +5,6 @@ import {toast} from "svelte-sonner";
 
 // Project types
 import type {SessionProfessor, UniversityRole} from "@/types";
-import {transformAvailabilityAndDate} from "@/api/RawTypes";
 import type {SessionData} from "../../SessionData.svelte";
 
 // APIs
@@ -20,6 +19,7 @@ import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelt
 import DataTableColumnButton from "@/components/DataTableColumnButton.svelte";
 import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
 import {AvailabilityOptions, UniversityRoles} from "@/const";
+import {fromRawDates} from "@/api/RawTypes";
 
 function sortableHeader<T>(title: string, column: Column<T>) {
   return renderComponent(DataTableColumnButton, {
@@ -56,16 +56,19 @@ const compareProfessorBurdens: (sd: SessionData) => SortingFn<SessionProfessor> 
 
 export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: SessionData) => [
   {
-    accessorKey: "surname",
+    id: "surname",
+    accessorFn: (sp: SessionProfessor) => sp.professor.surname,
     enableMultiSort: true,
     header: ({column}) => sortableHeader("Cognome", column),
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "surname"})
+    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original.professor, show: "surname"})
   }, {
-    accessorKey: "first_name",
+    id: "first_name",
+    accessorFn: (sp: SessionProfessor) => sp.professor.first_name,
     header: ({column}) => sortableHeader("Nome", column),
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original, show: "name"}),
+    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original.professor, show: "name"}),
   }, {
-    accessorKey: "role",
+    id: "role",
+    accessorFn: (sp: SessionProfessor) => sp.professor.role,
     header: ({column}) => renderComponent(DataTableColumnFilterButton<SessionProfessor>, {
       title: "Ruolo Didattico",
       entriesMap: UniversityRoles,
@@ -73,12 +76,12 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
     }),
     filterFn: arrayIncludesFilter,
     cell: ({row}) => renderComponent(ProfessorRoleSelector, {
-      value: row.original.role,
+      value: row.original.professor.role,
       onUpdateValue: async (newRole: UniversityRole) =>
         await ProfessorsApi()
-          .updateProfessor({id: row.original.id, role: newRole})
+          .updateProfessor({id: row.original.professor.id, role: newRole})
           .then((updatedProf) => {
-            sd.professorsMap.get(row.original.id)!.role = updatedProf.role;
+            sd.updateSessionProfessor({id: row.original.id, professor: updatedProf})
             toast.success("Ruolo del docente aggiornato correttamente.")
           })
           .catch(err => {
@@ -96,17 +99,16 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
       entriesMap: AvailabilityOptions,
       column
     }),
-    accessorFn: professor => professor.availability.when,
+    accessorFn: professor => professor.availability,
     filterFn: arrayIncludesFilter,
     cell: ({row}) => renderComponent(ProfessorAvailabilitySelector, {
-      value: row.original.availability.when,
+      value: row.original.availability,
       onUpdateValue: async (newAvailability) =>
         await GradSessionApi()
-          .updateProfessorAvailability(sd.session.id, row.original.id, newAvailability)
-          .then(transformAvailabilityAndDate)
-          .then((updatedAvailability) => {
-            let professor = sd.professorsMap.get(row.original.id)!;
-            professor.availability = updatedAvailability
+          .updateSessionProfessor(sd.session.id, row.original.id, newAvailability)
+          .then(fromRawDates<SessionProfessor>)
+          .then((updatedSP) => {
+            sd.updateSessionProfessor(updatedSP)
             toast.success("Disponibilità del docente per la sessione aggiornata correttamente.")
           })
           .catch(err => {

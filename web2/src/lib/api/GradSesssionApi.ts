@@ -2,8 +2,8 @@
 import {
   type ApiErrorResponse,
   type GradSession,
-  type GradSessionEntry,
   type ProfessorAvailability,
+  type SessionProfessor,
 } from "@/types";
 import {createMutation, createQuery, type QueryClient} from "@tanstack/svelte-query";
 import {
@@ -12,11 +12,10 @@ import {
 } from "@/schema/CommissionFormSchema";
 import {PUBLIC_BACKEND_URL} from "@/const";
 import {
-  type RawAvailabilityAndDate,
   type RawGradSession,
+  type RawGradSessionEntry,
   type RawSessionProfessor,
-  transformGradSession,
-  transformSessionProfessor
+  fromRawDates, fromRawList,
 } from "@/api/RawTypes";
 
 // import { PUBLIC_BACKEND_URL } from '$env/static/public';
@@ -71,22 +70,22 @@ export const GradSessionApi = (customFetch = fetch) => ({
   },
   getStudents: async (session_id: number) => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/students`);
-    return (await response.json()) as GradSessionEntry[];
+    return (await response.json()) as RawGradSessionEntry[];
   },
-  getProfessors: async (session_id: number) => {
+  getSessionProfessors: async (session_id: number) => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/professors`);
     return (await response.json()) as RawSessionProfessor[];
   },
-  updateProfessorAvailability: async (session_id: number, professor_id: number, availability: ProfessorAvailability) => {
-    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/availabilities`, {
+  updateSessionProfessor: async (session_id: number, session_prof_id: number, availability: ProfessorAvailability) => {
+    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/professors/${session_prof_id}`, {
       method: 'PATCH',
-      body: JSON.stringify({professor_id, availability}),
+      body: JSON.stringify({availability}),
       headers: {'Content-Type': 'application/json'}
     });
     if (!response.ok)
       throw await response.json();
 
-    return await response.json() as RawAvailabilityAndDate;
+    return await response.json() as RawSessionProfessor;
   }
 });
 
@@ -95,7 +94,7 @@ export const GradSessionApiQueries = (queryClient: QueryClient, customFetch = fe
     createQuery({
       queryKey: GradSessionKeys.all,
       queryFn: GradSessionApi(customFetch).getAll,
-      select: data => data.map(transformGradSession)
+      select: fromRawList<GradSession>
     }),
   sessionStudentsQuery: (session_id: number) =>
     createQuery({
@@ -105,12 +104,12 @@ export const GradSessionApiQueries = (queryClient: QueryClient, customFetch = fe
   sessionProfessorsQuery: (session_id: number) =>
     createQuery({
       queryKey: GradSessionKeys.session_professors(session_id),
-      queryFn: () => GradSessionApi(customFetch).getProfessors(session_id),
-      select: data => data.map(transformSessionProfessor)
+      queryFn: () => GradSessionApi(customFetch).getSessionProfessors(session_id),
+      select: fromRawList<SessionProfessor>
     }),
   uploadSessionMutation: () =>
     createMutation<GradSession, ApiErrorResponse<UploadErrorDetails>, CommissionFormData>({
-      mutationFn: (data: CommissionFormData) => GradSessionApi(customFetch).create(data).then(transformGradSession),
+      mutationFn: (data: CommissionFormData) => GradSessionApi(customFetch).create(data).then(fromRawDates<GradSession>),
       onSuccess: (raw) => {
         queryClient.invalidateQueries({queryKey: GradSessionKeys.all});
       },
