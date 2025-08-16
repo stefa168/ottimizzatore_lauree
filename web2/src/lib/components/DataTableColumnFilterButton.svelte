@@ -33,7 +33,7 @@
   <!-- Had to use the primitive to avoid all the styles -->
   <SelectPrimitive.Trigger>
     <!-- And a button in a button throws an error, so we have to mimic one ourselves -->
-    <span class={buttonVariants({ variant: "ghost" })}>
+    <span class={[buttonVariants({ variant: "ghost" }), 'hover:cursor-pointer']}>
       {title}
       <LucideFilter class={{"text-chart-2": value.length > 0}}/>
     </span>

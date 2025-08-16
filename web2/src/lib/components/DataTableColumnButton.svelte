@@ -16,7 +16,7 @@
 </script>
 
 {#if column.getCanSort()}
-  <Button {variant} {...restProps}>
+  <Button {variant} {...restProps} class="hover:cursor-pointer">
     {title}
     {#if sortDirection === "asc"}
       <ArrowUpIcon class="ml-2"/>
