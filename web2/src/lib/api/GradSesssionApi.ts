@@ -58,6 +58,8 @@ export const GradSessionApi = (customFetch = fetch) => ({
     // zod that validates the passed data for us.
     formData.append('file', data.excel!);
     formData.append('title', data.title);
+    if (data.only && data.only !== 'both')
+      formData.append('only', data.only);
 
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/upload`, {
       method: 'POST',

@@ -11,7 +11,8 @@ export const commissionFormSchema = z.object({
     .refine((file) => {
       return EXCEL_MIME_TYPES.includes(file.type)
     }, "Il file della sessione deve essere in formato xls, xlsx o ods")
-    .nullable()
+    .nullable(),
+  only: z.enum(['bachelors', 'masters', 'both']).default('both').optional()
 });
 
 export type CommissionFormData = z.infer<typeof commissionFormSchema>;
