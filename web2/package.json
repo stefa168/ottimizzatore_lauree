@@ -66,6 +66,7 @@
 		"@tanstack/svelte-query-devtools": "^5.81.3",
 		"mode-watcher": "^1.0.8",
 		"svelte-inspect-value": "^0.8.5",
-		"svelte-persisted-store": "^0.12.0"
+		"svelte-persisted-store": "^0.12.0",
+		"xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz"
 	}
 }
