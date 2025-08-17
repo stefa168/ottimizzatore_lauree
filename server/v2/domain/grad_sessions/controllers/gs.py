@@ -34,6 +34,10 @@ EXCEL_MEDIA_TYPES: Final[list[str]] = [
 
 MISSING: Final = {None, '', 'None'}
 
+EXPECTED_COLUMNS: Final = {'MATRICOLA', 'COGNOME', 'NOME', 'CELLULARE', 'EMAIL', 'EMAIL_ATENEO',
+                           'TIPO_CORSO_DESCRIZIONE', 'DATA_APPELLO', 'REL_COGNOME', 'REL_NOME', 'REL2_COGNOME',
+                           'REL2_NOME', 'CORR_NOME', 'CORR_COGNOME', 'CONTROREL_COGNOME', 'CONTROREL_NOME'}
+
 
 def is_missing(v: Any) -> bool:
     return v in MISSING
@@ -55,6 +59,10 @@ class GraduationSessionController(Controller):
         "session_professor_repository": Provide(SessionProfessorRepository.provide),
         "session_entry_repository": Provide(SessionEntryRepository.provide)
     }
+
+    @get("/sessions/upload/expected")
+    async def get_expected_columns(self) -> set[str]:
+        return EXPECTED_COLUMNS
 
     @get(urls.GRAD_SESSIONS_LIST, return_dto=SessionReadDTO)
     async def get_sessions(self, grad_session_repository: GradSessionRepository) -> list[GradSession]:
@@ -104,11 +112,8 @@ class GraduationSessionController(Controller):
                 status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
             )
 
-        expected_columns = {'MATRICOLA', 'COGNOME', 'NOME', 'CELLULARE', 'EMAIL', 'EMAIL_ATENEO',
-                            'TIPO_CORSO_DESCRIZIONE', 'DATA_APPELLO', 'REL_COGNOME', 'REL_NOME', 'REL2_COGNOME',
-                            'REL2_NOME', 'CORR_NOME', 'CORR_COGNOME', 'CONTROREL_COGNOME', 'CONTROREL_NOME'}
         actual_columns = {col.upper() for col in excel.columns}
-        missing_columns = expected_columns - actual_columns
+        missing_columns = EXPECTED_COLUMNS - actual_columns
 
         if missing_columns:
             raise HTTPException(

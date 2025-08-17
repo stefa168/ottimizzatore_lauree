@@ -1,0 +1,17 @@
+meta {
+  name: Get expected columns for upload
+  type: http
+  seq: 5
+}
+
+get {
+  url: 127.0.0.1:8000/api/v1/sessions/upload/expected
+  body: none
+  auth: inherit
+}
+
+body:multipart-form {
+  title: Prova
+  file: @file(/home/stefa/IdeaProjects/ottimizzatore_lauree/Sessione straordinaria 2023_24-Totale-INFORMATICA.xlsx)
+  only: bachelors
+}
