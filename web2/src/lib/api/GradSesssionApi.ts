@@ -28,6 +28,14 @@ export const GradSessionKeys = {
 }
 
 export const GradSessionApi = (customFetch = fetch) => ({
+  getRequiredColumns: async (): Promise<Set<string>> => {
+    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/upload/expected`);
+    if (!response.ok)
+      throw await response.json() as ApiErrorResponse;
+
+    // We expect to receive in the json a list of strings.
+    return new Set<string>(await response.json())
+  },
   getAll: async (): Promise<RawGradSession[]> => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions`);
 
