@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager, AsyncExitStack
 from multiprocessing import Process, Event
 from multiprocessing.synchronize import Event as EventType
 from pathlib import Path
-from typing import Final, AsyncGenerator
+from typing import Final, AsyncGenerator, Any
 
 import structlog.stdlib
 from aio_pika import Message, DeliveryMode
@@ -15,6 +15,7 @@ from aio_pika.abc import AbstractIncomingMessage
 from litestar import Litestar
 from litestar.datastructures import State
 
+from v2.config.log_settings import LogSettings
 from v2.config.settings import Settings, settings_path
 from v2.domain.grad_sessions.schemas import OptConfCompleteDTO
 from v2.domain.grad_sessions.services import solver_wrapper
@@ -33,6 +34,14 @@ class OptimizationWorkersManager:
 
     def __init__(self, app_settings_path: Path, max_workers=1):
         app_settings = Settings.from_yaml(app_settings_path)
+        log_settings = app_settings.log
+
+        # persist a plain-serializable version to pass to child processes
+        self._log_settings_payload: dict[str, Any] | None = log_settings.model_dump() if log_settings else None
+
+        # configure logging in the parent process
+        self._configure_logging_from_payload(self._log_settings_payload)
+
         self.start_workers(app_settings, max_workers)
 
     def start_workers(self, app_settings: Settings, num_workers: int):
@@ -43,7 +52,7 @@ class OptimizationWorkersManager:
             logger.debug("Creating worker process", idx=i)
             p = Process(
                 target=OptimizationWorkersManager._worker_entry,
-                args=(app_settings, self._stop_event),
+                args=(app_settings, self._stop_event, self._log_settings_payload),
                 name=f"opt-worker-{i + 1}",
                 daemon=False)
             p.start()
@@ -62,11 +71,34 @@ class OptimizationWorkersManager:
         logger.debug("Terminated all worker processes", count=len(self.processes))
 
     @staticmethod
-    def _worker_entry(app_settings: Settings, stop_event: EventType) -> None:
+    def _configure_logging_from_payload(payload: dict[str, Any] | None) -> None:
+        """
+        Configure structlog + stdlib logging for the current process,
+        using LogSettings serialized payload.
+        """
+        try:
+            ls = LogSettings.model_validate(payload) if payload else LogSettings()
+            # Apply Structlog / stdlib config (Litestar-compatible)
+            structlog_cfg = ls.structlog_config().structlog_logging_config
+            structlog_cfg.configure()
+        except Exception:
+            # As a safeguard, avoid breaking the process on logging config errors.
+            # Fall back to the default structlog setup.
+            structlog.stdlib.get_logger().warning("Failed to apply LogSettings; using default logging")
+
+    @staticmethod
+    def _worker_entry(
+            app_settings: Settings,
+            stop_event: EventType,
+            log_settings_payload: dict[str, Any] | None
+    ) -> None:
         """
         Synchronous entry-point executed by multiprocessing.Process.
         Spins up an event loop and runs the *real* async worker inside it.
         """
+        # Configure logging in the child process before doing anything else
+        OptimizationWorkersManager._configure_logging_from_payload(log_settings_payload)
+
         # Child must not die on Ctrl-C coming from the terminal
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         asyncio.run(OptimizationWorkersManager._async_worker(app_settings, stop_event))
@@ -88,9 +120,6 @@ class OptimizationWorkersManager:
                 cc_path = Path(payload["cc_path"])
 
                 retries = int(message.headers.get(RETRY_HEADER, 0))  # type: ignore[arg-type]
-
-                print("Recovered DTO:", config_dto)
-                print("Solution files are in", cc_path)
 
                 try:
                     # todo improve error management
