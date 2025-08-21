@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import signal
+import threading
+import time
 from contextlib import asynccontextmanager, AsyncExitStack
 from multiprocessing import Process, Event
 from multiprocessing.synchronize import Event as EventType
@@ -32,6 +34,14 @@ class OptimizationWorkersManager:
     processes: list[Process] = []
     _stop_event = Event()
 
+    # keep settings for respawns
+    _app_settings: Settings
+    _max_workers: int
+
+    # monitor thread & backoff
+    _monitor_thread: threading.Thread | None = None
+    _respawn_backoff: dict[int, float] = {}  # seconds, per worker index
+
     def __init__(self, app_settings_path: Path, max_workers=1):
         app_settings = Settings.from_yaml(app_settings_path)
         log_settings = app_settings.log
@@ -42,33 +52,129 @@ class OptimizationWorkersManager:
         # configure logging in the parent process
         self._configure_logging_from_payload(self._log_settings_payload)
 
+        # keep settings for respawns
+        self._app_settings: Settings = app_settings
+        self._max_workers: int = max_workers
+
         self.start_workers(app_settings, max_workers)
+        self._start_monitor()
+
+    def _spawn_worker(self, idx: int) -> Process:
+        """
+        Create and start a single worker process, returning the Process.
+        """
+        logger.debug("Creating worker process", idx=idx)
+        p = Process(
+            target=OptimizationWorkersManager._worker_entry,
+            args=(self._app_settings, self._stop_event, self._log_settings_payload),
+            name=f"opt-worker-{idx + 1}",
+            daemon=False,
+        )
+        p.start()
+        logger.debug("Created process", pid=p.pid, worker=p.name)
+        return p
 
     def start_workers(self, app_settings: Settings, num_workers: int):
         if len(self.processes) > 0:
             raise RuntimeError("Workers have been already started")
 
         for i in range(num_workers):
-            logger.debug("Creating worker process", idx=i)
-            p = Process(
-                target=OptimizationWorkersManager._worker_entry,
-                args=(app_settings, self._stop_event, self._log_settings_payload),
-                name=f"opt-worker-{i + 1}",
-                daemon=False)
-            p.start()
-            logger.debug("Created process", pid=p.pid)
+            p = self._spawn_worker(i)
             self.processes.append(p)
+            self._respawn_backoff[i] = 1.0
+
+    def _start_monitor(self) -> None:
+        """
+        Starts a supervisor thread that watches worker processes and respawns
+        them if they die unexpectedly.
+        """
+        if self._monitor_thread is not None:
+            return
+
+        def _monitor():
+            # Small initial delay to avoid racing with startup
+            time.sleep(0.5)
+            while not self._stop_event.is_set():
+                try:
+                    for idx, p in enumerate(list(self.processes)):
+                        # Skip if list changed length or idx invalid
+                        if idx >= len(self.processes):
+                            continue
+
+                        p = self.processes[idx]
+                        if p is None:
+                            continue
+
+                        if not p.is_alive():
+                            exitcode = p.exitcode
+                            logger.error(
+                                "Worker process exited; attempting restart",
+                                worker=p.name,
+                                pid=p.pid,
+                                exitcode=exitcode,
+                            )
+                            # basic backoff to prevent tight crash loops
+                            delay = max(1.0, self._respawn_backoff.get(idx, 1.0))
+                            if delay > 1.0:
+                                logger.info("Backoff before respawn", seconds=delay, worker_index=idx)
+                            # Sleep in small slices so we can react to stop_event promptly
+                            slept = 0.0
+                            slice_s = 0.2
+                            while slept < delay and not self._stop_event.is_set():
+                                time.sleep(slice_s)
+                                slept += slice_s
+
+                            if self._stop_event.is_set():
+                                break
+
+                            # Respawn and replace in-place
+                            new_p = self._spawn_worker(idx)
+                            self.processes[idx] = new_p
+                            # Exponential backoff up to 60 seconds if the new one crashes again
+                            self._respawn_backoff[idx] = min(delay * 2.0, 60.0)
+                            logger.info(
+                                "Worker restarted",
+                                worker=new_p.name,
+                                new_pid=new_p.pid,
+                                index=idx,
+                                next_backoff=self._respawn_backoff[idx],
+                            )
+                        else:
+                            # When a worker stays healthy, gradually reset the backoff
+                            if self._respawn_backoff.get(idx, 1.0) > 1.0:
+                                # decay backoff slowly
+                                self._respawn_backoff[idx] = max(1.0, self._respawn_backoff[idx] * 0.5)
+                    # Polling interval
+                    time.sleep(1.0)
+                except Exception:
+                    logger.exception("Monitor thread encountered an error")
+                    # Avoid tight loop if monitoring fails repeatedly
+                    time.sleep(2.0)
+
+        self._monitor_thread = threading.Thread(target=_monitor, name="opt-workers-monitor", daemon=True)
+        self._monitor_thread.start()
+        logger.debug("Started workers monitor thread", thread=self._monitor_thread.name)
 
     def stop_workers(self):
         logger.debug("Sending stop signal to workers")
         self._stop_event.set()
-        for p in self.processes:
-            logger.debug("Joining worker", worker=p.name)
+
+        # Stop monitor first so it doesn't spawn new workers while we're shutting down
+        if self._monitor_thread and self._monitor_thread.is_alive():
+            logger.debug("Joining monitor thread")
+            self._monitor_thread.join(timeout=5)
+
+        for p in list(self.processes):
+            if p is None:
+                continue
+            logger.debug("Joining worker", worker=p.name, pid=p.pid)
             p.join(timeout=5)
             if p.is_alive():
-                logger.warning("Worker still alive after timeout, terminating", worker=p.name)
+                logger.warning("Worker still alive after timeout, terminating", worker=p.name, pid=p.pid)
                 p.terminate()
+
         logger.debug("Terminated all worker processes", count=len(self.processes))
+        self.processes.clear()
 
     @staticmethod
     def _configure_logging_from_payload(payload: dict[str, Any] | None) -> None:
@@ -101,7 +207,14 @@ class OptimizationWorkersManager:
 
         # Child must not die on Ctrl-C coming from the terminal
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        asyncio.run(OptimizationWorkersManager._async_worker(app_settings, stop_event))
+
+        try:
+            asyncio.run(OptimizationWorkersManager._async_worker(app_settings, stop_event))
+        except Exception:
+            # Log any unhandled exceptions at the top level so we know why the worker died
+            structlog.stdlib.get_logger().exception("Worker crashed with an unhandled exception")
+            # Re-raise to ensure non-zero exit code (supervisor will see and respawn)
+            raise
 
     @staticmethod
     async def _async_worker(app_settings: Settings, stop_event: EventType):
@@ -122,7 +235,6 @@ class OptimizationWorkersManager:
                 retries = int(message.headers.get(RETRY_HEADER, 0))  # type: ignore[arg-type]
 
                 try:
-                    # todo improve error management
                     async with db_conf.get_session() as db_session:
                         await solver_wrapper(db_session, config_dto, cc_path)
 
