@@ -36,7 +36,7 @@
     data, columns,
     singlePlural = {
       singular: (n: number) => "È presente un solo elemento.",
-      plural: (n: number) => `È presente un totale di ${n} elementi.`
+      plural: (n: number) => `Sono presenti in totale ${n} elementi.`
     },
     filteredSinglePlural = {
       singular: (n: number, total: number) => `È presente un solo elemento (su ${total}) che corrisponde ai criteri di ricerca.`,
