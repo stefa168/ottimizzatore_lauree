@@ -28,6 +28,7 @@ dependencies = [
     "rich>=14.1.0",
     "sqlalchemy>=2.0.42",
     "structlog>=25.4.0",
+    "types-pyyaml>=6.0.12.20250809",
     "watchdog>=6.0.0",
     "xlrd>=2.0.2",
 ]
