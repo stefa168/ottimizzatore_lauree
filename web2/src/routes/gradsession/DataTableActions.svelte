@@ -58,6 +58,7 @@
           <DropdownMenu.Item
               onclick={deleteSession}
               disabled={isDeleting}
+              class="text-destructive"
           >
             Elimina
           </DropdownMenu.Item>

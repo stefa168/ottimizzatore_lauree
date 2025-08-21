@@ -47,9 +47,9 @@
     </ul>
   </div>
 
-  {#if debugEnabled}
-    <Inspect value={sessionData} elementView="simple"/>
-  {/if}
+  <!--{#if debugEnabled}-->
+  <!--  <Inspect value={sessionData} elementView="simple"/>-->
+  <!--{/if}-->
 
   {@render children?.()}
 </div>
