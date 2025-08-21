@@ -24,7 +24,7 @@ import {fromRawDates} from "@/api/RawTypes";
 function sortableHeader<T>(title: string, column: Column<T>) {
   return renderComponent(DataTableColumnButton, {
     title, column,
-    onclick: column.getToggleSortingHandler(),
+    onclickcapture: column.getToggleSortingHandler(),
   });
 }
 

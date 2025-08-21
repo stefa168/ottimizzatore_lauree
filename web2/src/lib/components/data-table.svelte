@@ -178,7 +178,7 @@
         <Button
             variant="outline"
             class="hidden size-8 p-0 lg:flex"
-            onclick={() => table.setPageIndex(0)}
+            onclickcapture={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
         >
           <span class="sr-only">Torna alla prima pagina</span>
@@ -187,7 +187,7 @@
         <Button
             variant="outline"
             class="size-8 p-0"
-            onclick={() => table.previousPage()}
+            onclickcapture={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
         >
           <span class="sr-only">Torna alla pagina precedente</span>
@@ -195,8 +195,9 @@
         </Button>
         <Button
             variant="outline"
+            type="button"
             class="size-8 p-0"
-            onclick={() => table.nextPage()}
+            onclickcapture={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
         >
           <span class="sr-only">Vai alla pagina successiva</span>
@@ -204,8 +205,9 @@
         </Button>
         <Button
             variant="outline"
+            type="button"
             class="hidden size-8 p-0 lg:flex"
-            onclick={() => table.setPageIndex(table.getPageCount() - 1)}
+            onclickcapture={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
         >
           <span class="sr-only">Vai all'ultima pagina</span>
