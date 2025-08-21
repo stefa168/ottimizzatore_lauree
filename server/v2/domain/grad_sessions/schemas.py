@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from dataclasses import dataclass
 from typing import Any
 
@@ -46,6 +47,15 @@ class OptimizationLogDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     opt_config_id: int
+
+    start_time: datetime.datetime
+    end_time: datetime.datetime
+
+    success: bool
+    solver_reached_optimality: bool
+    solver_time_limit_reached: bool
+    error_message: str | None
+    log: str
 
 
 class SolutionCommissionDTO(BaseModel):
@@ -105,3 +115,6 @@ class OptConfCompleteDTO(BaseModel):
 
     optimization_log: OptimizationLogDTO | None
     commissions: list[SolutionCommissionDTO]
+
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
