@@ -1,10 +1,11 @@
 import type {PageLoad} from './$types';
-import {type OptimizationConfiguration, OptimizationConfigurationApi} from "@/api/OptimizationConfigurationApi";
-import {fromRawList} from "@/api/RawTypes";
+import {OptimizationConfigurationApi} from "@/api/OptimizationConfigurationApi";
+import {z} from "zod";
 
-export const load: PageLoad = async ({parent, fetch}) => {
-  const p = await parent();
+export const load: PageLoad = async ({parent, fetch, params}) => {
+  const session_id = Number.parseInt(params.id);
+
   return {
-    configurations: await OptimizationConfigurationApi(fetch).getAll(p.session_id).then(fromRawList<OptimizationConfiguration>)
+    configurations: await OptimizationConfigurationApi(fetch).getAll(session_id)
   }
 }

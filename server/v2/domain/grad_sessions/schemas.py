@@ -57,6 +57,9 @@ class OptimizationLogDTO(BaseModel):
     error_message: str | None
     log: str
 
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
 
 class SolutionCommissionDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)  # from_attributes is crucial

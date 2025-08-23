@@ -1,10 +1,10 @@
 import type {ColumnDef} from "@tanstack/table-core";
-import type {OptimizationConfiguration} from "@/api/OptimizationConfigurationApi";
+import type {OptimizationConfigurationRecap} from "@/api/OptimizationConfigurationApi";
 import {dateFormatter} from "@/utils";
 import {renderComponent} from "@/components/ui/data-table";
 import DataTableActions from "./DataTableActions.svelte";
 
-export const columns: (session_id: number) => ColumnDef<OptimizationConfiguration>[] = (session_id) => [
+export const columns: (session_id: number) => ColumnDef<OptimizationConfigurationRecap>[] = (session_id) => [
   {
     accessorKey: "id",
     header: "ID"
