@@ -64,12 +64,17 @@ export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSch
   commissions: z.array(SolutionCommissionSchema).optional()
 }).passthrough()
 
-    return true;
-  });
+// Not using .omit by itself because it is only a schema-side thing and not on the parsing side, so Superforms uses the
+// extra fields anyway. The easiest thing to do is just to remove the fields that cause issues with SuperForms.
+// https://github.com/colinhacks/zod/discussions/2055
+export const OptConfFormSchema = OptimizationConfigurationSchema
+  .omit({optimization_log: true, commissions: true})
+  .transform(({optimization_log, commissions, ...rest}) => rest);
 
 export type OptimizationLog = z.infer<typeof OptimizationLogSchema>;
 export type OptimizationConfigurationRecap = z.infer<typeof OptimizationConfigurationRecapSchema>;
 export type OptimizationConfiguration = z.infer<typeof OptimizationConfigurationSchema>;
+export type OptimizationConfigurationForm = z.infer<typeof OptConfFormSchema>;
 
 export const OptimizationConfigurationApi = (customFetch = fetch) => ({
   getAll: async (session_id: number) => {
@@ -81,6 +86,19 @@ export const OptimizationConfigurationApi = (customFetch = fetch) => ({
   getComplete: async (session_id: number, configuration_id: number) => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration/${configuration_id}`);
     if (!response.ok) throw await response.json() as ApiErrorResponse;
+
+    return OptimizationConfigurationSchema.parse(await response.json());
+  },
+  updateConfiguration: async (session_id: number, configuration_id: number, updated_configuration: OptimizationConfigurationForm) => {
+    console.log(JSON.stringify(updated_configuration))
+    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration/${configuration_id}`, {
+      method: 'PATCH',
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(updated_configuration),
+    });
+    if(!response.ok) throw await response.json() as ApiErrorResponse;
 
     return OptimizationConfigurationSchema.parse(await response.json());
   }
