@@ -33,6 +33,18 @@ export const OptimizationLogSchema = CreationUpdateDateSchema.extend({
 }).passthrough();
 
 
+export const SolutionCommissionSchema = z.object({
+  order_key: z.coerce.number().min(0),
+  morning: z.coerce.boolean(),
+  duration: z.coerce.number().min(0),
+
+  session_id: z.coerce.number(),
+  opt_config_id: z.coerce.number(),
+
+  professor_ids: z.array(z.coerce.number()),
+  student_ids: z.array(z.coerce.number()),
+})
+
 export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSchema.extend({
   max_duration: z.coerce.number().min(0).default(210),
   max_commissions_morning: z.coerce.number().min(0).default(6),
@@ -48,7 +60,8 @@ export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSch
   optimization_time_limit: z.coerce.number().min(60).default(60),
   optimization_gap: z.coerce.number().min(0).default(0.005),
 
-  optimization_log: OptimizationLogSchema.nullable(),
+  optimization_log: OptimizationLogSchema.optional(),
+  commissions: z.array(SolutionCommissionSchema).optional()
 }).passthrough()
 
     return true;
