@@ -50,44 +50,6 @@ export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSch
 
   optimization_log: OptimizationLogSchema.nullable(),
 }).passthrough()
-  .refine((data) => {
-    // If online, then the minimum number of professors must be defined
-    return data.online ? data.min_professor_number !== null : true;
-  }, {
-    message: "Il numero minimo di professori deve essere definito se sono abilitate le impostazioni aggiuntive",
-    path: ["min_professor_number"]
-  }).refine((data) => {
-    // If online, then the minimum number of professors for the master's degree must be defined
-    return data.online ? data.min_professor_number_masters !== null : true;
-  }, {
-    message: "Il numero minimo di professori per il corso di laurea magistrale deve essere definito se sono abilitate le impostazioni aggiuntive",
-    path: ["min_professor_number_masters"]
-  }).refine((data) => {
-    // If online, then the maximum number of professors must be defined
-    return data.online ? data.max_professor_number !== null : true;
-  }, {
-    message: "Il numero massimo di professori deve essere definito se sono abilitate le impostazioni aggiuntive",
-    path: ["max_professor_number"]
-  }).refine((data) => {
-    // If online, then the minimum number of professors must be less than or equal to the maximum number of professors
-    if (data.online && data.min_professor_number && data.max_professor_number)
-      return data.min_professor_number <= data.max_professor_number;
-    return true;
-  }, {
-    message: "Il numero minimo di professori deve essere minore o uguale al numero massimo di professori se sono abilitate le impostazioni aggiuntive",
-    path: ["min_professor_number", "max_professor_number"]
-  }).refine((data) => {
-    // If online, then the minimum number of professors must be less than or equal to the maximum number of professors
-    if (data.online && data.min_professor_number && data.max_professor_number)
-      return data.min_professor_number <= data.max_professor_number;
-    return true;
-  }, {
-    message: "Il numero minimo di professori deve essere minore o uguale al numero massimo di professori se sono abilitate le impostazioni aggiuntive",
-    path: ["min_professor_number_masters", "max_professor_number"]
-  }).refine((data) => {
-    // If online, then the minimum number of professors for the master's degree must be less than or equal to the maximum number of professors
-    if (data.online && data.min_professor_number_masters && data.max_professor_number)
-      return data.min_professor_number_masters <= data.max_professor_number;
 
     return true;
   });
