@@ -75,9 +75,12 @@
   let collapsibleOpen = $state(true);
 </script>
 
-<Collapsible.Root bind:open={collapsibleOpen}>
+<Collapsible.Root
+    class="bg-card text-card-foreground flex flex-col gap-4 rounded-lg border p-4 shadow-sm"
+    bind:open={collapsibleOpen}
+>
   <div class="flex items-center justify-between">
-    <Collapsible.Trigger class="mt-4 mb-4 text-xl flex items-center cursor-pointer">
+    <Collapsible.Trigger class="text-xl flex items-center cursor-pointer">
       <MdiCogPlayOutline class="w-6 h-6 me-2"/>
       <span>Parametri dell'Ottimizzatore</span>
       <MdiChevronRight
@@ -111,19 +114,17 @@
     </div>
   </div>
 
-  <!--  <div class="transition-all duration-300 ease-in-out overflow-hidden max-w-full">-->
-  <Collapsible.Content>
-    {#if true /*$optStatus.configurationLocked || $optStatus.solutions.all.length > 0*/}
-      <div class="flex items-center mt-2 mb-4 text-[0.8rem] text-yellow-600 group dark:text-yellow-400">
-        <MdiReminder class="w-5 h-5"/>
-        <!-- todo we are expecting that the optimization doesn't fail, but that could be the case sometimes -->
-        <span class="flex items-center justify-start ms-2">
+  {#if true /*$optStatus.configurationLocked || $optStatus.solutions.all.length > 0*/}
+    <div class="flex items-center mb-4 text-[0.8rem] text-yellow-600 group dark:text-yellow-400">
+      <MdiReminder class="w-5 h-5"/>
+      <!-- todo we are expecting that the optimization doesn't fail, but that could be the case sometimes -->
+      <span class="flex items-center justify-start ms-2">
           {#if false /*$optStatus.solutions.all.length > 0*/}
               La configurazione è già stata usata per trovare una soluzione.
           {:else}
               La configurazione è stata inviata per l'ottimizzazione.
           {/if}
-          Non è possibile modificarla.
+        Non è possibile modificarla.
           Puoi sempre
           <button class="flex ms-[2px] hover:underline hover:cursor-pointer">
               <!--todo-->
@@ -131,27 +132,30 @@
           </button>
           .
         </span>
-      </div>
-    {/if}
+    </div>
+  {/if}
+
+  <Collapsible.Content>
     {#if errorMessage}
-      <div class="flex justify-center">
-        <Alert.Root class="mb-4 w-fit" variant="destructive">
+        <Alert.Root class="mb-4 w-full" variant="destructive">
           <IcBaselineErrorOutline class="w-4 h-4"/>
           <Alert.Title>Il server ha restituito un messaggio di errore ({errorMessage.status_code})</Alert.Title>
           <Alert.Description>
             <p class="font-mono">{errorMessage.detail}</p>
           </Alert.Description>
         </Alert.Root>
-      </div>
     {/if}
 
     <form method="post"
           enctype="multipart/form-data"
           use:enhance
     >
-      <fieldset disabled={(updatePromise !== null)}>
+      <fieldset
+          disabled={(updatePromise !== null)}
+          class="flex flex-col gap-4"
+      >
         <!-- General optimization configuration attributes -->
-        <div class="rounded-lg border p-4">
+        <div>
           <h3 class="text-lg font-medium">Impostazioni Generali</h3>
           <Separator decorative={true} class="mt-2 mb-4"/>
 
@@ -178,7 +182,7 @@
           </Form.Field>
         </div>
 
-        <div class="rounded-lg border p-4 mt-4">
+        <div>
           <h3 class="text-lg font-medium">Vincoli di composizione delle Commissioni</h3>
           <Separator decorative={true} class="mt-2 mb-4"/>
 
@@ -225,7 +229,7 @@
           </Form.Field>
         </div>
 
-        <div class="rounded-lg border p-4 mt-4">
+        <div>
           <h3 class="text-lg font-medium">Configurazione dell'Ottimizzatore</h3>
           <Separator decorative={true} class="mt-2 mb-4"/>
           <Form.Field {form} name="solver">
@@ -275,9 +279,7 @@
         </div>
 
         {#if browser && $debugEnabled}
-          <div class="my-4">
-            <Inspect value={$formData} expandLevel={0} name="Form Data"/>
-          </div>
+          <Inspect value={$formData} expandLevel={0} name="Form Data"/>
         {/if}
       </fieldset>
     </form>
