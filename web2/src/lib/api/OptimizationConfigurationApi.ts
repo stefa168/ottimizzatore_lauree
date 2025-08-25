@@ -60,7 +60,7 @@ export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSch
   optimization_time_limit: z.coerce.number().min(60).default(60),
   optimization_gap: z.coerce.number().min(0).default(0.005),
 
-  optimization_log: OptimizationLogSchema.optional(),
+  optimization_log: OptimizationLogSchema.optional().nullable(),
   commissions: z.array(SolutionCommissionSchema).optional()
 }).passthrough()
 
