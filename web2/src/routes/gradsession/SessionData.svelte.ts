@@ -5,6 +5,7 @@ import {computeProfessorsBurdens} from "@/utils";
 export class SessionData {
   public session: GradSession;
   public student_entries: GradSessionEntry[];
+  public studentEntriesMap: Map<number, GradSessionEntry>;
   public sessionProfessors: SessionProfessor[];
   public sessionProfessorsMap: Map<number, SessionProfessor>;
   public professorsBurdens: Map<number, ProfessorBurden>;
@@ -12,6 +13,7 @@ export class SessionData {
   constructor(session: GradSession, student_entries: GradSessionEntry[], professors: SessionProfessor[]) {
     this.session = $state(session);
     this.student_entries = $state(student_entries);
+    this.studentEntriesMap = $derived(new Map(this.student_entries.map(s => [s.id, s])));
     this.sessionProfessors = $state(professors);
     this.sessionProfessorsMap = $derived(new Map(this.sessionProfessors.map(p => [p.id, p])));
     this.professorsBurdens = $derived(computeProfessorsBurdens(this.sessionProfessorsMap, this.student_entries));
