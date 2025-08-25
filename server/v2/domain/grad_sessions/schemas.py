@@ -32,7 +32,7 @@ class OptConfPatchDTO(SQLAlchemyDTO[OptimizationConfiguration]):
     config = SQLAlchemyDTOConfig(
         max_nested_depth=0,
         partial=True,
-        exclude={"id", "created_at", "updated_at", "session_id"}
+        exclude={"id", "created_at", "updated_at", "session_id", "optimization_log", "commissions"}
     )
 
 
