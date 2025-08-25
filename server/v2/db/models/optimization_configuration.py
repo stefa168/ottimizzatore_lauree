@@ -46,9 +46,9 @@ class OptimizationConfiguration(IdentityAuditBase):
     max_commissions_afternoon: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='6', default=6)
 
     online: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
-    min_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
-    min_professor_number_masters: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
-    max_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
+    min_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True, default=1, server_default='1')
+    min_professor_number_masters: Mapped[int | None] = mapped_column(sa.Integer, nullable=True, default=1, server_default='1')
+    max_professor_number: Mapped[int | None] = mapped_column(sa.Integer, nullable=True, default=50, server_default='50')
 
     solver: Mapped[SolverEnum] = mapped_column(
         auto_named_enum(SolverEnum),
