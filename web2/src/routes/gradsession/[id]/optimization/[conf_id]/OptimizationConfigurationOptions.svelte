@@ -28,16 +28,17 @@
   import {browser} from "$app/environment";
   import {debugEnabled} from "@/store.svelte";
   import Inspect from "svelte-inspect-value";
-  import type {ApiErrorResponse} from "@/types";
+  import type {ApiErrorResponse, OptimizationStatus} from "@/types";
   import {toast} from "svelte-sonner";
   import type {ClassValue} from "clsx";
 
   interface Props {
     configuration: OptimizationConfiguration,
+    optStatus: OptimizationStatus,
     class?: ClassValue
   }
 
-  let {configuration = $bindable(), class: className}: Props = $props();
+  let {configuration = $bindable(), class: className, optStatus}: Props = $props();
 
   let updatePromise = $state<Promise<OptimizationConfiguration> | null>(null)
   let errorMessage = $state<ApiErrorResponse | null>(null);
@@ -75,6 +76,7 @@
   const taintedFieldCount = $derived($tainted ? Object.keys($tainted).length : 0);
 
   let collapsibleOpen = $state(true);
+  export const toggleCollapsible = (open?: boolean) => collapsibleOpen = open ?? !collapsibleOpen
 </script>
 
 <Collapsible.Root
@@ -119,19 +121,19 @@
     </div>
   </div>
 
-  {#if true /*$optStatus.configurationLocked || $optStatus.solutions.all.length > 0*/}
+  {#if optStatus.started}
     <div class="flex items-center mb-4 text-[0.8rem] text-yellow-600 group dark:text-yellow-400">
       <MdiReminder class="w-5 h-5"/>
       <!-- todo we are expecting that the optimization doesn't fail, but that could be the case sometimes -->
       <span class="flex items-center justify-start ms-2">
-          {#if false /*$optStatus.solutions.all.length > 0*/}
+          {#if optStatus.commissions.all.length > 0}
               La configurazione è già stata usata per trovare una soluzione.
           {:else}
               La configurazione è stata inviata per l'ottimizzazione.
           {/if}
         Non è possibile modificarla.
           Puoi sempre
-          <button class="flex ms-[2px] hover:underline hover:cursor-pointer">
+          <button class="flex ms-[2px] hover:underline hover:cursor-pointer disabled:hover:cursor-not-allowed" disabled>
               <!--todo-->
               <MdiContentDuplicate class="h-4 w-4 me-[2px]"/> duplicarla
           </button>
@@ -156,7 +158,7 @@
           use:enhance
     >
       <fieldset
-          disabled={(updatePromise !== null)}
+          disabled={(updatePromise !== null || optStatus.started)}
           class="flex flex-col gap-4"
       >
         <!-- General optimization configuration attributes -->

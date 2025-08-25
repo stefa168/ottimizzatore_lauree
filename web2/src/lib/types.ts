@@ -1,3 +1,5 @@
+import type {SolutionCommission} from "@/api/OptimizationConfigurationApi";
+
 export interface ApiErrorResponse<TExtra = never> {
   detail: string,
   extra?: TExtra,
@@ -65,6 +67,18 @@ export interface SessionProfessor extends CreationUpdateDate{
 export interface ProfessorBurden {
   asSupervisor: number,
   asCounterSupervisor: number
+}
+
+export type OptimizationTaskState = 'running' | 'ended' | 'not_started' | 'failure';
+
+export interface OptimizationStatus {
+  status: OptimizationTaskState;
+  running: boolean;
+  ended: boolean;
+  started: boolean;
+  failed: boolean;
+  commissions: { all: SolutionCommission[], morning: SolutionCommission[], afternoon: SolutionCommission [] };
+
 }
 
 export type TextTemplate = (count: number, total: number) => string;

@@ -1,6 +1,15 @@
 import {clsx, type ClassValue} from "clsx";
 import {twMerge} from "tailwind-merge";
-import type {GradSessionEntry, ProfessorBurden, SessionProfessor, TextTemplates} from "@/types";
+import type {
+  GradSessionEntry,
+  OptimizationStatus,
+  OptimizationTaskState,
+  ProfessorBurden,
+  SessionProfessor,
+  TextTemplates
+} from "@/types";
+import type {OptimizationConfiguration} from "@/api/OptimizationConfigurationApi";
+import {DateTime, Duration} from 'luxon'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -81,4 +90,46 @@ export const computeProfessorsBurdens = (
 // https://blog.logrocket.com/iterate-over-enums-typescript/
 export function enumKeys<O extends object, K extends keyof O = keyof O>(obj: O): K[] {
   return Object.keys(obj).filter(k => !Number.isNaN(k)) as K[]
+}
+
+export const optimizationTaskStatusFactory = (configuration: OptimizationConfiguration): OptimizationStatus => {
+  let status: OptimizationTaskState = "not_started";
+  if (configuration.run_lock) {
+    status = configuration.optimization_log ? 'ended' : 'running';
+  }
+
+  const solutions = configuration.commissions ?? [];
+
+  return {
+    status,
+    get ended() {
+      return this.status === 'ended'
+    },
+    get running() {
+      return this.status === 'running'
+    },
+    get started() {
+      return this.status !== 'not_started'
+    },
+    get failed() {
+      return this.status === 'failure'
+    },
+    commissions: {
+      all: solutions,
+      morning: solutions.filter(s => s.morning),
+      afternoon: solutions.filter(s => !s.morning),
+    }
+  }
+}
+
+export const computeTimeDifference = (startDate?: Date, endDate?: Date): string => {
+  if (!startDate || !endDate) return '?? minuti e ?? secondi';
+  const start = DateTime.fromJSDate(startDate)
+  const end = DateTime.fromJSDate(endDate)
+
+  return end.setLocale('it').diff(start).toHuman({})
+}
+
+export const formatTime = (minutes: number): string => {
+  return Duration.fromObject({minutes}, {locale: 'it'}).toHuman();
 }

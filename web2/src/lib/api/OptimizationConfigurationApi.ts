@@ -75,6 +75,7 @@ export type OptimizationLog = z.infer<typeof OptimizationLogSchema>;
 export type OptimizationConfigurationRecap = z.infer<typeof OptimizationConfigurationRecapSchema>;
 export type OptimizationConfiguration = z.infer<typeof OptimizationConfigurationSchema>;
 export type OptimizationConfigurationForm = z.infer<typeof OptConfFormSchema>;
+export type SolutionCommission = z.infer<typeof SolutionCommissionSchema>;
 
 export const OptimizationConfigurationApi = (customFetch = fetch) => ({
   getAll: async (session_id: number) => {
