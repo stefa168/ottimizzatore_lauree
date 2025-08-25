@@ -30,12 +30,14 @@
   import Inspect from "svelte-inspect-value";
   import type {ApiErrorResponse} from "@/types";
   import {toast} from "svelte-sonner";
+  import type {ClassValue} from "clsx";
 
   interface Props {
     configuration: OptimizationConfiguration,
+    class?: ClassValue
   }
 
-  let {configuration = $bindable()}: Props = $props();
+  let {configuration = $bindable(), class: className}: Props = $props();
 
   let updatePromise = $state<Promise<OptimizationConfiguration> | null>(null)
   let errorMessage = $state<ApiErrorResponse | null>(null);
@@ -76,7 +78,10 @@
 </script>
 
 <Collapsible.Root
-    class="bg-card text-card-foreground flex flex-col gap-4 rounded-lg border p-4 shadow-sm"
+    class={[
+      "bg-card text-card-foreground flex flex-col gap-4 rounded-lg border p-4 shadow-sm",
+      className
+    ]}
     bind:open={collapsibleOpen}
 >
   <div class="flex items-center justify-between">
@@ -137,13 +142,13 @@
 
   <Collapsible.Content>
     {#if errorMessage}
-        <Alert.Root class="mb-4 w-full" variant="destructive">
-          <IcBaselineErrorOutline class="w-4 h-4"/>
-          <Alert.Title>Il server ha restituito un messaggio di errore ({errorMessage.status_code})</Alert.Title>
-          <Alert.Description>
-            <p class="font-mono">{errorMessage.detail}</p>
-          </Alert.Description>
-        </Alert.Root>
+      <Alert.Root class="mb-4 w-full" variant="destructive">
+        <IcBaselineErrorOutline class="w-4 h-4"/>
+        <Alert.Title>Il server ha restituito un messaggio di errore ({errorMessage.status_code})</Alert.Title>
+        <Alert.Description>
+          <p class="font-mono">{errorMessage.detail}</p>
+        </Alert.Description>
+      </Alert.Root>
     {/if}
 
     <form method="post"
