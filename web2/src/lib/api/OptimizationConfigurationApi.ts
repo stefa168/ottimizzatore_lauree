@@ -52,9 +52,9 @@ export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSch
   online: z.boolean().default(true),
   run_lock: z.boolean(),
 
-  min_professor_number: z.coerce.number().min(1).nullable().default(null),
-  min_professor_number_masters: z.coerce.number().min(1).nullable().default(null),
-  max_professor_number: z.coerce.number().min(1).nullable().default(null),
+  min_professor_number: z.coerce.number().min(1).default(1),
+  min_professor_number_masters: z.coerce.number().min(1).default(1),
+  max_professor_number: z.coerce.number().min(1).default(50),
 
   solver: z.nativeEnum(SolverType).default(SolverType.CPLEX),
   optimization_time_limit: z.coerce.number().min(60).default(60),
