@@ -1,7 +1,8 @@
 <script lang="ts">
+  // noinspection ES6UnusedImports
   import * as Card from "$lib/components/ui/card";
   import {formatTime} from "$lib/utils";
-  import {getSessionData, SessionData} from "../../../SessionData.svelte";
+  import {SessionData} from "../../../SessionData.svelte";
   import type {SolutionCommission} from "@/api/OptimizationConfigurationApi";
 
   interface Props {
@@ -15,27 +16,6 @@
   const bachelor = $derived(students.filter(student => student?.degree_level === "bachelors").length);
   const masters = $derived(students.filter(student => student?.degree_level === "masters").length);
   const professors = $derived(commission.professor_ids.map(p => sessionData.sessionProfessorsMap.get(p)).filter(s => s !== undefined));
-
-  const commissionDetails = $derived.by(() => {
-    let result = "";
-    result += bachelor > 0 ? `${bachelor}T` : '';
-
-    if (masters > 0)
-      result += result.length > 0 ? `, ${masters}M` : `${masters}M`;
-
-    return result;
-  });
-
-  const commissionDetailsHover = $derived.by(() => {
-    let result = '';
-
-    result += bachelor > 0 ? `${bachelor} Studenti Triennali` : '';
-
-    if (masters > 0)
-      result += result.length > 0 ? `, ${masters} Studenti Magistrali` : '';
-
-    return result;
-  })
 </script>
 
 <Card.Root class="w-fit transition-all duration-300 hover:shadow-lg dark:hover:bg-primary-foreground gap-2">
