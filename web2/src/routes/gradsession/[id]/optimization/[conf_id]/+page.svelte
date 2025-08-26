@@ -23,7 +23,7 @@
   <Inspect value={sessionData}/>
 {/if}
 
-<OptimizationResultsCard {optStatus} {sessionData} {configuration}/>
+<OptimizationResultsCard {optStatus} {sessionData} bind:configuration/>
 
 {#key configuration}
   <OptimizationConfigurationOptions bind:this={optConfForm} {optStatus} bind:configuration class="mt-4"/>

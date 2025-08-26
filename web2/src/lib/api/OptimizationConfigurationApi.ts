@@ -84,14 +84,16 @@ export const OptimizationConfigurationApi = (customFetch = fetch) => ({
 
     return z.array(OptimizationConfigurationRecapSchema).parse(await response.json());
   },
-  getComplete: async (session_id: number, configuration_id: number) => {
-    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration/${configuration_id}`);
+  getComplete: async (session_id: number, configuration_id: number, init?: RequestInit) => {
+    const response = await customFetch(
+      `${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration/${configuration_id}`,
+      init
+    );
     if (!response.ok) throw await response.json() as ApiErrorResponse;
 
     return OptimizationConfigurationSchema.parse(await response.json());
   },
   updateConfiguration: async (session_id: number, configuration_id: number, updated_configuration: OptimizationConfigurationForm) => {
-    console.log(JSON.stringify(updated_configuration))
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration/${configuration_id}`, {
       method: 'PATCH',
       headers: {
@@ -99,8 +101,12 @@ export const OptimizationConfigurationApi = (customFetch = fetch) => ({
       },
       body: JSON.stringify(updated_configuration),
     });
-    if(!response.ok) throw await response.json() as ApiErrorResponse;
+    if (!response.ok) throw await response.json() as ApiErrorResponse;
 
     return OptimizationConfigurationSchema.parse(await response.json());
+  },
+  startOptimization: async (session_id: number, configuration_id: number) => {
+    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration/${configuration_id}/solve`);
+    if (!response.ok) throw await response.json() as ApiErrorResponse;
   }
 })

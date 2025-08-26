@@ -1,8 +1,8 @@
 <script lang="ts">
   import {DateTime} from "luxon";
-  import {computeTimeDifference} from "@/utils.js";
-  import type {OptimizationStatus} from "@/types";
-  import type {OptimizationConfiguration} from "@/api/OptimizationConfigurationApi";
+  import {computeTimeDifference, optimizationTaskStatusFactory} from "@/utils.js";
+  import type {ApiErrorResponse, OptimizationStatus} from "@/types";
+  import {type OptimizationConfiguration, OptimizationConfigurationApi} from "@/api/OptimizationConfigurationApi";
   import type {SessionData} from "../../../SessionData.svelte";
 
   // Components
@@ -27,17 +27,69 @@
   import MdiAlertOctagramOutline from '~icons/mdi/alert-octagram-outline'
   import MdiAlarm from '~icons/mdi/alarm'
   import MdiTimerOutline from '~icons/mdi/timer-outline'
+  import IcBaselineErrorOutline from '~icons/ic/baseline-error-outline'
+  import {onDestroy, onMount} from "svelte";
+  import {pollUntil} from "@/pollingUtility";
 
   interface Props {
     optStatus: OptimizationStatus;
     configuration: OptimizationConfiguration;
-    sessionData: SessionData
+    sessionData: SessionData;
+    optimizationStartCallback?: () => Promise<void>
   }
 
-  let {optStatus, configuration, sessionData}: Props = $props();
+  let {optStatus, configuration = $bindable(), sessionData, optimizationStartCallback}: Props = $props();
 
   let collapsibleOpen = $state(true);
   let log = $derived(configuration.optimization_log);
+  const abortController = new AbortController();
+  let pollingPromise: Promise<void> | null = $state(null);
+  let errorMessage: ApiErrorResponse | undefined = $state(undefined);
+
+  const startOptimization = async () => {
+    try {
+      await OptimizationConfigurationApi(fetch).startOptimization(sessionData.session.id, configuration.id)
+    } catch (e) {
+      errorMessage = e as ApiErrorResponse;
+      throw e
+    }
+    optimizationStartCallback?.();
+    configuration = {...configuration, run_lock: true}; // Needed to actually trigger reactivity!
+    await pollForOptimizationEnd();
+  }
+
+  // Can be called in the `onMount` lifecycle hook, or by the `startOptimization` function. Will throw if called twice.
+  async function pollForOptimizationEnd() {
+    if (pollingPromise) throw new Error("Should not call the polling twice");
+
+    const p = pollUntil(
+      async (signal) => OptimizationConfigurationApi(fetch).getComplete(sessionData.session.id, configuration.id, {signal}), {
+        signal: abortController.signal,
+        retries: Number.POSITIVE_INFINITY,
+        isDone(result) {
+          let status = optimizationTaskStatusFactory(result);
+          console.debug(JSON.stringify(status));
+          return ['ended', 'failed'].includes(status.status);
+        }
+      }
+    ).catch(e => console.warn(e)) // Just to silence the error thrown
+      .then(r => {
+        configuration = r!
+      });
+
+    pollingPromise = p;
+    return await p;
+  }
+
+  onMount(async () => {
+    if (optStatus.running) {
+      await pollForOptimizationEnd();
+    }
+  });
+
+  onDestroy(() => {
+    abortController.abort();
+  })
 </script>
 
 <Collapsible.Root
@@ -45,7 +97,7 @@
     bind:open={collapsibleOpen}
 >
   <div class="flex items-center justify-between">
-    <Collapsible.Trigger class="text-xl flex items-center cursor-pointer">
+    <Collapsible.Trigger class="text-xl flex items-center enabled:cursor-pointer" disabled={(!optStatus.started)}>
       {#if optStatus.ended}
         <MdiCheckDecagram class="w-6 h-6 me-2 text-green-600"/>
       {:else if optStatus.status === 'failure'}
@@ -63,7 +115,11 @@
         {/if}
       </span>
       <MdiChevronRight
-          class={["w-6 h-6 ms-2 transition-transform duration-200", collapsibleOpen && 'rotate-90']}
+          class={[
+            "w-6 h-6 ms-2 transition-transform duration-200",
+            collapsibleOpen && 'rotate-90',
+            optStatus.ended || optStatus.failed ? 'visible' : 'invisible'
+          ]}
           aria-hidden="true"
       />
     </Collapsible.Trigger>
@@ -71,6 +127,11 @@
       <div class="flex items-center justify-center">
         <MdiLoading class="w-6 h-6 ms-4 animate-spin" style="animation-duration: 2s"/>
         <span class="ms-2">Ottimizzazione in corso</span>
+      </div>
+    {:else if !optStatus.started}
+      <div class="flex items-center justify-center">
+        <MdiExclamation class="w-6 h-6 ms-4"/>
+        <span>Ottimizzazione non ancora avviata</span>
       </div>
     {/if}
   </div>
@@ -157,17 +218,26 @@
           <Alert.Description>{log.error_message}</Alert.Description>
         </Alert.Root>
       {/if}
+
+      {#if errorMessage}
+        <Alert.Root class="mb-4 w-full" variant="destructive">
+          <IcBaselineErrorOutline class="w-4 h-4"/>
+          <Alert.Title>Il server ha restituito un messaggio di errore ({errorMessage.status_code})</Alert.Title>
+          <Alert.Description>
+            <p class="font-mono">{errorMessage.detail}</p>
+          </Alert.Description>
+        </Alert.Root>
+      {/if}
+
       <!-- We still have to start the optimization -->
-      <div class="flex items-center flex-col">
-        <div class="flex items-center self-center mt-4">
-          <MdiExclamation class="w-8 h-8"/>
-          <span>Ottimizzazione non ancora avviata</span>
+      {#if !optStatus.started}
+        <div class="flex items-center flex-col">
+          <Button class="hover:cursor-pointer" onclick={startOptimization}>
+            <MdiCubeSend class="h-4 w-4 me-2"/>
+            <span>Avvia l'ottimizzazione</span>
+          </Button>
         </div>
-        <Button class="mt-2">
-          <MdiCubeSend class="h-4 w-4 me-2"/>
-          <span>Avvia l'ottimizzazione</span>
-        </Button>
-      </div>
+      {/if}
     {/if}
 
   </Collapsible.Content>
