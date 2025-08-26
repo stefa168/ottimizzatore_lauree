@@ -5,7 +5,7 @@ from typing import Annotated, Final, Any
 
 import pandas as pd
 
-from litestar import post, get, delete, Controller
+from litestar import post, get, delete, Controller, patch
 from litestar.di import Provide
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTOConfig
 from litestar.params import Body
@@ -25,6 +25,7 @@ from v2.domain.grad_sessions.deps import (
 )
 from v2.domain.grad_sessions.schemas import NewCommissionForm
 from v2.domain.grad_sessions import urls
+from v2.utils.crud_helpers import get_one_or_raise
 
 EXCEL_MEDIA_TYPES: Final[list[str]] = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -75,6 +76,21 @@ class GraduationSessionController(Controller):
 
         if session_db is None:
             raise HTTPException(detail="Specified Session does not exist", status_code=http_statuses.HTTP_404_NOT_FOUND)
+
+        return session_db
+
+    @patch(urls.GRAD_SESSION_RETRIEVE, return_dto=SessionReadDTO)
+    async def update_title(self,
+                           sid: int,
+                           data: Annotated[str, Body(min_length=1)],
+                           grad_session_repository: GradSessionRepository) -> GradSession:
+        session_db = await get_one_or_raise(
+            grad_session_repository,
+            GradSession.id == sid,
+            not_found_msg=f"Session with ID {sid} not found"
+        )
+
+        session_db.title = data
 
         return session_db
 

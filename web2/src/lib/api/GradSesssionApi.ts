@@ -66,9 +66,16 @@ export const GradSessionApi = (customFetch = fetch) => ({
       body: formData
     });
 
-    if (!response.ok) {
-      throw await response.json();
-    }
+    if (!response.ok) throw await response.json();
+
+    return await response.json() as RawGradSession;
+  },
+  changeTitle: async (id: number, title: string): Promise<RawGradSession> => {
+    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(title)
+    });
+    if (!response.ok) throw await response.json() as ApiErrorResponse;
 
     return await response.json() as RawGradSession;
   },

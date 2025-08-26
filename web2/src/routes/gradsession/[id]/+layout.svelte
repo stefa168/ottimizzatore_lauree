@@ -11,6 +11,7 @@
   import {setSessionData} from "../SessionData.svelte";
   import Inspect from "svelte-inspect-value";
   import {debugEnabled} from "@/store.svelte";
+  import EditableSessionTitle from "./EditableSessionTitle.svelte";
 
   let {children, data}: LayoutProps = $props();
   let sessionData = setSessionData(data.session, data.student_entries, data.professors);
@@ -27,7 +28,7 @@
 </script>
 
 <div class="container mx-auto pb-10">
-  <h1 class="text-2xl mb-4 font-medium">{sessionData.session.title}</h1>
+  <EditableSessionTitle {sessionData}/>
 
   <!-- Styles from https://flowbite.com/docs/components/tabs/ -->
   <!-- Tabs Root -->
