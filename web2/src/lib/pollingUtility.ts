@@ -1,136 +1,91 @@
 // pollUntilFn.ts
-export type RequestFn<T> = (signal: AbortSignal) => Promise<T>;
+import pRetry, {AbortError, type RetryContext} from "p-retry";
 
 /**
- * Options for configuring a cancelable polling function.
+ * Represents the configuration options for a polling mechanism.
  *
- * @template T The type of the result that the polling function resolves with.
- * @property {number} [initialDelay] The initial delay in milliseconds before the first poll.
- * @property {number} [maxDelay] The maximum delay in milliseconds between successive polls.
- * @property {number} [timeout] The maximum time in milliseconds to keep polling before timing out.
- * @property {boolean} [jitter] If true, applies jitter to delay intervals to avoid synchronized polling.
- * @property {(result: T) => boolean} isDone A function that determines when the polling should stop based on the result.
- * @property {boolean} [continueOnError] If true, continues polling even after encountering an error.
- * @property {number} [maxRetries] The maximum number of retry attempts after encountering errors before stopping the poll.
- * @property {(err: unknown, attempt: number) => void} [onError] An optional callback function invoked on an error, providing the error and the current retry attempt.
- * @property {AbortController} [externalController] An optional AbortController instance for external cancellation control.
+ * @template T - The type of the result being polled.
+ *
+ * @property {function(r: T): boolean} isDone - A predicate function that determines
+ * whether the polling should stop based on the result.
+ *
+ * @property {number} [retries] - An optional number indicating the maximum number
+ * of retries before giving up.
+ *
+ * @property {number} [minTimeout] - An optional number representing the minimum
+ * timeout interval in milliseconds between attempts.
+ *
+ * @property {number} [maxTimeout] - An optional number representing the maximum
+ * timeout interval in milliseconds.
+ *
+ * @property {boolean} [randomize] - An optional flag that indicates whether to add
+ * jitter (randomized variance) to the timeout intervals.
+ *
+ * @property {AbortSignal} [signal] - An optional AbortSignal instance that can be
+ * used to cancel the polling process.
+ *
+ * @property {function(e: RetryContext): void} [onFailedAttempt] - An optional callback function
+ * to handle errors during polling. It receives a RetryContext parameter that provides
+ * details about the error and retrying state.
  */
-export interface PollFnCancelableOptions
-<T> {
-  initialDelay?: number;
-  maxDelay?: number;
-  timeout?: number | null;
-  jitter?: boolean;
-  isDone: (result: T) => boolean;
-  continueOnError?: boolean;
-  maxRetries?: number;
-  onError?: (err: unknown, attempt: number) => void; // optional hook
-  externalController?: AbortController;
+export interface PollOptions<T> {
+  isDone: (r: T) => boolean;
+  retries?: number;
+  minTimeout?: number;
+  maxTimeout?: number;
+  randomize?: boolean; // jitter
+  signal?: AbortSignal;
+  onFailedAttempt?: (e: RetryContext) => Promise<void>;
 }
 
 /**
- * Polls a given asynchronous function until a condition is met or a timeout/retry limit occurs.
+ * Polls a given asynchronous function until a specified condition is met or the maximum number of retries is reached.
  *
- * @param {RequestFn<T>} request - A function that executes the request and returns a promise resolving with a result of type T.
- * @param {PollFnCancelableOptions<T>} options - Configuration options for polling, including initial delay, max delay, timeout, jitter, and condition check.
- * @return {Promise<T>} A promise that resolves with the first result of type T that satisfies the isDone condition, or rejects if the polling fails or times out.
+ * @param {function(AbortSignal): Promise<T>} fn The async function to be polled. It takes an `AbortSignal` as an argument
+ * and returns a Promise that resolves to the expected value.
+ * @param {Object} options Configuration options for the polling process.
+ * @param {function(T): boolean} options.isDone A function that determines whether the polling process should stop. It takes
+ * the resolved value of `fn` and returns a boolean.
+ * @param {number} [options.retries=10] The maximum number of attempts to poll the function. Defaults to 10.
+ * @param {number} [options.minTimeout=500] The minimum delay, in milliseconds, between polling attempts. Defaults to 500 ms.
+ * @param {number} [options.maxTimeout=5000] The maximum delay, in milliseconds, between polling attempts. Defaults to 5000 ms.
+ * @param {boolean} [options.randomize=true] Whether to introduce random variance in the delay time between retries. Defaults to true.
+ * @param {AbortSignal} [options.signal] An optional `AbortSignal` to cancel the polling process. Throws an `AbortError` if aborted.
+ * @param {function(Error): void} [options.onError] An optional error handler, called for each failed attempt.
+ * @return {Promise<T | undefined>} A promise that resolves to the result of the successfully polled function if the condition is met
+ * or `undefined` if the polling process is aborted or the maximum number of retries is reached.
  */
-export async function pollUntilFn<T>(
-  request: RequestFn<T>,
-  options: PollFnCancelableOptions<T>
+export async function pollUntil<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  options: PollOptions<T>
 ): Promise<T | undefined> {
   const {
-    initialDelay = 500,
-    maxDelay = 5000,
-    timeout = 60000,
-    jitter = true,
     isDone,
-    continueOnError = true,
-    maxRetries,
-    onError,
-    externalController,
+    retries = 10,
+    minTimeout = 500,
+    maxTimeout = 5000,
+    randomize = true,
+    signal,
+    onFailedAttempt,
   } = options;
 
-  const start = Date.now();
-  let delay = initialDelay;
-  let attempts = 0;
+  return pRetry(async () => {
+    if (signal?.aborted)
+      throw new AbortError('Aborted');
 
-  const internalController = externalController ? undefined : new AbortController();
-  const signal = externalController?.signal ?? internalController!.signal;
+    const result = await fn(signal!);
 
-  try {
-    while (!signal.aborted) {
-      // Global guards
-      if (maxRetries !== undefined && attempts >= maxRetries) {
-        throw new Error('Max retries exceeded');
-      }
-      if (timeout && timeout > 0 && Date.now() - start > timeout) {
-        throw new Error('Polling timed out');
-      }
+    if (isDone(result))
+      return result;
 
-      try {
-        const result = await request(signal);
-        if (isDone(result)) {
-          return result;
-        }
-      } catch (err) {
-        if (isAbortError(err)) throw err;
-        onError?.(err, attempts);
-        if (!continueOnError) throw err;
-      }
-
-      attempts += 1;
-
-      // Sleep with jitter
-      const jitterValue = jitter ? Math.random() * 0.5 * delay : 0;
-      await sleep(delay + jitterValue, signal);
-
-      // Exponential backoff
-      delay = Math.min(delay * 2, maxDelay);
-    }
-  } finally {
-    if (internalController) internalController.abort();
-    console.debug("Stopped polling", signal)
-  }
-  return undefined
-}
-
-/**
- * Determines if the provided error is an AbortError.
- *
- * @param {unknown} err - The error object to be checked.
- * @return {boolean} Returns `true` if the error is an AbortError; otherwise, `false`.
- */
-function isAbortError(err: unknown): boolean {
-  return err instanceof Error && (err.name === 'AbortError' || (err as any)?.code === 'ABORT_ERR');
-}
-
-/**
- * Pauses the execution for a given amount of time or until the provided abort signal is triggered.
- *
- * @param {number} ms - The duration in milliseconds for which to pause the execution.
- * @param {AbortSignal} [signal] - An optional AbortSignal to abort the sleep operation before the timeout completes.
- * @return {Promise<void>} A promise that resolves after the specified duration unless aborted by the signal.
- */
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  if (ms <= 0) return Promise.resolve();
-  return new Promise<void>((resolve, reject) => {
-    const done = () => {
-      cleanup();
-      resolve();
-    };
-    const onAbort = () => {
-      cleanup();
-      reject(new DOMException('Aborted', 'AbortError'));
-    };
-    const cleanup = () => {
-      clearTimeout(t);
-      signal?.removeEventListener('abort', onAbort);
-    };
-    const t = setTimeout(done, ms);
-    if (signal) {
-      if (signal.aborted) onAbort();
-      else signal.addEventListener('abort', onAbort);
-    }
+    throw new Error('Not done yet');
+  }, {
+    retries,
+    minTimeout,
+    maxTimeout,
+    factor: 2,
+    randomize,
+    signal,
+    onFailedAttempt
   });
 }
