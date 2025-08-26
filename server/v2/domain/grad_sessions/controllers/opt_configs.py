@@ -55,7 +55,7 @@ class OptimizationConfigurationController(Controller):
 
         conf_count = await opt_conf_repo.count(OptimizationConfiguration.session_id == sid)
 
-        conf = await opt_conf_repo.add(OptimizationConfiguration(session_id=sid, online=False))
+        conf = await opt_conf_repo.add(OptimizationConfiguration(session_id=sid))
         conf.title += f" {conf_count + 1}"
 
         return conf
