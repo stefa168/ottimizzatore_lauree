@@ -3,10 +3,9 @@
   import LucideCheck from '~icons/lucide/check'
   import LucideX from '~icons/lucide/x'
 
-
   import type {SessionData} from "../SessionData.svelte";
   import {Button} from "@/components/ui/button";
-  import {tick} from "svelte";
+  import {onDestroy, tick} from "svelte";
   import {GradSessionApi} from "@/api/GradSesssionApi";
   import {fromRawDates} from "@/api/RawTypes";
   import type {GradSession} from "@/types";
@@ -21,12 +20,26 @@
   let draftTitle = $state<string>(sessionData.session.title ?? '');
   let titleInputEl: HTMLInputElement | null = $state(null);
 
+  let showUpdated = $state(false);
+  let updateHideTimer: number | null = $state(null);
+
+  function resetHideTimer(show = false) {
+    if (updateHideTimer) clearTimeout(updateHideTimer);
+    showUpdated = show;
+  }
+
+  onDestroy(() => {
+    resetHideTimer();
+    updateHideTimer = null;
+  });
+
   function resetInputField() {
     draftTitle = sessionData.session.title ?? '';
   }
 
   const startEdit = async () => {
     resetInputField();
+    resetHideTimer();
     editingTitle = true;
     await tick();
     titleInputEl?.focus();
@@ -36,6 +49,7 @@
   const cancelEdit = () => {
     editingTitle = false;
     resetInputField();
+    resetHideTimer()
   };
 
   const saveTitle = async () => {
@@ -49,7 +63,13 @@
         // Update local data
         sessionData.session = newSessionData;
         editingTitle = false;
-      })
+
+        showUpdated = true;
+        resetHideTimer(true);
+        updateHideTimer = window.setTimeout(() => {
+          showUpdated = false;
+        }, 2500);
+      });
   };
 
   const onTitleKeyDown = (e: KeyboardEvent) => {
@@ -64,18 +84,24 @@
 </script>
 
 <div class="container mx-auto">
-  <div class="flex mb-4">
+  <div class="flex mb-4 flex-row items-center">
     {#if !editingTitle}
-      <h1 class="text-2xl font-medium truncate">{sessionData.session.title}</h1>
+      <h1 class="text-2xl font-medium w-fit truncate">{sessionData.session.title}</h1>
       <Button
           type="button"
           variant="ghost"
           aria-label="Edit title"
-          title="Edit title"
+          title="Modifica il titolo della sessione"
           onclick={startEdit}
       >
-        <LucidePencil class="size-4" />
+        <LucidePencil class="size-4"/>
       </Button>
+      <span class={[
+          "text-green-600 transform origin-left transition-transform duration-300",
+          showUpdated ? 'scale-x-100 w-fit' : 'scale-x-0 w-0'
+        ]}>
+          Aggiornato!
+        </span>
     {:else}
       <div class="flex items-center gap-2 w-full">
         <input
@@ -92,8 +118,9 @@
             aria-label="Save title"
             title="Salva"
             onclick={saveTitle}
+            class="text-green-600"
         >
-          <LucideCheck class="size-4" />
+          <LucideCheck class="size-4"/>
         </Button>
         <Button
             type="button"
@@ -101,8 +128,9 @@
             aria-label="Cancel editing title"
             title="Annulla"
             onclick={cancelEdit}
+            class="text-destructive"
         >
-          <LucideX class="size-4" />
+          <LucideX class="size-4"/>
         </Button>
       </div>
     {/if}
