@@ -98,9 +98,9 @@
 >
   <div class="flex items-center justify-between">
     <Collapsible.Trigger class="text-xl flex items-center enabled:cursor-pointer" disabled={(!optStatus.started)}>
-      {#if optStatus.ended}
+      {#if optStatus.success}
         <MdiCheckDecagram class="w-6 h-6 me-2 text-green-600"/>
-      {:else if optStatus.status === 'failure'}
+      {:else if optStatus.failed}
         <MdiAlertDecagramOutline class="w-6 h-6 me-2 text-destructive"/>
       {:else}
         <MdiData class="w-6 h-6 me-2"/>
