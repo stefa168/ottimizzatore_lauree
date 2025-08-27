@@ -15,12 +15,15 @@
   let optConfForm: OptimizationConfigurationOptions | null = $state(null);
   const sessionData = getSessionData();
   let optStatus: OptimizationStatus = $derived(optimizationTaskStatusFactory(configuration))
+
+  const InspectVals = Inspect.Values.withOptions(() => ({
+    expandLevel: 0,
+    elementAttributes: {style: 'margin-bottom: calc(var(--spacing) * 4)'} // Directly from tailwind
+  }));
 </script>
 
 {#if browser && $debugEnabled}
-  <Inspect value={data.configuration} expandLevel={0}/>
-  <Inspect value={optStatus}/>
-  <Inspect value={sessionData}/>
+  <InspectVals {configuration} {optStatus} {sessionData}/>
 {/if}
 
 <OptimizationResultsCard {optStatus} {sessionData} bind:configuration/>
