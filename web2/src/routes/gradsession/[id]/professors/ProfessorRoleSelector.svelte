@@ -2,7 +2,7 @@
   import * as Select from '@/components/ui/select'
   import type {UniversityRole} from "@/types";
   import {UniversityRoles} from "@/const";
-  import SuspenseOverlay from "@/components/SuspenseOverlay.svelte";
+  import SuspenseOverlay from "@/components/suspense/SuspenseOverlay.svelte";
 
   interface Props {
     value: UniversityRole | string;

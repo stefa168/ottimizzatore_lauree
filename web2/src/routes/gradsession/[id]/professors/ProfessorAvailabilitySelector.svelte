@@ -2,7 +2,7 @@
   import * as Select from '@/components/ui/select'
   import type {ProfessorAvailability} from "@/types";
   import {AvailabilityOptions} from "@/const";
-  import SuspenseOverlay from "@/components/SuspenseOverlay.svelte";
+  import SuspenseOverlay from "@/components/suspense/SuspenseOverlay.svelte";
 
   interface Props {
     value: ProfessorAvailability | string;
