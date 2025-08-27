@@ -28,6 +28,13 @@ class OptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
     )
 
 
+class CloneOptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
+    config = SQLAlchemyDTOConfig(
+        max_nested_depth=0,
+        exclude={"id", "created_at", "updated_at", "run_lock", "optimization_log", "commissions"}
+    )
+
+
 class OptConfPatchDTO(SQLAlchemyDTO[OptimizationConfiguration]):
     config = SQLAlchemyDTOConfig(
         max_nested_depth=0,

@@ -7,7 +7,7 @@ from typing import Final
 
 import structlog
 from aio_pika import Message, DeliveryMode
-from litestar import Controller, get, patch, delete
+from litestar import Controller, get, patch, delete, post
 from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
@@ -22,7 +22,8 @@ from v2.domain.grad_sessions.deps import (
     OptimizationConfigurationRepository,
     GradSessionRepository
 )
-from v2.domain.grad_sessions.schemas import OptConfDTO, OptConfPatchDTO, OptConfListDTO, OptConfCompleteDTO
+from v2.domain.grad_sessions.schemas import OptConfDTO, OptConfPatchDTO, OptConfListDTO, OptConfCompleteDTO, \
+    CloneOptConfDTO
 from v2.domain.grad_sessions.services import check_gs_exists_raise, get_opt_conf_raise
 from v2.utils.rabbit_messaging import RabbitMessaging, OPTIMIZATION_CHANNEL_NAME
 
@@ -59,6 +60,17 @@ class OptimizationConfigurationController(Controller):
         conf.title += f" {conf_count + 1}"
 
         return conf
+
+    @post(urls.GRAD_SESSION_OPT_CONF_NEW, dto=CloneOptConfDTO, return_dto=OptConfDTO)
+    async def clone_configuration(self, sid: int,
+                                  data: DTOData[OptimizationConfiguration],
+                                  grad_session_repository: GradSessionRepository,
+                                  opt_conf_repo: OptimizationConfigurationRepository) -> OptimizationConfiguration:
+        await check_gs_exists_raise(grad_session_repository, sid)
+        new_instance = data.create_instance(run_lock=False, online=True)
+        new_instance.title += " (Copia)"
+
+        return await opt_conf_repo.add(new_instance)
 
     @get(urls.GRAD_SESSION_OPT_CONF_LIST, return_dto=OptConfListDTO)
     async def configuration_list(self, sid: int,
