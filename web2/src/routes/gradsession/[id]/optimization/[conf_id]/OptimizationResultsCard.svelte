@@ -161,8 +161,8 @@
             <MdiAlarm class="w-6 h-6 me-1"/>
             <span>
               L'ottimizzazione è terminata
-              <span class={['font-bold', log.solver_reached_optimality ? 'text-green-600' : 'text-destructive']}>
-                {!configuration.solver_reached_time_limit ? 'prima' : 'col raggiungimento'}
+              <span class={['font-bold', !log.solver_time_limit_reached ? 'text-green-600' : 'text-destructive']}>
+                {!log.solver_time_limit_reached ? 'prima' : 'col raggiungimento'}
                 del tempo limite di esecuzione
               </span>
               .
