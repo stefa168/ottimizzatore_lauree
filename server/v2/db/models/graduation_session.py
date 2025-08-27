@@ -1,5 +1,6 @@
 import io
 from dataclasses import dataclass
+from typing import Final
 
 import pandas as pd
 import sqlalchemy as sa
@@ -51,6 +52,15 @@ class GradSession(IdentityAuditBase):
             av = sp.availability
             # TimeAvailability exposes booleans for morning/afternoon
             return si_no(av.available_morning), si_no(av.available_afternoon)
+
+        columns: Final = [
+            "ID_Studente", "Cognome", "Nome", "Durata",
+            # Supervisor columns (SessionProfessor + Professor)
+            "ID_Relatore", "PID_Relatore", "Relatore", "Ruolo_Relatore", "Relatore_Mattina", "Relatore_Pomeriggio",
+            # Counter-supervisor columns (optional; if absent the row cells will be NaN and are handled downstream)
+            "ID_Controrelatore", "PID_Controrelatore", "Controrelatore", "Ruolo_Controrelatore",
+            "Controrelatore_Mattina", "Controrelatore_Pomeriggio"
+        ]
 
         # Group students by SessionProfessor to keep things deterministic
         students_by_session_prof: dict[SessionProfessor, list[SessionEntry]] = {}
@@ -108,19 +118,14 @@ class GradSession(IdentityAuditBase):
                             f"might be missing role information or other attributes."
                         ) from e
 
+                # Pad missing optional fields so every row matches the declared columns
+                missing = len(columns) - len(entity)
+                if missing > 0:
+                    entity.extend([None] * missing)
+
                 data_rows.append(entity)
 
-        df = pd.DataFrame(
-            data_rows,
-            columns=[
-                "ID_Studente", "Cognome", "Nome", "Durata",
-                # Supervisor columns (SessionProfessor + Professor)
-                "ID_Relatore", "PID_Relatore", "Relatore", "Ruolo_Relatore", "Relatore_Mattina", "Relatore_Pomeriggio",
-                # Counter-supervisor columns (optional; if absent the row cells will be NaN and are handled downstream)
-                "ID_Controrelatore", "PID_Controrelatore", "Controrelatore", "Ruolo_Controrelatore",
-                "Controrelatore_Mattina", "Controrelatore_Pomeriggio"
-            ]
-        )
+        df = pd.DataFrame(data_rows, columns=columns)
 
         # Create an in-memory binary stream
         output = io.BytesIO()
