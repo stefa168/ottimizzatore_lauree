@@ -75,6 +75,7 @@
     ).catch(e => console.warn(e)) // Just to silence the error thrown
       .then(r => {
         configuration = r!
+        pollingPromise = null;
       });
 
     pollingPromise = p;
