@@ -21,8 +21,10 @@
   import {zod} from "sveltekit-superforms/adapters";
   import {defaults, superForm} from "sveltekit-superforms";
   import {
+    type OptimizationConfiguration,
     OptConfFormSchema,
-    type OptimizationConfiguration, OptimizationConfigurationApi, SolverType
+    OptimizationConfigurationApi,
+    SolverType
   } from "@/api/OptimizationConfigurationApi";
   import {enumKeys} from "@/utils";
   import {browser} from "$app/environment";
@@ -31,6 +33,8 @@
   import type {ApiErrorResponse, OptimizationStatus} from "@/types";
   import {toast} from "svelte-sonner";
   import type {ClassValue} from "clsx";
+  import SuspenseButton from "@/components/suspense/SuspenseButton.svelte";
+  import {goto, invalidate} from "$app/navigation";
 
   interface Props {
     configuration: OptimizationConfiguration,
@@ -133,10 +137,23 @@
           {/if}
         Non è possibile modificarla.
           Puoi sempre
-          <button class="flex ms-[2px] hover:underline hover:cursor-pointer disabled:hover:cursor-not-allowed" disabled>
-              <!--todo-->
-              <MdiContentDuplicate class="h-4 w-4 me-[2px]"/> duplicarla
-          </button>
+        <SuspenseButton onclick={async () => {
+          await OptimizationConfigurationApi(fetch)
+          .newOptConf(configuration.session_id, configuration)
+          .then((newConf) => {
+            toast.success("Configurazione di ottimizzazione clonata con successo!");
+            goto(`${newConf.id}`);
+          })
+        }}>
+          {#snippet children({loading})}
+            <span class={[
+                "flex ms-[2px] underline items-center",
+                loading ? 'cursor-progress' : 'cursor-pointer'
+              ]}>
+              <MdiContentDuplicate class="h-4 w-4 me-[2px]"/> clonarla
+            </span>
+          {/snippet}
+        </SuspenseButton>
           .
         </span>
     </div>
