@@ -191,6 +191,7 @@
                 borderless={true}
                 showTypes={false}
                 noanimate={true}
+                quotes="none"
             />
           </li>
         </ul>
