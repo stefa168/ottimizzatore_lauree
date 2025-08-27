@@ -1,6 +1,7 @@
 import {PUBLIC_BACKEND_URL} from "@/const";
 import type {ApiErrorResponse, CreationUpdateDate} from "@/types";
 import {z} from "zod";
+import type {Expand} from "@/toolbelt";
 
 export enum SolverType {
   CPLEX = "CPLEX",
@@ -78,6 +79,21 @@ export type OptimizationConfigurationForm = z.infer<typeof OptConfFormSchema>;
 export type SolutionCommission = z.infer<typeof SolutionCommissionSchema>;
 
 export const OptimizationConfigurationApi = (customFetch = fetch) => ({
+  newOptConf: async (session_id: number, configuration_to_clone?: OptimizationConfiguration): Promise<Expand<OptimizationConfiguration>> => {
+    let options: RequestInit | undefined = undefined;
+    if (configuration_to_clone) options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(configuration_to_clone),
+    }
+
+    const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration/new`, options);
+    if (!response.ok) throw await response.json() as ApiErrorResponse;
+
+    return OptimizationConfigurationSchema.parse(await response.json());
+  },
   getAll: async (session_id: number) => {
     const response = await customFetch(`${PUBLIC_BACKEND_URL}/sessions/${session_id}/configuration`);
     if (!response.ok) throw await response.json() as ApiErrorResponse;
