@@ -54,7 +54,7 @@ export interface Professor extends NameSurname, CreationUpdateDate {
   role: UniversityRole
 }
 
-export interface SessionProfessor extends CreationUpdateDate{
+export interface SessionProfessor extends CreationUpdateDate {
   id: number,
   session_id: number,
   professor: Professor
@@ -77,8 +77,8 @@ export interface OptimizationStatus {
   ended: boolean;
   started: boolean;
   failed: boolean;
+  success: boolean;
   commissions: { all: SolutionCommission[], morning: SolutionCommission[], afternoon: SolutionCommission [] };
-
 }
 
 export type TextTemplate = (count: number, total: number) => string;

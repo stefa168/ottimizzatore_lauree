@@ -93,16 +93,14 @@ export function enumKeys<O extends object, K extends keyof O = keyof O>(obj: O):
 }
 
 export const optimizationTaskStatusFactory = (configuration: OptimizationConfiguration): OptimizationStatus => {
+  const hasOptimizationLog = !!configuration.optimization_log;
+  const hasErrorMessage = !!configuration.optimization_log?.error_message;
+  const solutions = configuration.commissions ?? [];
+
   let status: OptimizationTaskState = "not_started";
   if (configuration.run_lock) {
-    const optimizationLog = configuration.optimization_log;
-    if (optimizationLog?.error_message && optimizationLog.error_message.length > 0)
-      status = "failure"
-    else
-      status = optimizationLog ? 'ended' : 'running';
+    status = hasOptimizationLog ? 'ended' : 'running';
   }
-
-  const solutions = configuration.commissions ?? [];
 
   return {
     status,
@@ -116,7 +114,10 @@ export const optimizationTaskStatusFactory = (configuration: OptimizationConfigu
       return this.status !== 'not_started'
     },
     get failed() {
-      return this.status === 'failure'
+      return this.ended && solutions.length <= 0 || hasErrorMessage;
+    },
+    get success() {
+      return this.ended && solutions.length > 0 && !hasErrorMessage
     },
     commissions: {
       all: solutions,
