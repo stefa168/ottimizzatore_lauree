@@ -63,8 +63,14 @@ class RabbitMessaging:
         return cls(connection, channel, opt_queue)  # type: ignore
 
     async def close(self):
-        await self.channel.close()
-        await self.connection.close()
+        # Close the connection only; channels will be closed implicitly.
+        # This avoids robust channel restore callbacks racing against a closed transport.
+        try:
+            if not self.connection.is_closed:
+                await self.connection.close()
+        except Exception as e:
+            # Suppress shutdown-time transport errors
+            pass
 
     async def __aenter__(self) -> RabbitMessaging:
         return self
