@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from typing import Final, AsyncGenerator
 
 import aio_pika
+import structlog
 from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel, AbstractRobustQueue
 from litestar import Litestar
 from litestar.datastructures import State
@@ -14,6 +16,8 @@ from v2.config.settings import Settings
 
 PIKA_LIFETIME_KEY: Final = "pika"
 OPTIMIZATION_CHANNEL_NAME: Final = "optimization"
+
+logger: structlog.stdlib.BoundLogger = structlog.stdlib.get_logger()
 
 
 @dataclass
@@ -39,8 +43,17 @@ class RabbitMessaging:
 
     @classmethod
     async def create(cls, settings: Settings) -> RabbitMessaging:
+        # Toggle robust vs non-robust via env for debugging.
+        # Set MQ_DEBUG_NO_ROBUST=1 to see clean, direct exceptions without auto-recovery noise.
+        debug_no_robust = os.getenv("MQ_DEBUG_NO_ROBUST", "0") == "1"
+        debug_no_robust = True
+
         # todo add configuration
-        connection = await aio_pika.connect_robust("amqp://localhost/")
+        if debug_no_robust:
+            connection = await aio_pika.connect("amqp://localhost/")
+        else:
+            # You can also tune heartbeat and reconnect interval here if needed:
+            connection = await aio_pika.connect_robust("amqp://localhost/")
 
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=1)
