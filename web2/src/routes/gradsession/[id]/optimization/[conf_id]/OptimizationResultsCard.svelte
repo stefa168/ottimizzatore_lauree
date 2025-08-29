@@ -101,7 +101,8 @@
   <div class="flex items-center justify-between">
     <Collapsible.Trigger class="text-xl flex items-center enabled:cursor-pointer" disabled={(!optStatus.started)}>
       {#if optStatus.success}
-        <MdiCheckDecagram class="w-6 h-6 me-2 text-green-600"/>
+        {@const absoluteWin = log && !log.solver_time_limit_reached && log.solver_reached_optimality }
+        <MdiCheckDecagram class={["w-6 h-6 me-2", absoluteWin ? 'text-green-600' : 'text-amber-500']}/>
       {:else if optStatus.failed}
         <MdiAlertDecagramOutline class="w-6 h-6 me-2 text-destructive"/>
       {:else}
