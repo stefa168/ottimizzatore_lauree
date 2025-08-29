@@ -12,8 +12,7 @@ from pathlib import Path
 from typing import Final, AsyncGenerator, Any
 
 import structlog.stdlib
-from aio_pika import Message, DeliveryMode
-from aio_pika.abc import AbstractIncomingMessage
+import aio_pika
 from litestar import Litestar
 from litestar.datastructures import State
 
@@ -209,7 +208,7 @@ class OptimizationWorkersManager:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         try:
-            asyncio.run(OptimizationWorkersManager._async_worker(app_settings, stop_event))
+            asyncio.run(OptimizationWorkersManager._async_worker(app_settings, stop_event, log_settings_payload))
         except Exception:
             # Log any unhandled exceptions at the top level so we know why the worker died
             structlog.stdlib.get_logger().exception("Worker crashed with an unhandled exception")
@@ -217,7 +216,9 @@ class OptimizationWorkersManager:
             raise
 
     @staticmethod
-    async def _async_worker(app_settings: Settings, stop_event: EventType):
+    async def _async_worker(app_settings: Settings, stop_event: EventType, log_settings_payload: dict[str, Any] | None):
+        OptimizationWorkersManager._configure_logging_from_payload(log_settings_payload)
+
         # noinspection PyShadowingNames
         logger = structlog.stdlib.get_logger()
         db_conf = app_settings.db.config()
@@ -226,46 +227,39 @@ class OptimizationWorkersManager:
         async with AsyncExitStack() as stack:
             mq = await stack.enter_async_context(await RabbitMessaging.create(app_settings))
 
-            async def solve(message: AbstractIncomingMessage):
-                body_str = message.body.decode("utf-8")
-                payload = json.loads(body_str)
-                config_dto = OptConfCompleteDTO.model_validate(payload["config"])
-                cc_path = Path(payload["cc_path"])
-
-                retries = int(message.headers.get(RETRY_HEADER, 0))  # type: ignore[arg-type]
-
-                try:
-                    async with db_conf.get_session() as db_session:
-                        await solver_wrapper(db_session, config_dto, cc_path)
-
-                except Exception as e:
-                    logger.exception("Could not solve the optimization problem", e)
-                    if retries <= MAX_RETRIES:
-                        new_headers = dict(message.headers or {})
-                        new_headers[RETRY_HEADER] = retries + 1
-
-                        assert message.routing_key is not None
-                        await mq.channel.default_exchange.publish(
-                            Message(
-                                body=message.body,
-                                headers=new_headers,
-                                delivery_mode=DeliveryMode.PERSISTENT
-                            ),
-                            routing_key=message.routing_key
-                        )
-                    else:
-                        logger.warning(f"Dropping message after {retries} retries")
-                        # todo log this issue somewhere...
-                finally:
-                    await message.ack()
-
-            await mq.opt_queue.consume(solve)
-            # await stop_event.wait()
             loop = asyncio.get_running_loop()
+            loop.set_exception_handler(lambda _loop, ctx: logger.error("Unhandled task exception", exc_info=ctx.get("exception")))
 
-            # turn the multiprocessing.Event into an awaitable
-            await loop.run_in_executor(None, stop_event.wait)
-            logger.info("Shutting down")
+            try:
+                while not stop_event.is_set():
+                    try:
+                        # timeout lets us check stop_event periodically
+                        message = await mq.opt_queue.get(timeout=1)
+
+                        # This context acks on success; on exception it nacks with requeue=True
+                        async with message.process(requeue=True) as ctx:
+                            body_str = message.body.decode("utf-8")
+                            payload = json.loads(body_str)
+                            config_dto = OptConfCompleteDTO.model_validate(payload["config"])
+                            cc_path = Path(payload["cc_path"])
+
+                            # Process the job; any error here will produce a clean, direct traceback
+                            await solver_wrapper(db_conf, config_dto, cc_path)
+
+                    except aio_pika.exceptions.QueueEmpty:
+                        await asyncio.sleep(0.1)
+                        continue
+
+                    except Exception as e:
+                        # Log full stack and re-raise so the worker dies and you see the primary error
+                        logger.exception("Job failed while processing message", e)
+                        continue
+
+                # If we reach here, ack has already been sent by .process()
+            except Exception as e:
+                logger.exception(f"Error while optimizing: {e}", e)
+            finally:
+                logger.info("Shutting down")
 
     async def __aenter__(self):
         return self

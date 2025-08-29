@@ -1,18 +1,18 @@
+import asyncio
 from pathlib import Path
 from typing import Any, cast, Iterable, Optional
 
 import structlog
+from advanced_alchemy.config import SQLAlchemyAsyncConfig
 from advanced_alchemy.repository import LoadSpec
-from litestar import status_codes as http_statuses
-from litestar.exceptions import HTTPException
 from pandas import DataFrame
 from pyomo.core import ConcreteModel
 from pyomo.core.base.set import OrderedScalarSet
 from pyomo.opt import SolverFactory, SolverResults, SolverStatus, TerminationCondition, OptSolver
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from optimization.models import create_min_durata_model, create_max_durata_model
-from utils import FileChangeHandler
+from optimization.models import create_min_durata_model
 from v2.db.models import GradSession, OptimizationConfiguration, SolverEnum, OptimizationLog, SolutionCommission, \
     SessionProfessor
 from v2.domain.grad_sessions.deps import GradSessionRepository, OptimizationConfigurationRepository, \
@@ -107,34 +107,76 @@ async def get_session_professor_raise(session_id: int,
 
 
 async def solver_wrapper(
-        db_session: AsyncSession,
+        db_conf: SQLAlchemyAsyncConfig,
         config_dto: OptConfCompleteDTO,
         cc_path: Path
 ) -> bool:
-    logger.bind(opt_id=config_dto.id, session_id=config_dto.session_id)
-    logger.info(f"Starting optimization")
-    conf_repo = OptimizationConfigurationRepository(session=db_session)
+    logg = logger.bind(opt_id=config_dto.id, session_id=config_dto.session_id)
+    logg.info(f"Starting optimization")
 
-    config = await conf_repo.get_one_or_none(OptimizationConfiguration.id == config_dto.id)
+    def run_solver_blocking(config: OptimizationConfiguration, cc_path: Path):
+        return asyncio.run(run_solver(config, cc_path))
 
-    if config is None:
-        raise RuntimeError("Optimization configuration does not exist")
+    async with db_conf.get_session() as db_session:
+        conf_repo = OptimizationConfigurationRepository(session=db_session)
+        config = await get_opt_conf_raise(config_dto.id, config_dto.session_id, conf_repo)
+        # db_session.expunge(config)
 
     try:
-        await solve_model(config, cc_path, db_session)
-        await conf_repo.add(config, auto_commit=True)
-        # await conf_repo.session.flush()
-        # await conf_repo.session.commit()
-        # await conf_repo.update(config)
+        # results, model, opt_log = await run_solver(config, cc_path)
+        results, model, opt_log = await asyncio.to_thread(run_solver_blocking, config, cc_path)
     except Exception as e:
-        logger.error(f"An error occurred while solving the optimization problem: {e}", e)
+        logg.exception(f"An error occurred while solving the optimization problem", e)
         return False
-    else:
-        logger.info("Optimization completed and correctly saved to database.")
-        return True
+
+    if not opt_log.success:
+        # todo decide what to do in case of failure
+        logg.error(f"Solver encountered an error. Solver status: {results.solver.status}")
+        return False
+    if not opt_log.solver_reached_optimality and not opt_log.solver_time_limit_reached:
+        # todo decide what to do in case of failure
+        logg.error(f"Solver failed to reach optimality. Solver status: {results.solver.status}")
+        return False
+
+    async with db_conf.get_session() as db_session:
+        # todo return also the reason why the solver stopped
+        morning_commissions, afternoon_commissions = await generate_commissions_from_model(config, model, db_session)
+        new_commissions = morning_commissions + afternoon_commissions
+
+        conf_repo = OptimizationConfigurationRepository(session=db_session)
+        # Re-load the persistent parent, then apply changes on it
+        persistent = await get_opt_conf_raise(
+            config.id,
+            config.session_id,
+            conf_repo,
+            load=[selectinload(OptimizationConfiguration.commissions).options(
+                selectinload(SolutionCommission.professors),
+                selectinload(SolutionCommission.students)
+            )]
+        )
+
+        opt_log.opt_config = persistent
+
+        # Replace existing commissions (if any). This is just a precaution
+        persistent.optimization_log = opt_log
+        persistent.commissions.clear()
+        persistent.commissions.extend(new_commissions)
+
+        try:
+            await db_session.commit()
+            await db_session.flush()
+        except Exception as e:
+            logg.exception("Error while saving optimization results to the database")
+            raise
+
+    logg.info("Optimization completed and correctly saved to database.")
+    return True
 
 
-async def solve_model(config: OptimizationConfiguration, cc_path: Path, db_session: AsyncSession):
+async def run_solver(
+        config: OptimizationConfiguration,
+        cc_path: Path
+) -> tuple[SolverResults, ConcreteModel, OptimizationLog]:
     dat_path = cc_path / "temp.dat"
 
     model: ConcreteModel
@@ -143,14 +185,14 @@ async def solve_model(config: OptimizationConfiguration, cc_path: Path, db_sessi
         model = create_min_durata_model(dat_path)
     else:
         # maxdurata
-        model = create_max_durata_model(dat_path)
+        # model = create_max_durata_model(dat_path)
         raise RuntimeError("Max durata model deprecated")
     logger.debug("Optimization model created")
 
     model_filename = cc_path / "model.lp"
     # Actually create the model that will be solved
     model.write(str(model_filename), io_options={'symbolic_solver_labels': True})
-    logger.debug(f"Model written to file ${model_filename}")
+    logger.debug(f"Model written to file {model_filename}")
 
     solver_arguments: dict[str, Any] = {'options': {}}
 
@@ -172,61 +214,29 @@ async def solve_model(config: OptimizationConfiguration, cc_path: Path, db_sessi
     solver: OptSolver = SolverFactory(str(config.solver.value).lower(), **solver_arguments)
     solver_log_path = cc_path / "solver.log"
 
-    # Wipe the file clean if it already exists, otherwise the existing content will mess with the watchdog logger.
-    solver_log_path.open("w").close()
-    solver_log_handler = FileChangeHandler(logger, solver_log_path)
-
-    # Small logger just to print the solver output to the main logger
-    def solver_log_observer(new_lines):
-        for line in new_lines:
-            logger.debug("", new_line=line)
-
-    # solver_log_handler.register_observer(solver_log_observer)
-
-    # observer = Observer()
-    # observer.schedule(solver_log_handler, str(solver_log_path.parent), recursive=False)
-    # observer.start()
     logger.info("Running solver...")
-    opt_log = OptimizationLog(
-        opt_config=config
-    )
+    opt_log = OptimizationLog()
 
     opt_log.started()
+    with solver_log_path.open('a+') as f:
+        f.write(f'Optimizer try started at {str(opt_log.start_time.isoformat())}')
+
     results: SolverResults = solver.solve(
         model,
         keepfiles=True,
         logfile=str(solver_log_path.absolute())
     )
     logger.info(f"The solver has exited. Status: {results.solver.status}")
-    # logger.debug("Stopping observer...")
-    # observer.stop()
-    # logger.debug("Observer stopped. Joining observer thread...")
-    # observer.join()
-    # logger.debug("Observer thread joined.")
 
     solver_ok = results.solver.status == SolverStatus.ok
     solver_reached_optimality = results.solver.termination_condition == TerminationCondition.optimal
     solver_reached_time_limit = results.solver.termination_condition == TerminationCondition.maxTimeLimit
 
     opt_log.finished(solver_ok, solver_reached_optimality, solver_reached_time_limit)
-    opt_log.log = solver_log_handler.read_file()
+    with solver_log_path.open('r') as f:
+        opt_log.log = f.read()
 
-    config.optimization_log = opt_log
-
-    if not solver_ok:
-        # todo decide what to do in case of failure
-        logger.error(f"Solver encountered an error. Solver status: {results.solver.status}")
-        return
-
-    if solver_reached_optimality or solver_reached_time_limit:
-        # todo return also the reason why the solver stopped
-        morning_commissions, afternoon_commissions = await generate_commissions_from_model(config, model, db_session)
-        config.commissions = morning_commissions + afternoon_commissions
-        return
-    else:
-        # todo decide what to do in case of failure
-        logger.error(f"Solver failed to reach optimality. Solver status: {results.solver.status}")
-        return
+    return results, model, opt_log
 
 
 async def generate_commissions_from_model(
