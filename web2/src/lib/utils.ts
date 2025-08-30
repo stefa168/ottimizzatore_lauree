@@ -1,7 +1,7 @@
 import {clsx, type ClassValue} from "clsx";
 import {twMerge} from "tailwind-merge";
 import type {
-  GradSessionEntry,
+  GradSessionEntry, NameSurname,
   OptimizationStatus,
   OptimizationTaskState,
   ProfessorBurden,
@@ -34,6 +34,11 @@ export const capitalize = (s: string) =>
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+
+export const fullName = (v: NameSurname | undefined, surnameFirst = true) => {
+  if (!v) return '';
+  return surnameFirst ? `${v.surname} ${v.first_name}` : `${v.first_name} ${v.surname}`;
+}
 
 export const getDegreeLevelString = (s: GradSessionEntry) => {
   switch (s.degree_level) {

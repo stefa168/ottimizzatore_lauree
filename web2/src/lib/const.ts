@@ -18,3 +18,8 @@ export const AvailabilityOptions = new Map<string, ValueLabelStructure>([
   ["morning", {value: 'morning', label: 'Solo la Mattina'}],
   ["afternoon", {value: 'afternoon', label: 'Solo il Pomeriggio'}],
 ]);
+
+export const DegreeLevels = new Map<string, ValueLabelStructure>([
+  ["bachelors", {value: 'bachelors', label: "Triennale"}],
+  ["masters", {value: 'masters', label: 'Magistrale'}]
+]);
