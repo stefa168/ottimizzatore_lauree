@@ -1,22 +1,30 @@
-import type {ColumnDef} from "@tanstack/table-core";
+import type {ColumnDef, InitialTableState} from "@tanstack/table-core";
 import type {OptimizationConfigurationRecap} from "@/api/OptimizationConfigurationApi";
 import {dateFormatter} from "@/utils";
-import {renderComponent, renderSnippet} from "@/components/ui/data-table";
+import {renderComponent} from "@/components/ui/data-table";
+import {sortableHeader} from "@/components/table/utils";
 import DataTableActions from "./DataTableActions.svelte";
 import NewConfigurationButton from "./NewConfigurationButton.svelte";
+
+export const initialTableState: () => InitialTableState = () => ({
+  sorting: [{
+    id: 'id',
+    desc: false
+  }]
+});
 
 export const columns: (session_id: number) => ColumnDef<OptimizationConfigurationRecap>[] = (session_id) => [
   {
     accessorKey: "id",
-    header: "ID"
+    header: ({column}) => sortableHeader("ID", column)
   },
   {
     accessorKey: 'title',
-    header: "Titolo"
+    header: ({column}) => sortableHeader("Titolo", column)
   },
   {
     accessorKey: "created_at",
-    header: "Data di Creazione",
+    header: ({column}) => sortableHeader("Data di Creazione", column),
     cell: ({row}) => dateFormatter.format(row.original.created_at)
   },
   {
