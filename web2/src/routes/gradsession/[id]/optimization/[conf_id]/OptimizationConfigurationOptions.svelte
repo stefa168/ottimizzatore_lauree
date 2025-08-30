@@ -77,6 +77,7 @@
     form.reset();
   }
   export const isValid = async () => await validateForm({focusOnError: true}).then(v => v.valid)
+  export const hasTaintedFields = () => taintedFieldCount > 0;
   const taintedFieldCount = $derived($tainted ? Object.keys($tainted).length : 0);
 
   let collapsibleOpen = $state(true);

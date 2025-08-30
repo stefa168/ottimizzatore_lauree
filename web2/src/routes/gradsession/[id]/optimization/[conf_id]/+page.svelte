@@ -20,13 +20,15 @@
     expandLevel: 0,
     elementAttributes: {style: 'margin-bottom: calc(var(--spacing) * 4)'} // Directly from tailwind
   }));
+
+  const optimizationStartPreflight = async () => optConfForm !== null && !optConfForm?.hasTaintedFields() && await optConfForm?.isValid()
 </script>
 
 {#if browser && $debugEnabled}
   <InspectVals {configuration} {optStatus} {sessionData}/>
 {/if}
 
-<OptimizationResultsCard {optStatus} {sessionData} bind:configuration/>
+<OptimizationResultsCard {optStatus} {sessionData} bind:configuration {optimizationStartPreflight}/>
 
 {#key configuration}
   <OptimizationConfigurationOptions bind:this={optConfForm} {optStatus} bind:configuration class="mt-4"/>

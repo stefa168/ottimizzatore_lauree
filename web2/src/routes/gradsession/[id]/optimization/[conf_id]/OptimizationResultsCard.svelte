@@ -35,16 +35,30 @@
     optStatus: OptimizationStatus;
     configuration: OptimizationConfiguration;
     sessionData: SessionData;
-    optimizationStartCallback?: () => Promise<void>
+    optimizationStartCallback?: () => Promise<void>,
+    optimizationStartPreflight?: () => Promise<boolean>
   }
 
-  let {optStatus, configuration = $bindable(), sessionData, optimizationStartCallback}: Props = $props();
+  let {
+    optStatus,
+    configuration = $bindable(),
+    sessionData,
+    optimizationStartCallback,
+    optimizationStartPreflight = () => true
+  }: Props = $props();
 
   let collapsibleOpen = $state(true);
   let log = $derived(configuration.optimization_log);
   const abortController = new AbortController();
   let pollingPromise: Promise<void> | null = $state(null);
   let errorMessage: ApiErrorResponse | undefined = $state(undefined);
+
+  const safeStartOptimization = async () => {
+    if (await optimizationStartPreflight())
+      await startOptimization();
+    else
+      alert("Attualmente ci sono delle modifiche non salvate nella configurazione. Per continuare, salvarle o annullarle");
+  }
 
   const startOptimization = async () => {
     try {
@@ -236,7 +250,7 @@
       <!-- We still have to start the optimization -->
       {#if !optStatus.started}
         <div class="flex items-center flex-col">
-          <Button class="hover:cursor-pointer" onclick={startOptimization}>
+          <Button class="hover:cursor-pointer" onclick={safeStartOptimization}>
             <MdiCubeSend class="h-4 w-4 me-2"/>
             <span>Avvia l'ottimizzazione</span>
           </Button>
