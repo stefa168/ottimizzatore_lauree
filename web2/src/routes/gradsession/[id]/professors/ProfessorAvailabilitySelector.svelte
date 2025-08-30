@@ -1,4 +1,5 @@
 <script lang="ts">
+  // noinspection ES6UnusedImports
   import * as Select from '@/components/ui/select'
   import type {ProfessorAvailability} from "@/types";
   import {AvailabilityOptions} from "@/const";

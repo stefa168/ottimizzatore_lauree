@@ -97,7 +97,7 @@
       <MdiChevronRight
           class={[
             "w-6 h-6 ms-2 transition-transform duration-200",
-            collapsibleOpen ? 'rotate-90' : ''
+            collapsibleOpen && 'rotate-90'
           ]}
           aria-hidden="true"
       />

@@ -1,4 +1,5 @@
 <script lang="ts">
+  // noinspection ES6UnusedImports
   import * as Select from '@/components/ui/select'
   import type {UniversityRole} from "@/types";
   import {UniversityRoles} from "@/const";
