@@ -205,6 +205,30 @@
             <Form.Description>La durata massima della singola commissione (in minuti)</Form.Description>
             <Form.FieldErrors/>
           </Form.Field>
+
+          <div class="grid grid-cols-2 gap-4 mt-4">
+            <Form.Field {form} name="max_commissions_morning">
+              <Form.Control>
+                {#snippet children({props})}
+                  <Form.Label>Numero massimo di Commissioni Mattutine</Form.Label>
+                  <Input type="number" {...props} bind:value={$formData.max_commissions_morning}/>
+                {/snippet}
+              </Form.Control>
+              <Form.Description>Quante commissioni possono essere previste al massimo la mattina</Form.Description>
+              <Form.FieldErrors/>
+            </Form.Field>
+
+            <Form.Field {form} name="max_commissions_afternoon">
+              <Form.Control>
+                {#snippet children({props})}
+                  <Form.Label>Numero massimo di Commissioni Pomeridiane</Form.Label>
+                  <Input type="number" {...props} bind:value={$formData.max_commissions_afternoon}/>
+                {/snippet}
+              </Form.Control>
+              <Form.Description>Quante commissioni possono essere previste al massimo il pomeriggio</Form.Description>
+              <Form.FieldErrors/>
+            </Form.Field>
+          </div>
         </div>
 
         <div>
