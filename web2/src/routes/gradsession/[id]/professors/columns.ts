@@ -1,5 +1,5 @@
 // Libraries
-import type {Column, ColumnDef, FilterFn, InitialTableState, SortingFn} from "@tanstack/table-core";
+import type {ColumnDef, FilterFn, InitialTableState, SortingFn} from "@tanstack/table-core";
 import {renderComponent} from "@/components/ui/data-table";
 import {toast} from "svelte-sonner";
 
@@ -16,17 +16,10 @@ import StyledFullName from "@/components/StyledFullName.svelte";
 import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
 import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
 import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
-import DataTableColumnButton from "@/components/DataTableColumnButton.svelte";
 import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
 import {AvailabilityOptions, UniversityRoles} from "@/const";
 import {fromRawDates} from "@/api/RawTypes";
-
-function sortableHeader<T>(title: string, column: Column<T>) {
-  return renderComponent(DataTableColumnButton, {
-    title, column,
-    onclickcapture: column.getToggleSortingHandler(),
-  });
-}
+import {sortableHeader} from "@/components/table/utils";
 
 export const initialTableState: () => InitialTableState = () => ({
   sorting: [{
