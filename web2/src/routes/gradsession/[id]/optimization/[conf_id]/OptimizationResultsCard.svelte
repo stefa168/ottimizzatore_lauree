@@ -2,7 +2,9 @@
   import {DateTime} from "luxon";
   import {computeTimeDifference, optimizationTaskStatusFactory} from "@/utils.js";
   import type {ApiErrorResponse, OptimizationStatus} from "@/types";
-  import {type OptimizationConfiguration, OptimizationConfigurationApi} from "@/api/OptimizationConfigurationApi";
+  import type {OptimizationConfiguration} from "@/schema/optimization";
+  import {startOptimization as startOptimizationCommand, watchConfiguration} from "@/api/optimization.remote";
+  import {toApiError} from "@/errors";
   import type {SessionData} from "../../../SessionData.svelte";
 
   // Components
@@ -30,8 +32,6 @@
   import IcBaselineErrorOutline from '~icons/ic/baseline-error-outline'
   import LucideLogs from '~icons/lucide/logs'
   import LucideChevronRight from '~icons/lucide/chevron-right'
-  import {onDestroy, onMount} from "svelte";
-  import {pollUntil} from "@/pollingUtility";
 
   interface Props {
     optStatus: OptimizationStatus;
@@ -51,9 +51,22 @@
 
   let collapsibleOpen = $state(true);
   let log = $derived(configuration.optimization_log);
-  const abortController = new AbortController();
-  let pollingPromise: Promise<void> | null = $state(null);
   let errorMessage: ApiErrorResponse | undefined = $state(undefined);
+
+  // While the optimization runs, the server streams the configuration until the optimization ends
+  let watching = $state(optStatus.running);
+  const live = $derived(watching
+    ? watchConfiguration({sid: sessionData.session.id, cid: configuration.id})
+    : null);
+
+  $effect(() => {
+    const latest = live?.current;
+    // Only replace the configuration when the status changes, so the page isn't re-rendered every few seconds
+    if (latest && optimizationTaskStatusFactory(latest).status !== optStatus.status)
+      configuration = latest;
+    if (live?.done)
+      watching = false;
+  });
 
   const safeStartOptimization = async () => {
     if (await optimizationStartPreflight())
@@ -64,50 +77,15 @@
 
   const startOptimization = async () => {
     try {
-      await OptimizationConfigurationApi(fetch).startOptimization(sessionData.session.id, configuration.id)
+      await startOptimizationCommand({sid: sessionData.session.id, cid: configuration.id});
     } catch (e) {
-      errorMessage = e as ApiErrorResponse;
+      errorMessage = toApiError(e);
       throw e
     }
     optimizationStartCallback?.();
     configuration = {...configuration, run_lock: true}; // Needed to actually trigger reactivity!
-    await pollForOptimizationEnd();
+    watching = true;
   }
-
-  // Can be called in the `onMount` lifecycle hook, or by the `startOptimization` function. Will throw if called twice.
-  async function pollForOptimizationEnd() {
-    if (pollingPromise) throw new Error("Should not call the polling twice");
-
-    const p = pollUntil(
-      async (signal) => OptimizationConfigurationApi(fetch).getComplete(sessionData.session.id, configuration.id, {signal}), {
-        signal: abortController.signal,
-        retries: Number.POSITIVE_INFINITY,
-        isDone(result) {
-          let status = optimizationTaskStatusFactory(result);
-          console.debug(JSON.stringify(status));
-          return ['ended', 'failed'].includes(status.status);
-        }
-      }
-    ).catch(e => console.warn(e)) // Just to silence the error thrown
-      .then(r => {
-        configuration = r!
-
-      })
-      .finally(() => pollingPromise = null);
-
-    pollingPromise = p;
-    return await p;
-  }
-
-  onMount(async () => {
-    if (optStatus.running) {
-      await pollForOptimizationEnd();
-    }
-  });
-
-  onDestroy(() => {
-    abortController.abort();
-  })
 </script>
 
 <Collapsible.Root

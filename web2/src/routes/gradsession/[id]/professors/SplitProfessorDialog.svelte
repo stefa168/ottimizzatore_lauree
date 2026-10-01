@@ -7,13 +7,13 @@
   import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
   import type {SessionData} from "../../SessionData.svelte";
   import type {
-    ApiErrorResponse,
     GradSessionEntry,
     ProfessorAvailability,
     SessionProfessor,
     SessionProfessorSplitConflict
   } from "@/types";
-  import {GradSessionApi} from "@/api/GradSesssionApi";
+  import {splitSessionProfessor} from "@/api/professors.remote";
+  import {toApiError} from "@/errors";
   import {fullName, getDegreeLevelString} from "@/utils";
   import {toast} from "svelte-sonner";
   import {untrack} from "svelte";
@@ -90,24 +90,28 @@
     if (!target || !valid) return;
     saving = true;
     try {
-      await GradSessionApi().splitSessionProfessor(sd.session.id, target.id, parts.map((p, i) => ({
-        when: p.when,
-        note: p.note.trim() || null,
-        students: entries.filter(e => assignment[e.id] === i).map(e => e.id)
-      })), ignoreSubstitutes);
-      await sd.refresh();
+      await splitSessionProfessor({
+        sid: sd.session.id,
+        spId: target.id,
+        parts: parts.map((p, i) => ({
+          when: p.when,
+          note: p.note.trim() || null,
+          students: entries.filter(e => assignment[e.id] === i).map(e => e.id)
+        })),
+        ignoreSubstitutes
+      });
       toast.success(isEdit ? "Divisione del docente aggiornata." : "Docente diviso correttamente.");
       onClose();
     } catch (err) {
-      const apiError = err as ApiErrorResponse<SessionProfessorSplitConflict>;
-      if (apiError?.status_code === 409 && apiError.extra?.had_substitutes) {
+      const apiError = toApiError<SessionProfessorSplitConflict>(err);
+      if (apiError.status_code === 409 && apiError.extra?.had_substitutes) {
         substituteConflict = true;
         return;
       }
       console.error(err);
       toast.error("Si è verificato un errore durante la divisione del docente", {
         duration: Number.POSITIVE_INFINITY,
-        description: apiError?.detail ?? JSON.stringify(err)
+        description: apiError.detail
       });
     } finally {
       saving = false;

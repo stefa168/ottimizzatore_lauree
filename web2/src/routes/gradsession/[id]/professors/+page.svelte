@@ -3,7 +3,7 @@
   import DataTable from "@/components/data-table.svelte";
   import {getSessionData} from "../../SessionData.svelte";
   import {Input} from "@/components/ui/input";
-  import type {ApiErrorResponse, SessionProfessor} from "@/types";
+  import type {SessionProfessor} from "@/types";
   import {Button} from "@/components/ui/button";
   // noinspection ES6UnusedImports
   import * as Dialog from "@/components/ui/dialog";
@@ -12,7 +12,8 @@
   import SplitProfessorDialog from "./SplitProfessorDialog.svelte";
   import SubstituteProfessorDialog from "./SubstituteProfessorDialog.svelte";
   import type {ProfessorAction} from "./ProfessorRowActions.svelte";
-  import {GradSessionApi} from "@/api/GradSesssionApi";
+  import {removeSubstitute, splitSessionProfessor} from "@/api/professors.remote";
+  import {toApiError} from "@/errors";
   import {fullName} from "@/utils";
   import {toast} from "svelte-sonner";
   import {LucideLoaderCircle} from "@lucide/svelte";
@@ -53,7 +54,7 @@
             "torneranno al docente originale.",
           confirmLabel: "Rimuovi divisione",
           run: async () => {
-            await GradSessionApi().splitSessionProfessor(sessionData.session.id, sp.id, [], true);
+            await splitSessionProfessor({sid: sessionData.session.id, spId: sp.id, parts: [], ignoreSubstitutes: true});
             toast.success("Divisione rimossa.");
           }
         };
@@ -66,7 +67,7 @@
             `${fullName(parent?.professor)}.`,
           confirmLabel: "Rimuovi sostituto",
           run: async () => {
-            await GradSessionApi().removeSubstitute(sessionData.session.id, sp.id);
+            await removeSubstitute({sid: sessionData.session.id, spId: sp.id});
             toast.success("Sostituto rimosso.");
           }
         };
@@ -80,13 +81,12 @@
     confirming = true;
     try {
       await confirmation.run();
-      await sessionData.refresh();
       confirmation = null;
     } catch (err) {
       console.error(err);
       toast.error("Si è verificato un errore durante l'operazione", {
         duration: Number.POSITIVE_INFINITY,
-        description: (err as ApiErrorResponse)?.detail ?? JSON.stringify(err)
+        description: toApiError(err).detail
       });
     } finally {
       confirming = false;

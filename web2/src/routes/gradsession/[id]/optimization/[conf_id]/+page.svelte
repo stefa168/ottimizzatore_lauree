@@ -8,9 +8,10 @@
   import {optimizationTaskStatusFactory} from "@/utils";
   import {getSessionData} from "../../../SessionData.svelte";
   import OptimizationResultsCard from "./OptimizationResultsCard.svelte";
+  import {getConfiguration} from "@/api/optimization.remote";
 
-  let {data}: PageProps = $props();
-  let configuration = $derived(data.configuration);
+  let {params}: PageProps = $props();
+  let configuration = $derived(await getConfiguration({sid: Number(params.id), cid: Number(params.conf_id)}));
 
   let optConfForm: OptimizationConfigurationOptions | null = $state(null);
   const sessionData = getSessionData();

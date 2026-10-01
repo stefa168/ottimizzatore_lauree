@@ -5,7 +5,11 @@ import 'unplugin-icons/types/svelte'
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
+		interface Error {
+			message: string;
+			// Details sent by the backend with the error (e.g. `missing_columns`, `had_substitutes`)
+			extra?: Record<string, unknown>;
+		}
 		// interface Locals {}
 		// interface PageData {}
 		// interface PageState {}

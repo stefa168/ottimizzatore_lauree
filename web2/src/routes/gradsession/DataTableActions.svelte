@@ -3,27 +3,26 @@
   import {Button} from "@/components/ui/button";
   // noinspection ES6UnusedImports
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
-  import {goto, invalidate, invalidateAll} from "$app/navigation";
   import ButtonGroup from "@/components/ButtonGroup.svelte";
-  import {useQueryClient} from "@tanstack/svelte-query";
-  import {GradSessionApi, GradSessionApiQueries} from "@/api/GradSesssionApi";
+  import {deleteSession as deleteSessionCommand} from "@/api/sessions.remote";
+  import {toApiError} from "@/errors";
 
   import LucideLoaderCircle from '~icons/lucide/loader-circle'
   import {toast} from "svelte-sonner";
 
   let {id}: { id: number; } = $props();
 
-  const queryClient = useQueryClient();
-  const gradSessionApiQueries = GradSessionApiQueries(queryClient);
-  const deleteSessionMutation = gradSessionApiQueries.deleteSessionMutation()
+  let isDeleting = $state(false);
 
-  const isDeleting = $derived($deleteSessionMutation.isPending)
-
+  // The command also refreshes the list of sessions
   const deleteSession = async () => {
-    await GradSessionApi().delete(id)
-      .then(() => invalidate((url) => url.href.includes("sessions")))
+    isDeleting = true;
+    await deleteSessionCommand(id)
       .then(() => toast.success("La sessione è stata eliminata con successo."))
-      .catch((e) => toast.error("Si è verificato un errore durante la cancellazione della sessione", e));
+      .catch((e) => toast.error("Si è verificato un errore durante la cancellazione della sessione", {
+        description: toApiError(e).detail
+      }))
+      .finally(() => isDeleting = false);
   }
 </script>
 

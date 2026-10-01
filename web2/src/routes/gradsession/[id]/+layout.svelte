@@ -11,9 +11,28 @@
   import {page} from '$app/state';
   import {setSessionData} from "../SessionData.svelte";
   import EditableSessionTitle from "./EditableSessionTitle.svelte";
+  import {getSession, getSessionProfessors, getSessionStudents} from "@/api/sessions.remote";
 
-  let {children, data}: LayoutProps = $props();
-  let sessionData = setSessionData(data.session, data.student_entries, data.professors);
+  let {children, params}: LayoutProps = $props();
+  const sessionId = $derived(Number(params.id));
+
+  // The context must be set before the first `await`, otherwise the child routes can't see it. Its getters are only
+  // read by the markup below, which waits for the queries (see the {#if}), and they follow the queries when refreshed.
+  let sessionData = setSessionData({
+    get session() {
+      return session;
+    },
+    get students() {
+      return students;
+    },
+    get professors() {
+      return professors;
+    },
+  });
+
+  const session = $derived(await getSession(sessionId));
+  const students = $derived(await getSessionStudents(sessionId));
+  const professors = $derived(await getSessionProfessors(sessionId));
 
   type Section = { label: string, slug: string, path?: string, icon?: Component<SvelteHTMLElements['svg']> };
   const sections: Section[] = [
@@ -43,6 +62,8 @@
   </li>
 {/snippet}
 
+<!-- Referencing the awaited values makes the whole layout wait for them -->
+{#if session && students && professors}
 <div class="container mx-auto pb-10">
   <EditableSessionTitle {sessionData}/>
 
@@ -54,7 +75,7 @@
       {#each sections as section}
         {@const
           url = section.slug !== 'conf' ?
-          `/gradsession/${data.session_id}/${section.path ?? section.slug}` :
+          `/gradsession/${sessionId}/${section.path ?? section.slug}` :
           page.url
         }
         {@render tab(url, section, !isConfigOpen && currentSection === section.slug || isConfigOpen && section.slug === 'conf')}
@@ -64,3 +85,4 @@
 
   {@render children?.()}
 </div>
+{/if}

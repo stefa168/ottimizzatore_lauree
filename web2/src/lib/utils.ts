@@ -8,7 +8,7 @@ import type {
   SessionProfessor,
   TextTemplates
 } from "@/types";
-import type {OptimizationConfiguration} from "@/api/OptimizationConfigurationApi";
+import type {OptimizationConfiguration} from "@/schema/optimization";
 import {DateTime, Duration} from 'luxon'
 
 export function cn(...inputs: ClassValue[]) {

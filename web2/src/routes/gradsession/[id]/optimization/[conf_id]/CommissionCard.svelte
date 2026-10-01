@@ -3,7 +3,7 @@
   import * as Card from "$lib/components/ui/card";
   import {formatTime} from "$lib/utils";
   import {SessionData} from "../../../SessionData.svelte";
-  import type {SolutionCommission} from "@/api/OptimizationConfigurationApi";
+  import type {SolutionCommission} from "@/schema/optimization";
 
   interface Props {
     sessionData: SessionData;

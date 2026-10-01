@@ -1,9 +1,9 @@
 <script lang="ts">
   import DataTable from "@/components/data-table.svelte";
   import {columns} from "./columns";
-  import type {PageProps} from "./$types";
+  import {getSessions} from "@/api/sessions.remote";
 
-  let {data}: PageProps = $props();
+  const sessions = $derived(await getSessions());
 </script>
 
 <div class="border-b-2 mb-6">
@@ -12,10 +12,4 @@
     generazione delle commissioni.</p>
 </div>
 
-{#await data.sessions}
-  Caricando le sessioni attive...
-{:then sessions}
-  <DataTable data={sessions} columns={columns}/>
-{:catch error}
-  Errore: {JSON.stringify(error)}
-{/await}
+<DataTable data={sessions} columns={columns}/>

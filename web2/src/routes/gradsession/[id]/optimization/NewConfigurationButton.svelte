@@ -3,7 +3,7 @@
   import SuspenseButton from "@/components/suspense/SuspenseButton.svelte";
   import MdiFilePlus from '~icons/mdi/file-plus'
   import MdiLoading from "~icons/mdi/loading";
-  import {OptimizationConfigurationApi} from "@/api/OptimizationConfigurationApi.js";
+  import {newConfiguration} from "@/api/optimization.remote";
   import {goto} from "$app/navigation";
 
   interface Props {
@@ -13,7 +13,7 @@
   const {session_id}: Props = $props();
 
   const onclick = async () => {
-    const newConfig = await OptimizationConfigurationApi(fetch).newOptConf(session_id)
+    const newConfig = await newConfiguration({sid: session_id})
     const basePath = location.pathname.endsWith('/') ? location.pathname.slice(0, -1) : location.pathname;
     await goto(`${basePath}/${newConfig.id}`)
   }

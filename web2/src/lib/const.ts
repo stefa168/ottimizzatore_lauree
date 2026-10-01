@@ -3,7 +3,6 @@ import type {ValueLabelStructure} from "@/types";
 
 export const EXCEL_MIME_TYPES = ['xls', 'xlsx', 'ods'].map(x => mime_types[x])
 export const EXCEL_MIME_STRING = EXCEL_MIME_TYPES.reduce((prev, cur) => prev.concat(", ", cur));
-export const PUBLIC_BACKEND_URL = "http://127.0.0.1:8000/api/v1";
 
 export const UniversityRoles = new Map<string, ValueLabelStructure>([
   ["ordinary", {value: 'ordinary', label: 'Professore Ordinario'}],

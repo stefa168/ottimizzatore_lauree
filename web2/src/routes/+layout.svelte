@@ -4,12 +4,10 @@
 
   import '../app.css';
 
-  import {QueryClientProvider} from "@tanstack/svelte-query";
-  import {SvelteQueryDevtools} from "@tanstack/svelte-query-devtools";
   import AppNavbar from "@/components/AppNavbar.svelte";
   import {Toaster} from "@/components/ui/sonner";
 
-  let {data, children}: LayoutProps = $props();
+  let {children}: LayoutProps = $props();
 </script>
 
 <svelte:head>
@@ -20,12 +18,10 @@
 <ModeWatcher/>
 <Toaster closeButton richColors/>
 
-<QueryClientProvider client={data.queryClient}>
-  <div class="flex min-h-screen w-full flex-col">
-    <AppNavbar/>
-    <main class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4">
-      {@render children?.()}
-    </main>
-  </div>
-  <SvelteQueryDevtools buttonPosition="bottom-left"/>
-</QueryClientProvider>
+<div class="flex min-h-screen w-full flex-col">
+  <AppNavbar/>
+  <main class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4">
+    <!-- Pages await remote queries; their errors (e.g. backend unreachable) are shown by the +error pages -->
+    {@render children?.()}
+  </main>
+</div>

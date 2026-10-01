@@ -23,9 +23,10 @@
   import {
     type OptimizationConfiguration,
     OptConfFormSchema,
-    OptimizationConfigurationApi,
     SolverType
-  } from "@/api/OptimizationConfigurationApi";
+  } from "@/schema/optimization";
+  import {newConfiguration, updateConfiguration} from "@/api/optimization.remote";
+  import {toApiError} from "@/errors";
   import {enumKeys} from "@/utils";
   import {browser} from "$app/environment";
   import {debugEnabled} from "@/store.svelte";
@@ -56,12 +57,12 @@
     async onUpdate({form, cancel}) {
       if (updatePromise || !form.valid) return;
 
-      updatePromise = OptimizationConfigurationApi(fetch).updateConfiguration(configuration.session_id, configuration.id, form.data);
+      updatePromise = updateConfiguration({sid: configuration.session_id, cid: configuration.id, data: form.data});
       try {
         configuration = await updatePromise;
       } catch (e: unknown) {
         console.log(e);
-        errorMessage = e as ApiErrorResponse;
+        errorMessage = toApiError(e);
         toast.error(`Si è verificato un errore durante il salvataggio della configurazione (${errorMessage.status_code})\n${errorMessage.detail}`);
         cancel();
       } finally {
@@ -139,8 +140,7 @@
         Non è possibile modificarla.
           Puoi sempre
         <SuspenseButton onclick={async () => {
-          await OptimizationConfigurationApi(fetch)
-          .newOptConf(configuration.session_id, configuration)
+          await newConfiguration({sid: configuration.session_id, cloneFrom: $state.snapshot(configuration)})
           .then((newConf) => {
             toast.success("Configurazione di ottimizzazione clonata con successo!");
             goto(`${newConf.id}`);

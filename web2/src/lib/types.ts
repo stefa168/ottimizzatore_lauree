@@ -1,4 +1,4 @@
-import type {SolutionCommission} from "@/api/OptimizationConfigurationApi";
+import type {SolutionCommission} from "@/schema/optimization";
 
 export interface ApiErrorResponse<TExtra = never> {
   detail: string,

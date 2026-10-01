@@ -3,8 +3,10 @@
   import {zod} from "sveltekit-superforms/adapters";
   import * as XLSX from 'xlsx';
   import {commissionFormSchema} from "@/schema/CommissionFormSchema";
-  import {useQueryClient} from "@tanstack/svelte-query";
-  import {GradSessionApiQueries} from "@/api/GradSesssionApi";
+  import {getExpectedColumns, uploadSession} from "@/api/sessions.remote";
+  import {toApiError} from "@/errors";
+  import type {ApiErrorResponse} from "@/types";
+  import type {CommissionFormData, UploadErrorDetails} from "@/schema/CommissionFormSchema";
 
   import {EXCEL_MIME_STRING} from "@/const";
 
@@ -22,19 +24,15 @@
   // Icons
   import MdiAlertOutline from '~icons/mdi/alert-outline'
 
-  import type {PageProps} from './$types';
-  import {goto, invalidate} from "$app/navigation";
+  import {goto} from "$app/navigation";
   import {toast} from "svelte-sonner";
   // noinspection ES6UnusedImports
   import Inspect from "svelte-inspect-value";
 
-  let {data}: PageProps = $props();
+  const expectedColumns = $derived(await getExpectedColumns());
 
-  // TSQ
-  const queryClient = useQueryClient();
-  const gradSessionApiQueries = GradSessionApiQueries(queryClient);
-
-  const uploadNewGSMutation = gradSessionApiQueries.uploadSessionMutation();
+  let upload_error = $state<ApiErrorResponse<UploadErrorDetails> | null>(null);
+  const submitting = $derived(uploadSession.pending > 0);
 
   const form = superForm(defaults(zod(commissionFormSchema)), {
     // With this setting we don't depend on a SvelteKit backend for posting or validating.
@@ -49,14 +47,18 @@
         return;
       }
 
-      await $uploadNewGSMutation.mutateAsync(form.data)
+      upload_error = null;
+      const data = form.data as CommissionFormData;
+      // The schema allows a null file only to start the form empty; a valid form always has one
+      await uploadSession({title: data.title, only: data.only, excel: data.excel!})
         .then(s => {
-          invalidate((url) => url.href.includes("sessions"));
           toast.success("Commissione creata con successo! Apertura in corso...");
-          return s
+          return goto(`/gradsession/${s.id}`);
         })
-        .then((s) => goto(`/gradsession/${s.id}`))
-        .catch(() => cancel());
+        .catch((e) => {
+          upload_error = toApiError<UploadErrorDetails>(e);
+          cancel();
+        });
     }
   });
   const {form: formData, enhance} = form;
@@ -72,8 +74,6 @@
     excelFile = input.files?.[0];
   }
 
-  let upload_error = $derived($uploadNewGSMutation.error)
-  let submitting = $derived($uploadNewGSMutation.isPending)
 
   let excelRows = $derived.by(async () => {
     console.debug("Tried to recompute EXCEL file")
@@ -101,7 +101,7 @@
   let missingColumns = $derived.by(async () => {
     let columns = await excelColumns;
     if (columns.length <= 0) return new Set<string>();
-    return data.expectedColumns.difference(new Set<string>(columns));
+    return expectedColumns.difference(new Set<string>(columns));
   })
 
   let xlsxPreview = $derived.by(async () => {

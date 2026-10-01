@@ -6,10 +6,9 @@
   import StyledFullName from "@/components/StyledFullName.svelte";
   import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
   import type {SessionData} from "../../SessionData.svelte";
-  import type {ApiErrorResponse, Professor, ProfessorAvailability, SessionProfessor} from "@/types";
-  import {GradSessionApi} from "@/api/GradSesssionApi";
-  import {ProfessorsApi} from "@/api/ProfessorsApi";
-  import {fromRawList} from "@/api/RawTypes";
+  import type {Professor, ProfessorAvailability, SessionProfessor} from "@/types";
+  import {getProfessors, substituteSessionProfessor} from "@/api/professors.remote";
+  import {toApiError} from "@/errors";
   import {fullName} from "@/utils";
   import {UniversityRoles} from "@/const";
   import {toast} from "svelte-sonner";
@@ -53,10 +52,10 @@
     availability = t.availability;
     loading = true;
     try {
-      professors = fromRawList<Professor>(await ProfessorsApi().getAll());
+      professors = await getProfessors();
     } catch (err) {
       console.error(err);
-      toast.error("Impossibile caricare l'elenco dei docenti", {description: (err as ApiErrorResponse)?.detail});
+      toast.error("Impossibile caricare l'elenco dei docenti", {description: toApiError(err).detail});
     } finally {
       loading = false;
     }
@@ -79,18 +78,20 @@
     if (!target || !selected) return;
     saving = true;
     try {
-      await GradSessionApi().substituteSessionProfessor(sd.session.id, target.id, selected.id, {
+      await substituteSessionProfessor({
+        sid: sd.session.id,
+        spId: target.id,
+        professorId: selected.id,
         availability,
         note: note.trim()
       });
-      await sd.refresh();
       toast.success(isChange ? "Sostituto aggiornato." : "Sostituto assegnato correttamente.");
       onClose();
     } catch (err) {
       console.error(err);
       toast.error("Si è verificato un errore durante l'assegnazione del sostituto", {
         duration: Number.POSITIVE_INFINITY,
-        description: (err as ApiErrorResponse)?.detail ?? JSON.stringify(err)
+        description: toApiError(err).detail
       });
     } finally {
       saving = false;

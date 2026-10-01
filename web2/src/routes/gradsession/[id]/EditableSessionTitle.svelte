@@ -6,9 +6,7 @@
   import type {SessionData} from "../SessionData.svelte";
   import {Button} from "@/components/ui/button";
   import {onDestroy, tick} from "svelte";
-  import {GradSessionApi} from "@/api/GradSesssionApi";
-  import {fromRawDates} from "@/api/RawTypes";
-  import type {GradSession} from "@/types";
+  import {renameSession} from "@/api/sessions.remote";
 
   interface Props {
     sessionData: SessionData
@@ -56,12 +54,9 @@
     const newTitle = draftTitle.trim();
     if (!newTitle) return;
 
-    await GradSessionApi(fetch)
-      .changeTitle(sessionData.session.id, newTitle)
-      .then(fromRawDates<GradSession>)
-      .then((newSessionData) => {
-        // Update local data
-        sessionData.session = newSessionData;
+    // The command updates the session query, which sessionData reads from
+    await renameSession({sid: sessionData.session.id, title: newTitle})
+      .then(() => {
         editingTitle = false;
 
         showUpdated = true;

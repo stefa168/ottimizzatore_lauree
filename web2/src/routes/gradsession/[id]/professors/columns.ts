@@ -8,8 +8,8 @@ import type {SessionProfessor, UniversityRole} from "@/types";
 import type {SessionData} from "../../SessionData.svelte";
 
 // APIs
-import {ProfessorsApi} from "@/api/ProfessorsApi";
-import {GradSessionApi} from "@/api/GradSesssionApi";
+import {updateProfessor, updateSessionProfessor} from "@/api/professors.remote";
+import {toApiError} from "@/errors";
 
 // Components
 import StyledFullName from "@/components/StyledFullName.svelte";
@@ -20,7 +20,6 @@ import ProfessorNameCell from "./ProfessorNameCell.svelte";
 import ProfessorRowActions, {type ProfessorAction} from "./ProfessorRowActions.svelte";
 import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
 import {AvailabilityOptions, UniversityRoles} from "@/const";
-import {fromRawDates} from "@/api/RawTypes";
 import {sortableHeader} from "@/components/table/utils";
 
 export const initialTableState: () => InitialTableState = () => ({
@@ -92,20 +91,16 @@ export const columns: (sd: SessionData, onAction: (action: ProfessorAction, sp: 
     cell: ({row}) => row.original.relation === 'SPLIT' ? "" : renderComponent(ProfessorRoleSelector, {
       value: row.original.professor.role,
       onUpdateValue: async (newRole: UniversityRole) =>
-        await ProfessorsApi()
-          .updateProfessor({id: row.original.professor.id, role: newRole})
-          .then((updatedProf) => {
-            // The same professor can appear in several rows (e.g. original and splits)
-            sd.sessionProfessors
-              .filter(sp => sp.professor.id === updatedProf.id)
-              .forEach(sp => sd.updateSessionProfessor({id: sp.id, professor: updatedProf}))
-            toast.success("Ruolo del docente aggiornato correttamente.")
+        // The command sends back the session's professors, so every row of this professor is updated
+        await updateProfessor({sid: sd.session.id, professor: {id: row.original.professor.id, role: newRole}})
+          .then(() => {
+            toast.success("Ruolo del docente aggiornato correttamente.");
           })
           .catch(err => {
             console.error(err)
             toast.error("Si è verificato un errore durante l'aggiornamento del ruolo del docente", {
               duration: Number.POSITIVE_INFINITY,
-              description: JSON.stringify(err)
+              description: toApiError(err).detail
             })
           })
     })
@@ -121,18 +116,15 @@ export const columns: (sd: SessionData, onAction: (action: ProfessorAction, sp: 
     cell: ({row}) => renderComponent(ProfessorAvailabilitySelector, {
       value: row.original.availability,
       onUpdateValue: async (newAvailability) =>
-        await GradSessionApi()
-          .updateSessionProfessor(sd.session.id, row.original.id, newAvailability)
-          .then(fromRawDates<SessionProfessor>)
-          .then((updatedSP) => {
-            sd.updateSessionProfessor(updatedSP)
-            toast.success("Disponibilità del docente per la sessione aggiornata correttamente.")
+        await updateSessionProfessor({sid: sd.session.id, spId: row.original.id, availability: newAvailability})
+          .then(() => {
+            toast.success("Disponibilità del docente per la sessione aggiornata correttamente.");
           })
           .catch(err => {
             console.error(err)
             toast.error("Si è verificato un errore durante l'aggiornamento della disponibilità del docente", {
               duration: Number.POSITIVE_INFINITY,
-              description: JSON.stringify(err)
+              description: toApiError(err).detail
             })
           })
     })

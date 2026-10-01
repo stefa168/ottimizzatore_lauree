@@ -1,5 +1,5 @@
 import type {ColumnDef, InitialTableState} from "@tanstack/table-core";
-import type {OptimizationConfigurationRecap} from "@/api/OptimizationConfigurationApi";
+import type {OptimizationConfigurationRecap} from "@/schema/optimization";
 import {dateFormatter} from "@/utils";
 import {renderComponent} from "@/components/ui/data-table";
 import {sortableHeader} from "@/components/table/utils";
