@@ -47,7 +47,7 @@ export interface Student extends NameSurname, CreationUpdateDate {
 // Professor
 export type UniversityRole = 'ordinary' | 'associate' | 'researcher' | 'unspecified';
 export type ProfessorAvailability = 'always' | 'morning' | 'afternoon'
-export type SessionProfessorRelation = 'original' | 'split' | 'substitute'
+export type SessionProfessorRelation = 'ORIGINAL' | 'SPLIT' | 'SUBSTITUTE'
 
 export interface Professor extends NameSurname, CreationUpdateDate {
   id: number,
@@ -62,6 +62,18 @@ export interface SessionProfessor extends CreationUpdateDate {
   user_note: string | null,
   derived_from_id: number | null,
   relation: SessionProfessorRelation
+}
+
+// A part of a split Session Professor, as sent to the split endpoint
+export interface SessionProfessorSplitPart {
+  when: ProfessorAvailability,
+  note: string | null,
+  students: number[]
+}
+
+export interface SessionProfessorSplitConflict {
+  substitute_session_professor_ids: number[],
+  had_substitutes: boolean
 }
 
 export interface ProfessorBurden {

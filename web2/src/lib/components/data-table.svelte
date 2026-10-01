@@ -7,6 +7,8 @@
     getFilteredRowModel,
     getFacetedUniqueValues,
     getFacetedRowModel,
+    getExpandedRowModel,
+    type ExpandedState,
     type InitialTableState,
     type PaginationState,
     type SortingState,
@@ -30,6 +32,10 @@
     singlePlural?: TextTemplates;
     filteredSinglePlural?: TextTemplates;
     initialState?: InitialTableState;
+    /** Enables nested rows: returns the children of a row, shown when the row is expanded. */
+    getSubRows?: (row: TData, index: number) => TData[] | undefined;
+    /** Stable row ids, so that row state (e.g. expansion) follows the data when it's reloaded or reordered. */
+    getRowId?: (row: TData, index: number) => string;
   };
 
   let {
@@ -43,6 +49,8 @@
       plural: (n: number, total: number) => `Sono presenti ${n} elementi (su ${total}) che corrispondono ai criteri di ricerca.`
     },
 
+    getSubRows,
+    getRowId,
     ...otherProps
   }: DataTableProps<TData, TValue> = $props();
 
@@ -51,6 +59,7 @@
   // At the same time, we need to define it so that if the reset methods are called we have a default state.
   let sorting = $state<SortingState>(otherProps.initialState?.sorting ?? []);
   let columnFilters = $state<ColumnFiltersState>([])
+  let expanded = $state<ExpandedState>({});
 
   export const table = $state(createSvelteTable({
     get data() {
@@ -63,6 +72,15 @@
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedRowModel: getFacetedRowModel(),
+    ...(getRowId ? {getRowId} : {}),
+    ...(getSubRows ? {
+      getSubRows,
+      getExpandedRowModel: getExpandedRowModel(),
+      // Keep the children on the same page as their parent, and filter only the top-level rows:
+      // the children of a matching row are always shown.
+      paginateExpandedRows: false,
+      maxLeafRowFilterDepth: 0,
+    } : {}),
     state: {
       get pagination() {
         return pagination;
@@ -72,6 +90,9 @@
       },
       get columnFilters() {
         return columnFilters;
+      },
+      get expanded() {
+        return expanded;
       },
     },
     initialState: otherProps.initialState,
@@ -94,6 +115,13 @@
         columnFilters = updater(columnFilters);
       } else {
         columnFilters = updater;
+      }
+    },
+    onExpandedChange: (updater) => {
+      if (typeof updater === "function") {
+        expanded = updater(expanded);
+      } else {
+        expanded = updater;
       }
     },
   }));
@@ -120,7 +148,8 @@
       </Table.Header>
       <Table.Body>
         {#each table.getRowModel().rows as row (row.id)}
-          <Table.Row data-state={row.getIsSelected() && "selected"}>
+          <Table.Row data-state={row.getIsSelected() && "selected"} data-depth={row.depth}
+                     class={[row.depth > 0 && "bg-muted/40"]}>
             {#each row.getVisibleCells() as cell (cell.id)}
               <Table.Cell>
                 <FlexRender

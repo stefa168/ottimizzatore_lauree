@@ -14,7 +14,8 @@
   let bachelorStudents = $derived(studentEntries.filter(e => e.degree_level === 'bachelors'));
   let masterStudents = $derived(studentEntries.filter(e => e.degree_level === 'masters'));
 
-  let professors = $derived(sessionData.sessionProfessors);
+  // Distinct people: a split professor has several Session Professors, and substitutes are people too
+  let professors = $derived([...new Map(sessionData.sessionProfessors.map(sp => [sp.professor.id, sp.professor])).values()]);
   let professorsWithoutRole = $derived(professors.filter(p => p.role === 'unspecified'));
 
   let problemsPresent = $derived(professorsWithoutRole.length > 0)

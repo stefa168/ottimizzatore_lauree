@@ -4,6 +4,8 @@ import {
   type GradSession,
   type ProfessorAvailability,
   type SessionProfessor,
+  type SessionProfessorSplitConflict,
+  type SessionProfessorSplitPart,
 } from "@/types";
 import {createMutation, createQuery, type QueryClient} from "@tanstack/svelte-query";
 import {
@@ -103,6 +105,46 @@ export const GradSessionApi = (customFetch = fetch) => ({
       throw await response.json();
 
     return await response.json() as RawSessionProfessor;
+  },
+  /**
+   * Replaces the splits of an ORIGINAL Session Professor. An empty list of parts removes the split.
+   * If the professor has substitutes, the request fails with a 409 unless `ignoreSubstitutes` is set,
+   * in which case they are removed.
+   */
+  splitSessionProfessor: async (session_id: number, session_prof_id: number, parts: SessionProfessorSplitPart[], ignoreSubstitutes = false) => {
+    const response = await customFetch(
+      `${PUBLIC_BACKEND_URL}/sessions/${session_id}/professors/${session_prof_id}/split?ignore_substitutes=${ignoreSubstitutes}`, {
+        method: 'PATCH',
+        body: JSON.stringify(parts),
+        headers: {'Content-Type': 'application/json'}
+      });
+    if (!response.ok)
+      throw await response.json() as ApiErrorResponse<SessionProfessorSplitConflict>;
+
+    return await response.json() as RawSessionProfessor[];
+  },
+  /**
+   * Assigns the students of a Session Professor to another professor. Called on a SUBSTITUTE, it changes the
+   * substituting professor instead.
+   */
+  substituteSessionProfessor: async (session_id: number, session_prof_id: number, professor_id: number,
+                                     data: { availability: ProfessorAvailability, note: string }) => {
+    const response = await customFetch(
+      `${PUBLIC_BACKEND_URL}/sessions/${session_id}/professors/${session_prof_id}/substitute/${professor_id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: {'Content-Type': 'application/json'}
+      });
+    if (!response.ok)
+      throw await response.json() as ApiErrorResponse;
+
+    return await response.json() as RawSessionProfessor;
+  },
+  removeSubstitute: async (session_id: number, substitute_prof_id: number) => {
+    const response = await customFetch(
+      `${PUBLIC_BACKEND_URL}/sessions/${session_id}/professors/${substitute_prof_id}/substitute`, {method: 'DELETE'});
+    if (!response.ok)
+      throw await response.json() as ApiErrorResponse;
   }
 });
 

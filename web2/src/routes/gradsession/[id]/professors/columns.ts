@@ -16,6 +16,8 @@ import StyledFullName from "@/components/StyledFullName.svelte";
 import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
 import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
 import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
+import ProfessorNameCell from "./ProfessorNameCell.svelte";
+import ProfessorRowActions, {type ProfessorAction} from "./ProfessorRowActions.svelte";
 import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
 import {AvailabilityOptions, UniversityRoles} from "@/const";
 import {fromRawDates} from "@/api/RawTypes";
@@ -37,28 +39,46 @@ const arrayIncludesFilter: FilterFn<SessionProfessor> = (row, columnId, filterVa
   return filterValue.includes(cellValue);
 };
 
+// Burdens include the students of splits and substitutes, so a split professor still shows their whole load
 const compareProfessorBurdens: (sd: SessionData) => SortingFn<SessionProfessor> = (sd) => (rowA, rowB) => {
-  const burdenA = sd.professorsBurdens.get(rowA.original.id)
-  const burdenB = sd.professorsBurdens.get(rowB.original.id)
+  const burdenA = sd.subtreeBurden(rowA.original.id)
+  const burdenB = sd.subtreeBurden(rowB.original.id)
 
-  const totalA = burdenA ? burdenA.asCounterSupervisor + burdenA.asSupervisor : 0;
-  const totalB = burdenB ? burdenB.asCounterSupervisor + burdenB.asSupervisor : 0;
-
-  return totalA - totalB;
+  return (burdenA.asCounterSupervisor + burdenA.asSupervisor) - (burdenB.asCounterSupervisor + burdenB.asSupervisor);
 }
 
-export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: SessionData) => [
+// 1-based position of a split among the splits of the same professor
+const partNumber = (sd: SessionData, sp: SessionProfessor) => {
+  if (sp.relation !== 'SPLIT' || sp.derived_from_id === null) return undefined;
+  const siblings = (sd.childrenOf.get(sp.derived_from_id) ?? [])
+    .filter(c => c.relation === 'SPLIT')
+    .toSorted((a, b) => a.id - b.id);
+  return siblings.findIndex(c => c.id === sp.id) + 1;
+}
+
+export const columns: (sd: SessionData, onAction: (action: ProfessorAction, sp: SessionProfessor) => void) => ColumnDef<SessionProfessor>[] = (sd, onAction) => [
   {
     id: "surname",
     accessorFn: (sp: SessionProfessor) => sp.professor.surname,
     enableMultiSort: true,
     header: ({column}) => sortableHeader("Cognome", column),
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original.professor, show: "surname"})
+    cell: ({row}) => renderComponent(ProfessorNameCell, {
+      sp: row.original,
+      depth: row.depth,
+      partNumber: partNumber(sd, row.original),
+      children: sd.childrenOf.get(row.original.id),
+      canExpand: row.getCanExpand(),
+      expanded: row.getIsExpanded(),
+      toggle: row.getToggleExpandedHandler(),
+    })
   }, {
     id: "first_name",
     accessorFn: (sp: SessionProfessor) => sp.professor.first_name,
     header: ({column}) => sortableHeader("Nome", column),
-    cell: ({row}) => renderComponent(StyledFullName, {fullName: row.original.professor, show: "name"}),
+    // Splits share the professor's name, so their row shows the note instead
+    cell: ({row}) => row.original.relation === 'SPLIT'
+      ? (row.original.user_note || "")
+      : renderComponent(StyledFullName, {fullName: row.original.professor, show: "name"}),
   }, {
     id: "role",
     accessorFn: (sp: SessionProfessor) => sp.professor.role,
@@ -68,13 +88,17 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
       column,
     }),
     filterFn: arrayIncludesFilter,
-    cell: ({row}) => renderComponent(ProfessorRoleSelector, {
+    // A split is the same person as its parent row: its role is edited there
+    cell: ({row}) => row.original.relation === 'SPLIT' ? "" : renderComponent(ProfessorRoleSelector, {
       value: row.original.professor.role,
       onUpdateValue: async (newRole: UniversityRole) =>
         await ProfessorsApi()
           .updateProfessor({id: row.original.professor.id, role: newRole})
           .then((updatedProf) => {
-            sd.updateSessionProfessor({id: row.original.id, professor: updatedProf})
+            // The same professor can appear in several rows (e.g. original and splits)
+            sd.sessionProfessors
+              .filter(sp => sp.professor.id === updatedProf.id)
+              .forEach(sp => sd.updateSessionProfessor({id: sp.id, professor: updatedProf}))
             toast.success("Ruolo del docente aggiornato correttamente.")
           })
           .catch(err => {
@@ -115,9 +139,18 @@ export const columns: (sd: SessionData) => ColumnDef<SessionProfessor>[] = (sd: 
   }, {
     id: "burden",
     header: ({column}) => sortableHeader("Carico", column),
-    accessorFn: professor => sd.professorsBurdens.get(professor.id),
+    accessorFn: professor => sd.subtreeBurden(professor.id),
     sortingFn: compareProfessorBurdens(sd),
     enableMultiSort: true,
-    cell: ({row}) => renderComponent(ProfessorBurdenComponent, {burden: sd.professorsBurdens.get(row.original.id)})
+    cell: ({row}) => renderComponent(ProfessorBurdenComponent, {burden: sd.subtreeBurden(row.original.id)})
+  }, {
+    id: "actions",
+    header: "",
+    enableSorting: false,
+    cell: ({row}) => renderComponent(ProfessorRowActions, {
+      sp: row.original,
+      children: sd.childrenOf.get(row.original.id),
+      onAction
+    })
   }
 ]
