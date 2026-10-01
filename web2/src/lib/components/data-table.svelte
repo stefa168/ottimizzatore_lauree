@@ -72,6 +72,10 @@
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedRowModel: getFacetedRowModel(),
+    // By default the table goes back to page 1 whenever the data changes, e.g. after editing a row refreshes it.
+    // The page is kept instead: searches reset it explicitly (see onColumnFiltersChange), and the $effect below
+    // keeps it in range when rows disappear.
+    autoResetPageIndex: false,
     ...(getRowId ? {getRowId} : {}),
     ...(getSubRows ? {
       getSubRows,
@@ -116,6 +120,8 @@
       } else {
         columnFilters = updater;
       }
+      // A new search shows its results from the first page
+      pagination = {...pagination, pageIndex: 0};
     },
     onExpandedChange: (updater) => {
       if (typeof updater === "function") {
@@ -125,6 +131,13 @@
       }
     },
   }));
+
+  // Stay on an existing page when the rows shrink (e.g. a row deleted from the last page, or a bigger page size)
+  $effect(() => {
+    const lastPage = Math.max(0, table.getPageCount() - 1);
+    if (pagination.pageIndex > lastPage)
+      pagination = {...pagination, pageIndex: lastPage};
+  });
 </script>
 
 <div>
