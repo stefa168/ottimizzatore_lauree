@@ -13,8 +13,10 @@ GRAD_SESSION_ENTRY_LIST = "/sessions/{sid:int}/students"
 SESSION_PROFESSOR_LIST = "/sessions/{sid:int}/professors"
 SESSION_PROFESSOR_UPDATE = "/sessions/{sid:int}/professors/{session_professor_id:int}"
 SESSION_PROFESSOR_SPLIT = "/sessions/{session_id:int}/professors/{session_professor_id:int}/split"
-SESSION_PROFESSOR_SUBSTITUTE = "/sessions/{session_id:int}/professors/{session_professor_id:int}/substitute/{substitute_sesssion_professor_id:int}"
+SESSION_PROFESSOR_SUBSTITUTE = "/sessions/{session_id:int}/professors/{session_professor_id:int}/substitute/{substitute_professor_id:int}"
+SESSION_PROFESSOR_SUBSTITUTE_DELETE = "/sessions/{session_id:int}/professors/{session_professor_id:int}/substitute"
 PROFESSOR_UPDATE = "/professors"
+PROFESSOR_LIST = "/professors"
 
 # Optimization Configurations Urls
 GRAD_SESSION_OPT_CONF_NEW = "/sessions/{sid:int}/configuration/new"

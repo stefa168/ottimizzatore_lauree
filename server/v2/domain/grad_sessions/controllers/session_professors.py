@@ -126,18 +126,21 @@ class SessionProfessorController(Controller):
         sp = await get_session_professor_raise(sid, session_professor_id, session_professor_repository)
         return data.update_instance(sp)
 
-    @patch(urls.SESSION_PROFESSOR_SPLIT)
+    @patch(urls.SESSION_PROFESSOR_SPLIT, return_dto=SessionProfessorReadDTO)
     async def split_session_professor(self,
                                       data: list[SessionProfessorSplit],
                                       session_id: int,
                                       session_professor_id: int,
                                       session_professor_repository: SessionProfessorRepository,
                                       session_entry_repository: SessionEntryRepository,
-                                      ignore_substitutes: bool | None = None,
+                                      ignore_substitutes: bool = False,
                                       ) -> list[SessionProfessor]:
         """
-        Draft documentation: this endpoint will REPLACE all the children SessionProfessors with the new configuration
-        supplied with the request.
+        Replaces all the children SessionProfessors with the new configuration supplied with the request.
+
+        Every student supervised by the Session Professor (or by one of its splits/substitutes) must be assigned to
+        exactly one split. An empty list removes all the splits, moving the students back to the original.
+        Existing substitutes are removed only if ``ignore_substitutes`` is true; otherwise the request is refused.
         """
         # 1. Get the referred Session Professor
         original_sp = await get_session_professor_raise(session_id, session_professor_id, session_professor_repository)
@@ -183,7 +186,7 @@ class SessionProfessorController(Controller):
 
         substitute_ids = [idx for idx, rel in sp_ids.items() if rel is SessionProfessorRelation.SUBSTITUTE]
 
-        if ignore_substitutes is False and substitute_ids:
+        if not ignore_substitutes and substitute_ids:
             raise HTTPException(
                 detail="Substitutes exist; operation cannot proceed. "
                        "Set query parameter `ignore_substitutes` to true to ignore this constraint and remove them",
@@ -211,6 +214,16 @@ class SessionProfessorController(Controller):
                     detail="Some students are not owned by the specified Session Professor",
                     status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
                     extra={"foreign_students": foreign_students}
+                )
+
+            # 4.1 Every student must end up in a split: the previous splits are going to be deleted, and the
+            #     original Session Professor cannot supervise students while it has splits.
+            missing_students = set(owned_students_dict.keys()) - request_students
+            if missing_students:
+                raise HTTPException(
+                    detail="Some students supervised by the Session Professor have not been assigned to a split",
+                    status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY,
+                    extra={"missing_students": missing_students}
                 )
 
             # 5. We're all set! Let's make the new session professors and assign the students.
@@ -243,7 +256,7 @@ class SessionProfessorController(Controller):
 
         return splits
 
-    @patch(urls.SESSION_PROFESSOR_SUBSTITUTE)
+    @patch(urls.SESSION_PROFESSOR_SUBSTITUTE, return_dto=SessionProfessorReadDTO)
     async def substitute_session_professor(self,
                                            session_id: int,
                                            session_professor_id: int,
@@ -296,14 +309,14 @@ class SessionProfessorController(Controller):
             SessionEntry.session_id == original_sp.session_id
         )
 
+        # The entries are tracked by the session, so the change is flushed on commit.
+        # (update_many would write back the stale supervisor_id of the original professor.)
         for student in students:
             student.supervisor = substitute_sp
 
-        await session_entry_repository.update_many(students)
-
         return substitute_sp
 
-    @delete("/sessions/{session_id:int}/professors/{session_professor_id:int}/substitute")
+    @delete(urls.SESSION_PROFESSOR_SUBSTITUTE_DELETE)
     async def delete_substitute_session_professor(self,
                                                   session_id: int,
                                                   session_professor_id: int,
@@ -313,12 +326,6 @@ class SessionProfessorController(Controller):
         substitute_sp = await get_session_professor_raise(session_id, session_professor_id,
                                                           session_professor_repository)
 
-        if substitute_sp.parent is None:
-            raise HTTPException(
-                detail="Substitute undefined",
-                status_code=http_statuses.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
         if substitute_sp.relation is not SessionProfessorRelation.SUBSTITUTE:
             raise HTTPException(
                 detail="The specified Session Professor is not a substitute",
@@ -326,18 +333,32 @@ class SessionProfessorController(Controller):
                 extra={"relation": substitute_sp.relation}
             )
 
+        if substitute_sp.derived_from_id is None:
+            raise HTTPException(
+                detail="Substitute undefined",
+                status_code=http_statuses.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        parent_id = substitute_sp.derived_from_id
         students = await session_entry_repository.list(
             SessionEntry.supervisor_id == substitute_sp.id,
             SessionEntry.session_id == substitute_sp.session_id
         )
 
+        # Move the students first (ON DELETE RESTRICT is checked immediately), then delete the substitute.
+        # The "supervisor must be a leaf" trigger is deferred to the commit, when the substitute is gone.
         for student in students:
-            student.supervisor = substitute_sp.parent
+            student.supervisor_id = parent_id
+        await session_entry_repository.session.flush()
 
-        await session_entry_repository.update_many(students)
-        await session_professor_repository.delete(substitute_sp)
+        await session_professor_repository.delete(substitute_sp.id)
 
     # todo move to a separate Professors Controller
+    @get(urls.PROFESSOR_LIST)
+    async def list_professors(self, professor_repository: ProfessorRepository) -> list[Professor]:
+        """Lists all the known professors, e.g. to choose a substitute."""
+        return list(await professor_repository.list(order_by=[(Professor.surname, False), (Professor.first_name, False)]))
+
     @patch(urls.PROFESSOR_UPDATE, dto=ProfessorDTO)
     async def update_professor(
             self,
