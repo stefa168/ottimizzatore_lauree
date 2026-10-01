@@ -28,6 +28,8 @@
   import MdiAlarm from '~icons/mdi/alarm'
   import MdiTimerOutline from '~icons/mdi/timer-outline'
   import IcBaselineErrorOutline from '~icons/ic/baseline-error-outline'
+  import LucideLogs from '~icons/lucide/logs'
+  import LucideChevronRight from '~icons/lucide/chevron-right'
   import {onDestroy, onMount} from "svelte";
   import {pollUntil} from "@/pollingUtility";
 
@@ -44,7 +46,7 @@
     configuration = $bindable(),
     sessionData,
     optimizationStartCallback,
-    optimizationStartPreflight = () => true
+    optimizationStartPreflight = async () => true
   }: Props = $props();
 
   let collapsibleOpen = $state(true);
@@ -109,8 +111,8 @@
 </script>
 
 <Collapsible.Root
-    class="bg-card text-card-foreground flex flex-col gap-4 rounded-lg border p-4 shadow-sm"
-    bind:open={collapsibleOpen}
+  class="bg-card text-card-foreground flex flex-col gap-4 rounded-lg border p-4 shadow-sm"
+  bind:open={collapsibleOpen}
 >
   <div class="flex items-center justify-between">
     <Collapsible.Trigger class="text-xl flex items-center enabled:cursor-pointer" disabled={(!optStatus.started)}>
@@ -132,12 +134,12 @@
         {/if}
       </span>
       <MdiChevronRight
-          class={[
+        class={[
             "w-6 h-6 ms-2 transition-transform duration-200",
             collapsibleOpen && 'rotate-90',
             optStatus.ended || optStatus.failed ? 'visible' : 'invisible'
           ]}
-          aria-hidden="true"
+        aria-hidden="true"
       />
     </Collapsible.Trigger>
     {#if optStatus.running}
@@ -196,18 +198,37 @@
             </li>
           {/if}
           <li>
-            <Inspect
-                class="my-inspect-theme"
-                value={configuration.optimization_log?.log}
-                expandLevel={0}
-                heading="Log dell'ottimizzatore"
-                search="filter"
-                theme=""
-                borderless={true}
-                showTypes={false}
-                noanimate={true}
-                quotes="none"
-            />
+
+            <Collapsible.Root>
+              <Collapsible.Trigger>
+                {#snippet child({props})}
+                  <Button
+                    {...props}
+                    variant="ghost"
+                    size="sm"
+                    class="group w-full justify-start transition-none hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <LucideLogs/>
+                    <LucideChevronRight class="transition-transform group-data-[state=open]:rotate-90" />
+                    Apri il log
+                  </Button>
+                {/snippet}
+              </Collapsible.Trigger>
+              <Collapsible.Content>
+                <table class="font-mono text-sm w-full">
+                  <tbody>
+                  {#each configuration.optimization_log?.log.split(/\n/g) as line, row }
+                    <tr class="hover:bg-amber-200">
+                      <td class="text-end pe-1 border-r">{row + 1}</td>
+                      <td class="ps-2">
+                        <pre class="m-0 inline">{line}</pre>
+                      </td>
+                    </tr>
+                  {/each}
+                  </tbody>
+                </table>
+              </Collapsible.Content>
+            </Collapsible.Root>
           </li>
         </ul>
       </div>
