@@ -129,7 +129,7 @@
         Risultati dell'Ottimizzazione
         {#if log}
           <span class="text-muted-foreground">
-            (avviata il {DateTime.fromJSDate(log.start_time).toFormat("d MMMM yy 'alle' HH:mm", {locale: 'it'})})
+            (avviata il {DateTime.fromJSDate(log.start_time).toFormat("d MMMM yyyy 'alle' HH:mm", {locale: 'it'})})
           </span>
         {/if}
       </span>
