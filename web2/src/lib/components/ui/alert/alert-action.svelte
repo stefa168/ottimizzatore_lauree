@@ -12,8 +12,8 @@
 
 <div
 	bind:this={ref}
-	data-slot="sheet-header"
-	class={cn("gap-0.5 p-4 flex flex-col", className)}
+	data-slot="alert-action"
+	class={cn("absolute top-2 right-2", className)}
 	{...restProps}
 >
 	{@render children?.()}
