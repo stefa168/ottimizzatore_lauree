@@ -1,32 +1,30 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import signal
 import threading
 import time
-from contextlib import asynccontextmanager, AsyncExitStack
-from multiprocessing import Process, Event
+from contextlib import asynccontextmanager, suppress
+from multiprocessing import Process, Event, current_process
 from multiprocessing.synchronize import Event as EventType
 from pathlib import Path
 from typing import Final, AsyncGenerator, Any
 
 import structlog.stdlib
-import aio_pika
 from litestar import Litestar
 from litestar.datastructures import State
 
 from v2.config.log_settings import LogSettings
 from v2.config.settings import Settings, settings_path
-from v2.domain.grad_sessions.schemas import OptConfCompleteDTO
+from v2.db.models import OptimizationJob, OptimizationConfiguration
 from v2.domain.grad_sessions.services import solver_wrapper
-from v2.utils.rabbit_messaging import RabbitMessaging
+from v2.utils import job_queue
 
 logger = structlog.stdlib.get_logger()
 
 MANAGER_LIFESPAN_KEY: Final = "opt_manager"
-MAX_RETRIES: Final = 3
-RETRY_HEADER: Final = "x-retries"
+POLL_INTERVAL: Final = 1.0  # seconds between queue polls when idle
+STALE_CHECK_INTERVAL: Final = 30.0  # seconds between checks for jobs abandoned by dead workers
 
 
 class OptimizationWorkersManager:
@@ -222,44 +220,80 @@ class OptimizationWorkersManager:
         # noinspection PyShadowingNames
         logger = structlog.stdlib.get_logger()
         db_conf = app_settings.db.config()
+        worker_name = f"{current_process().name}:{current_process().pid}"
 
-        # noinspection PyAbstractClass
-        async with AsyncExitStack() as stack:
-            mq = await stack.enter_async_context(await RabbitMessaging.create(app_settings))
+        loop = asyncio.get_running_loop()
+        loop.set_exception_handler(lambda _loop, ctx: logger.error("Unhandled task exception", exc_info=ctx.get("exception")))
 
-            loop = asyncio.get_running_loop()
-            loop.set_exception_handler(lambda _loop, ctx: logger.error("Unhandled task exception", exc_info=ctx.get("exception")))
+        last_stale_check = 0.0
+        try:
+            while not stop_event.is_set():
+                try:
+                    if time.monotonic() - last_stale_check >= STALE_CHECK_INTERVAL:
+                        last_stale_check = time.monotonic()
+                        async with db_conf.get_session() as db_session:
+                            await job_queue.requeue_stale(db_session)
 
-            try:
-                while not stop_event.is_set():
-                    try:
-                        # timeout lets us check stop_event periodically
-                        message = await mq.opt_queue.get(timeout=1)
+                    async with db_conf.get_session() as db_session:
+                        job = await job_queue.claim_next(db_session, worker_name)
 
-                        # This context acks on success; on exception it nacks with requeue=True
-                        async with message.process(requeue=True) as ctx:
-                            body_str = message.body.decode("utf-8")
-                            payload = json.loads(body_str)
-                            config_dto = OptConfCompleteDTO.model_validate(payload["config"])
-                            cc_path = Path(payload["cc_path"])
-
-                            # Process the job; any error here will produce a clean, direct traceback
-                            await solver_wrapper(db_conf, config_dto, cc_path)
-
-                    except aio_pika.exceptions.QueueEmpty:
-                        await asyncio.sleep(0.1)
+                    if job is None:
+                        await asyncio.sleep(POLL_INTERVAL)
                         continue
 
-                    except Exception as e:
-                        # Log full stack and re-raise so the worker dies and you see the primary error
-                        logger.exception("Job failed while processing message", e)
-                        continue
+                    await OptimizationWorkersManager._run_job(db_conf, job)
 
-                # If we reach here, ack has already been sent by .process()
-            except Exception as e:
-                logger.exception(f"Error while optimizing: {e}", e)
-            finally:
-                logger.info("Shutting down")
+                except Exception:
+                    # Errors while talking to the queue (e.g. the database is down): wait and try again
+                    logger.exception("Error while polling the optimization queue")
+                    await asyncio.sleep(POLL_INTERVAL)
+        finally:
+            logger.info("Shutting down")
+            await db_conf.get_engine().dispose()
+
+    @staticmethod
+    async def _run_job(db_conf, job: OptimizationJob) -> None:
+        logg = structlog.stdlib.get_logger().bind(job_id=job.id, opt_id=job.opt_config_id, attempt=job.attempts)
+        logg.info("Claimed optimization job")
+
+        async def _heartbeat():
+            while True:
+                await asyncio.sleep(job_queue.HEARTBEAT_INTERVAL.total_seconds())
+                try:
+                    async with db_conf.get_session() as hb_session:
+                        await job_queue.heartbeat(hb_session, job.id)
+                except Exception:
+                    logg.exception("Failed to send job heartbeat")
+
+        heartbeat_task = asyncio.create_task(_heartbeat())
+        try:
+            async with db_conf.get_session() as db_session:
+                config = await db_session.get(OptimizationConfiguration, job.opt_config_id)
+                session_id = config.session_id if config is not None else None
+
+            if session_id is None:
+                ok, error, retry = False, "Configuration no longer exists", False
+            else:
+                cc_path = job_queue.job_dir(session_id, job.opt_config_id)
+                # A False result means the solver ran but produced no usable solution: retrying would give the
+                # same outcome, so only unexpected exceptions are retried.
+                ok = await solver_wrapper(db_conf, job.opt_config_id, session_id, cc_path)
+                error, retry = "Solver did not produce a solution", False
+        except Exception as e:
+            logg.exception("Optimization job raised an exception")
+            ok, error, retry = False, f"{type(e).__name__}: {e}", True
+        finally:
+            heartbeat_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await heartbeat_task
+
+        async with db_conf.get_session() as db_session:
+            if ok:
+                await job_queue.complete(db_session, job.id)
+                logg.info("Optimization job completed")
+            else:
+                await job_queue.fail(db_session, job.id, error, retry=retry)
+                logg.warning("Optimization job failed", error=error, will_retry=retry)
 
     async def __aenter__(self):
         return self

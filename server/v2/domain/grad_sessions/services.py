@@ -17,7 +17,6 @@ from v2.db.models import GradSession, OptimizationConfiguration, SolverEnum, Opt
     SessionProfessor
 from v2.domain.grad_sessions.deps import GradSessionRepository, OptimizationConfigurationRepository, \
     StudentRepository, SessionProfessorRepository
-from v2.domain.grad_sessions.schemas import OptConfCompleteDTO
 from v2.utils.crud_helpers import get_one_or_raise, exists_or_raise
 
 logger: structlog.stdlib.BoundLogger = structlog.stdlib.get_logger()
@@ -108,10 +107,11 @@ async def get_session_professor_raise(session_id: int,
 
 async def solver_wrapper(
         db_conf: SQLAlchemyAsyncConfig,
-        config_dto: OptConfCompleteDTO,
+        config_id: int,
+        session_id: int,
         cc_path: Path
 ) -> bool:
-    logg = logger.bind(opt_id=config_dto.id, session_id=config_dto.session_id)
+    logg = logger.bind(opt_id=config_id, session_id=session_id)
     logg.info(f"Starting optimization")
 
     def run_solver_blocking(config: OptimizationConfiguration, cc_path: Path):
@@ -119,14 +119,14 @@ async def solver_wrapper(
 
     async with db_conf.get_session() as db_session:
         conf_repo = OptimizationConfigurationRepository(session=db_session)
-        config = await get_opt_conf_raise(config_dto.id, config_dto.session_id, conf_repo)
+        config = await get_opt_conf_raise(config_id, session_id, conf_repo)
         # db_session.expunge(config)
 
     try:
         # results, model, opt_log = await run_solver(config, cc_path)
         results, model, opt_log = await asyncio.to_thread(run_solver_blocking, config, cc_path)
-    except Exception as e:
-        logg.exception(f"An error occurred while solving the optimization problem", e)
+    except Exception:
+        logg.exception("An error occurred while solving the optimization problem")
         return False
 
     if not opt_log.success:

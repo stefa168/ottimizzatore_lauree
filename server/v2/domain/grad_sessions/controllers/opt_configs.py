@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import json
-import pathlib
 import shutil
-from typing import Final
 
 import structlog
-from aio_pika import Message, DeliveryMode
 from litestar import Controller, get, patch, delete, post
 from litestar.di import Provide
 from litestar.dto import DTOData
@@ -25,17 +21,9 @@ from v2.domain.grad_sessions.deps import (
 from v2.domain.grad_sessions.schemas import OptConfDTO, OptConfPatchDTO, OptConfListDTO, OptConfCompleteDTO, \
     CloneOptConfDTO
 from v2.domain.grad_sessions.services import check_gs_exists_raise, get_opt_conf_raise
-from v2.utils.rabbit_messaging import RabbitMessaging, OPTIMIZATION_CHANNEL_NAME
+from v2.utils import job_queue
 
 logger = structlog.stdlib.get_logger(__name__)
-
-# Path to the directories that hold the datfiles and solutions produced.
-# Inside this directory there is a directory with this structure:
-# temp
-# |- [problem_id] - [config_id] --- cfg.dat
-# |_ ...                         |_ model.lp
-#                                |_ val.xls
-OPT_TMP_DIR: Final = ".temp/"
 
 
 class OptimizationConfigurationController(Controller):
@@ -110,7 +98,6 @@ class OptimizationConfigurationController(Controller):
 
     @get(urls.GRAD_SESSION_OPT_CONF_SOLVE, status_code=http_statuses.HTTP_202_ACCEPTED)
     async def solve_configuration(self, session_id: int, config_id: int,
-                                  pika: RabbitMessaging,
                                   grad_session_repository: GradSessionRepository,
                                   opt_conf_repo: OptimizationConfigurationRepository) -> None:
         logger.info(f"Received request to solve commission {session_id} with configuration {config_id}")
@@ -134,7 +121,6 @@ class OptimizationConfigurationController(Controller):
 
         # Then we check if the configuration is already running. If we're here, we're sure that we haven't saved a
         # solution yet.
-        # todo we should return another kind of error if the lock is set but there is no future currently running
         logger.debug(f"Locking the configuration {config_id}")
         if not await opt_conf_repo.acquire_lock(config_id):
             logger.error(f"Configuration with ID {config_id} is already being solved")
@@ -144,8 +130,7 @@ class OptimizationConfigurationController(Controller):
             )
 
         logger.debug(f"Setting up the optimization for session {session_id} and configuration {config_id}")
-        base_path = pathlib.Path(OPT_TMP_DIR)
-        cc_path = base_path / str(session_id) / str(config_id)
+        cc_path = job_queue.job_dir(session_id, config_id)
 
         cc_path.mkdir(parents=True, exist_ok=True)
 
@@ -154,25 +139,13 @@ class OptimizationConfigurationController(Controller):
 
             with (cc_path / "val.xls").open('wb') as f:
                 f.write(config.session.export_xls())
-        except Exception as e:
-            logger.error(f"Error during optimization files creation for session {session_id}, config {config_id}", e)
+        except Exception:
+            logger.exception(f"Error during optimization files creation for session {session_id}, config {config_id}")
             if cc_path.exists():
                 shutil.rmtree(cc_path)
                 logger.debug(f"Deleted directory {cc_path} due to export error")
 
             raise
 
-        payload = {
-            "config": OptConfCompleteDTO.model_validate(config).model_dump(mode="json"),
-            "cc_path": str(cc_path.absolute())
-        }
-
-        await pika.channel.default_exchange.publish(
-            Message(
-                body=json.dumps(payload).encode("utf-8"),
-                content_type="application/json",
-                content_encoding="utf-8",
-                delivery_mode=DeliveryMode.PERSISTENT,
-            ),
-            routing_key=OPTIMIZATION_CHANNEL_NAME
-        )
+        # The job is committed together with the run_lock, so a locked configuration always has a job behind it.
+        job_queue.enqueue(opt_conf_repo.session, config_id)

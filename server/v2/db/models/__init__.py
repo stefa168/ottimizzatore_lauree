@@ -1,5 +1,6 @@
 from .optimization_configuration import OptimizationConfiguration
 from .optimization_log import OptimizationLog
+from .optimization_job import OptimizationJob, JobStatus
 from .session_professor import SessionProfessor
 from .solution_commission import SolutionCommission
 from .student import Student
@@ -19,6 +20,8 @@ __all__ = [
     'GradSession',
     'OptimizationConfiguration',
     'OptimizationLog',
+    'OptimizationJob',
+    'JobStatus',
     'SolutionCommission',
     'SessionProfessor'
 ]

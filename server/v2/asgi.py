@@ -2,7 +2,6 @@
 
 from litestar import Litestar, Router
 from litestar.datastructures import State
-from litestar.di import Provide
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
 
@@ -15,7 +14,6 @@ from v2.domain.grad_sessions.controllers import (
     OptimizationConfigurationController
 )
 from v2.opt_manager import OptimizationWorkersManager
-from v2.utils.rabbit_messaging import RabbitMessaging
 
 base_router = Router(
     path="/api/v1",
@@ -29,9 +27,6 @@ base_router = Router(
 
 app = Litestar(
     debug=settings.app.debug,
-    dependencies={
-        "pika": Provide(RabbitMessaging.provide)
-    },
     route_handlers=[base_router],
     cors_config=settings.cors_config,
     plugins=[alchemy_plugin, structlog_plugin],
@@ -41,7 +36,6 @@ app = Litestar(
         render_plugins=[SwaggerRenderPlugin()]
     ),
     lifespan=[
-        RabbitMessaging.lifespan,
         OptimizationWorkersManager.lifespan
     ],
     state=State({"settings": settings})
