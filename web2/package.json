@@ -62,7 +62,6 @@
 		"zod": "^3.25.76"
 	},
 	"dependencies": {
-		"@inlang/paraglide-js": "^2.20.1",
 		"@tanstack/svelte-query": "^5.90.2",
 		"@tanstack/svelte-query-devtools": "^5.90.2",
 		"luxon": "^3.7.2",
