@@ -35,6 +35,27 @@ export async function backendFetch<T = unknown>(path: string, init?: RequestInit
   return body as T;
 }
 
+/**
+ * Calls the backend and returns its response as is, e.g. to stream a file to the browser. Failures are turned into
+ * SvelteKit HTTP errors like in `backendFetch`.
+ */
+export async function backendResponse(path: string, init?: RequestInit): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_URL}${path}`, init);
+  } catch (e) {
+    console.error(`Backend not reachable at ${BACKEND_URL}`, e);
+    error(503, {message: "Backend non raggiungibile"});
+  }
+
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as BackendError;
+    error(response.status, {message: err.detail ?? response.statusText, extra: err.extra});
+  }
+
+  return response;
+}
+
 /** Shorthand for requests with a JSON body. */
 export const jsonBody = (method: string, data: unknown): RequestInit => ({
   method,

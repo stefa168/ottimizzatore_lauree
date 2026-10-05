@@ -5,6 +5,7 @@ import {renderComponent} from "@/components/ui/data-table";
 import {sortableHeader} from "@/components/table/utils";
 import DataTableActions from "./DataTableActions.svelte";
 import NewConfigurationButton from "./NewConfigurationButton.svelte";
+import ConfigurationTitle from "./ConfigurationTitle.svelte";
 
 export const initialTableState: () => InitialTableState = () => ({
   sorting: [{
@@ -20,7 +21,8 @@ export const columns: (session_id: number) => ColumnDef<OptimizationConfiguratio
   },
   {
     accessorKey: 'title',
-    header: ({column}) => sortableHeader("Titolo", column)
+    header: ({column}) => sortableHeader("Titolo", column),
+    cell: ({row}) => renderComponent(ConfigurationTitle, {title: row.original.title, frozen: row.original.frozen})
   },
   {
     accessorKey: "created_at",

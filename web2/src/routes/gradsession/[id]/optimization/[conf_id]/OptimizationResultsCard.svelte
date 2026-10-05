@@ -3,7 +3,19 @@
   import {computeTimeDifference, optimizationTaskStatusFactory} from "@/utils.js";
   import type {ApiErrorResponse, OptimizationStatus} from "@/types";
   import type {OptimizationConfiguration} from "@/schema/optimization";
-  import {startOptimization as startOptimizationCommand, watchConfiguration} from "@/api/optimization.remote";
+  import {
+    setConfigurationFrozen,
+    startOptimization as startOptimizationCommand,
+    watchConfiguration
+  } from "@/api/optimization.remote";
+  import {Badge} from "@/components/ui/badge";
+  // noinspection ES6UnusedImports
+  import * as Dialog from "$lib/components/ui/dialog";
+  import {toast} from "svelte-sonner";
+  import LucideSnowflake from '~icons/lucide/snowflake'
+  import LucideDownload from '~icons/lucide/download'
+  import LucideLockOpen from '~icons/lucide/lock-open'
+  import LucideLoaderCircle from '~icons/lucide/loader-circle'
   import {toApiError} from "@/errors";
   import type {SessionData} from "../../../SessionData.svelte";
 
@@ -68,6 +80,25 @@
       watching = false;
   });
 
+  // Freezing marks the solution as final: the configuration can't be changed or deleted until it's unfrozen
+  let freezeDialogOpen = $state(false);
+  let freezing = $state(false);
+  const exportUrl = $derived(`/gradsession/${sessionData.session.id}/optimization/${configuration.id}/export`);
+
+  const toggleFrozen = async () => {
+    freezing = true;
+    const frozen = !configuration.frozen;
+    try {
+      await setConfigurationFrozen({sid: sessionData.session.id, cid: configuration.id, frozen});
+      toast.success(frozen ? "Soluzione congelata: è ora elencata tra le soluzioni finali della sessione." : "Soluzione sbloccata.");
+      freezeDialogOpen = false;
+    } catch (e) {
+      toast.error("Si è verificato un errore", {description: toApiError(e).detail});
+    } finally {
+      freezing = false;
+    }
+  };
+
   const safeStartOptimization = async () => {
     if (await optimizationStartPreflight())
       await startOptimization();
@@ -120,7 +151,23 @@
         aria-hidden="true"
       />
     </Collapsible.Trigger>
-    {#if optStatus.running}
+    {#if optStatus.success}
+      <div class="flex items-center gap-2">
+        {#if configuration.frozen}
+          <Badge variant="secondary"><LucideSnowflake class="size-3"/> Congelata</Badge>
+        {/if}
+        <Button variant="outline" size="sm" href={exportUrl} download data-sveltekit-reload>
+          <LucideDownload/> Esporta XLS
+        </Button>
+        <Button variant={configuration.frozen ? "outline" : "default"} size="sm" onclick={() => freezeDialogOpen = true}>
+          {#if configuration.frozen}
+            <LucideLockOpen/> Sblocca soluzione
+          {:else}
+            <LucideSnowflake/> Congela soluzione
+          {/if}
+        </Button>
+      </div>
+    {:else if optStatus.running}
       <div class="flex items-center justify-center">
         <MdiLoading class="w-6 h-6 ms-4 animate-spin" style="animation-duration: 2s"/>
         <span class="ms-2">Ottimizzazione in corso</span>
@@ -259,3 +306,26 @@
 
   </Collapsible.Content>
 </Collapsible.Root>
+
+<Dialog.Root bind:open={freezeDialogOpen}>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>{configuration.frozen ? "Sbloccare la soluzione?" : "Congelare la soluzione?"}</Dialog.Title>
+      <Dialog.Description>
+        {#if configuration.frozen}
+          La configurazione tornerà modificabile ed eliminabile, e non sarà più elencata tra le soluzioni finali.
+        {:else}
+          La soluzione verrà considerata definitiva: sarà elencata tra le soluzioni finali della sessione e la
+          configurazione non potrà essere modificata né eliminata finché non verrà sbloccata.
+        {/if}
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => freezeDialogOpen = false} disabled={freezing}>Annulla</Button>
+      <Button onclick={toggleFrozen} disabled={freezing}>
+        {#if freezing}<LucideLoaderCircle class="animate-spin"/>{/if}
+        {configuration.frozen ? "Sblocca" : "Congela"}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>

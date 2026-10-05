@@ -15,6 +15,8 @@ export const OptimizationConfigurationRecapSchema = CreationUpdateDateSchema.ext
   id: z.number(),
   session_id: z.number(),
   title: z.string().min(1).max(256),
+  // A frozen configuration holds a solution judged final
+  frozen: z.boolean().default(false),
 }).passthrough();
 
 export const OptimizationLogSchema = CreationUpdateDateSchema.extend({
@@ -35,6 +37,8 @@ export const SolutionCommissionSchema = z.object({
   order_key: z.coerce.number().min(0),
   morning: z.coerce.boolean(),
   duration: z.coerce.number().min(0),
+  // Minutes of each student's discussion (by student id) as used by the solver
+  student_minutes: z.record(z.coerce.number()).default({}),
 
   session_id: z.coerce.number(),
   opt_config_id: z.coerce.number(),
@@ -49,6 +53,11 @@ export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSch
   max_commissions_afternoon: z.coerce.number().min(0).default(6),
   online: z.boolean().default(true),
   run_lock: z.boolean(),
+
+  // Length of each discussion in minutes, by kind of degree
+  duration_bachelors: z.coerce.number().int().min(1).default(15),
+  duration_masters: z.coerce.number().int().min(1).default(20),
+  duration_masters_counter: z.coerce.number().int().min(1).default(30),
 
   min_professor_number: z.coerce.number().min(1).default(1),
   min_professor_number_masters: z.coerce.number().min(1).default(1),

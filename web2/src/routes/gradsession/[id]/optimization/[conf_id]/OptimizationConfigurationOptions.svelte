@@ -229,6 +229,43 @@
               <Form.FieldErrors/>
             </Form.Field>
           </div>
+
+          <h4 class="font-medium mt-6">Durata delle discussioni (in minuti)</h4>
+          <p class="text-sm text-muted-foreground mb-2">
+            A ciascun laureando viene aggiunto l'eventuale tempo bonus indicato nella sezione Studenti Candidati.
+          </p>
+          <div class="grid grid-cols-3 gap-4">
+            <Form.Field {form} name="duration_bachelors">
+              <Form.Control>
+                {#snippet children({props})}
+                  <Form.Label>Laurea Triennale</Form.Label>
+                  <Input type="number" min="1" {...props} bind:value={$formData.duration_bachelors}/>
+                {/snippet}
+              </Form.Control>
+              <Form.Description>Durata della discussione di un laureando triennale</Form.Description>
+              <Form.FieldErrors/>
+            </Form.Field>
+            <Form.Field {form} name="duration_masters">
+              <Form.Control>
+                {#snippet children({props})}
+                  <Form.Label>Laurea Magistrale</Form.Label>
+                  <Input type="number" min="1" {...props} bind:value={$formData.duration_masters}/>
+                {/snippet}
+              </Form.Control>
+              <Form.Description>Durata della discussione di un laureando magistrale senza controrelatore</Form.Description>
+              <Form.FieldErrors/>
+            </Form.Field>
+            <Form.Field {form} name="duration_masters_counter">
+              <Form.Control>
+                {#snippet children({props})}
+                  <Form.Label>Magistrale con Controrelatore</Form.Label>
+                  <Input type="number" min="1" {...props} bind:value={$formData.duration_masters_counter}/>
+                {/snippet}
+              </Form.Control>
+              <Form.Description>Durata della discussione di un laureando magistrale con controrelatore</Form.Description>
+              <Form.FieldErrors/>
+            </Form.Field>
+          </div>
         </div>
 
         <div>

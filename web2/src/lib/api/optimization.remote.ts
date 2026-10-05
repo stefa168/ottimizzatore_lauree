@@ -70,3 +70,13 @@ export const startOptimization = command(configRef, async ({sid, cid}) => {
   await backendFetch(`/sessions/${sid}/configuration/${cid}/solve`);
   await getConfiguration({sid, cid}).refresh();
 });
+
+/** Marks the solution as final (frozen), or makes the configuration editable again. */
+export const setConfigurationFrozen = command(z.object({
+  sid: id,
+  cid: id,
+  frozen: z.boolean(),
+}), async ({sid, cid, frozen}) => {
+  await backendFetch(`/sessions/${sid}/configuration/${cid}/${frozen ? 'freeze' : 'unfreeze'}`, {method: 'POST'});
+  await Promise.all([getConfiguration({sid, cid}).refresh(), getConfigurations(sid).refresh()]);
+});

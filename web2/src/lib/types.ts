@@ -16,7 +16,8 @@ export interface CreationUpdateDate {
 // Graduation Session
 export interface GradSession extends CreationUpdateDate {
   id: number,
-  title: string
+  title: string,
+  archived: boolean
 }
 
 // Graduation Session Entry
@@ -29,7 +30,9 @@ export interface GradSessionEntry extends CreationUpdateDate {
   supervisor_id: number,
   supervisor2_id: number | null,
   supervisor_assistant_id: number | null,
-  counter_supervisor_id: number | null
+  counter_supervisor_id: number | null,
+  // Extra minutes for the discussion
+  bonus_minutes: number
 }
 
 export interface NameSurname {

@@ -4,6 +4,7 @@
   import MaterialSymbolsPersonPin from '~icons/material-symbols/person-pin'
   import MageRobotUwuFill from '~icons/mage/robot-uwu-fill'
   import MdiCogOutline from '~icons/mdi/cog-outline'
+  import RadixIconsArchive from '~icons/radix-icons/archive'
 
   import type {Component} from "svelte";
   import type {SvelteHTMLElements} from "svelte/elements";
@@ -65,6 +66,13 @@
 <!-- Referencing the awaited values makes the whole layout wait for them -->
 {#if session && students && professors}
 <div class="container mx-auto pb-10">
+  {#if session.archived}
+    <div class="mt-4 flex items-center gap-2 rounded-md border px-4 py-2 text-sm text-muted-foreground" role="status">
+      <RadixIconsArchive class="size-4"/>
+      Questa sessione è archiviata. Può essere ripristinata tra le sessioni attive dalla pagina
+      <a href="/archive" class="text-blue-500 hover:underline">Sessioni Archiviate</a>.
+    </div>
+  {/if}
   <EditableSessionTitle {sessionData}/>
 
   <!-- Styles from https://flowbite.com/docs/components/tabs/ -->

@@ -7,6 +7,7 @@ import LucideHash from '~icons/lucide/hash'
 import {sortableHeader} from "@/components/table/utils";
 import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
 import {DegreeLevels} from "@/const";
+import StudentBonusInput from "./StudentBonusInput.svelte";
 
 export const initialTableState: () => InitialTableState = () => ({
   sorting: [{
@@ -17,7 +18,10 @@ export const initialTableState: () => InitialTableState = () => ({
 
 // Using row instead of getValue because for some reason it results to be unknown 🤔
 // https://tanstack.com/table/v8/docs/guide/column-defs#cell-formatting
-export const columns: (professorMap: Map<number, SessionProfessor>) => ColumnDef<GradSessionEntry>[] = (professorMap) => [
+export const columns: (
+  professorMap: Map<number, SessionProfessor>,
+  onBonusChange: (entry: GradSessionEntry, minutes: number) => Promise<void>
+) => ColumnDef<GradSessionEntry>[] = (professorMap, onBonusChange) => [
   {
     id: "id",
     accessorFn: entry => entry.id,
@@ -57,5 +61,14 @@ export const columns: (professorMap: Map<number, SessionProfessor>) => ColumnDef
     header: ({column}) => sortableHeader("Controrelatore", column),
     accessorFn: entry => fullName(professorMap.get(entry.counter_supervisor_id ?? -1)?.professor),
     cell: ({row}) => renderComponent(StyledFullName, {fullName: professorMap.get(row.original.counter_supervisor_id ?? -1)?.professor})
+  },
+  {
+    id: "bonus_minutes",
+    accessorFn: entry => entry.bonus_minutes,
+    header: ({column}) => sortableHeader("Tempo bonus", column),
+    cell: ({row}) => renderComponent(StudentBonusInput, {
+      value: row.original.bonus_minutes,
+      onSave: (minutes: number) => onBonusChange(row.original, minutes)
+    })
   }
 ]

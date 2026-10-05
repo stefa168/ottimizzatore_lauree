@@ -6,6 +6,11 @@
   import IcBaselineInfo from '~icons/ic/baseline-info'
   import IcOutlineKeyboardDoubleArrowRight from '~icons/ic/outline-keyboard-double-arrow-right'
   import {getSessionData} from "../SessionData.svelte";
+  import {getConfigurations} from "@/api/optimization.remote";
+  import {Button} from "@/components/ui/button";
+  import LucideSnowflake from '~icons/lucide/snowflake'
+  import LucideDownload from '~icons/lucide/download'
+  import {dateFormatter} from "@/utils";
 
   let sessionData = getSessionData();
   let session_id = $derived(sessionData.session.id);
@@ -19,6 +24,9 @@
   let professorsWithoutRole = $derived(professors.filter(p => p.role === 'unspecified'));
 
   let problemsPresent = $derived(professorsWithoutRole.length > 0)
+
+  // Configurations whose solution was frozen, i.e. judged final
+  const finalSolutions = $derived((await getConfigurations(session_id)).filter(c => c.frozen));
 </script>
 
 <div>
@@ -45,6 +53,35 @@
     </li>
     <li>Alla sessione parteciperanno {professors.length} docenti.</li>
   </ul>
+</div>
+
+<div>
+  <h2 class="text-2xl border-b-2 mt-6 mb-4 flex items-center">
+    <LucideSnowflake/>
+    <span class="ms-2">Soluzioni finali</span>
+  </h2>
+  {#if finalSolutions.length === 0}
+    <p>
+      Nessuna soluzione è ancora stata congelata. Una soluzione ritenuta completa può essere congelata dalla sua
+      configurazione, nella sezione <a href={`/gradsession/${session_id}/optimization`}
+                                        class="text-blue-500 hover:underline">Ottimizzazione</a>.
+    </p>
+  {:else}
+    <ul class="divide-y rounded-md border" aria-label="Soluzioni finali">
+      {#each finalSolutions as configuration (configuration.id)}
+        {@const url = `/gradsession/${session_id}/optimization/${configuration.id}`}
+        <li class="flex items-center justify-between gap-4 px-4 py-2">
+          <div>
+            <a href={url} class="font-medium hover:underline">{configuration.title}</a>
+            <p class="text-xs text-muted-foreground">Configurazione creata il {dateFormatter.format(configuration.created_at)}</p>
+          </div>
+          <Button variant="outline" size="sm" href={`${url}/export`} download data-sveltekit-reload>
+            <LucideDownload/> Esporta XLS
+          </Button>
+        </li>
+      {/each}
+    </ul>
+  {/if}
 </div>
 
 <div>

@@ -1,6 +1,6 @@
 import {command, query} from "$app/server";
 import {z} from "zod";
-import {backendFetch} from "$lib/server/backend";
+import {backendFetch, jsonBody} from "$lib/server/backend";
 import {withDates} from "$lib/server/dates";
 import type {GradSession, GradSessionEntry, SessionProfessor} from "@/types";
 
@@ -55,4 +55,23 @@ export const renameSession = command(z.object({sid: id, title: z.string()}), asy
 export const deleteSession = command(id, async (sid) => {
   await backendFetch(`/sessions/${sid}`, {method: 'DELETE'});
   await getSessions().refresh();
+});
+
+/** Moves the session to the archive, or back among the active sessions. */
+export const setSessionArchived = command(z.object({sid: id, archived: z.boolean()}), async ({sid, archived}) => {
+  const session = withDates<GradSession>(
+    await backendFetch(`/sessions/${sid}/${archived ? 'archive' : 'unarchive'}`, {method: 'POST'}));
+  getSession(sid).set(session);
+  await getSessions().refresh();
+  return session;
+});
+
+/** Sets the bonus time (minutes) of a student's discussion. */
+export const updateStudentBonus = command(z.object({
+  sid: id,
+  entryId: id,
+  minutes: z.number().int().min(0).max(120),
+}), async ({sid, entryId, minutes}) => {
+  await backendFetch(`/sessions/${sid}/students/${entryId}`, jsonBody('PATCH', {bonus_minutes: minutes}));
+  await getSessionStudents(sid).refresh();
 });

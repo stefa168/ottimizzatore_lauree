@@ -3,7 +3,8 @@
   import {columns} from "./columns";
   import {getSessions} from "@/api/sessions.remote";
 
-  const sessions = $derived(await getSessions());
+  // Archived sessions are listed in their own page
+  const sessions = $derived((await getSessions()).filter(s => !s.archived));
 </script>
 
 <div class="border-b-2 mb-6">
