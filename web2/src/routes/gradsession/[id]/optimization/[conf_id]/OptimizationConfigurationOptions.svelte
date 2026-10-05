@@ -328,7 +328,7 @@
                   </Select.Trigger>
                   <Select.Content>
                     {#each enumKeys(SolverType) as solverItem}
-                      <Select.Item value={solverItem} label={solverItem} disabled={(solverItem !== SolverType.CPLEX)}/>
+                      <Select.Item value={solverItem} label={solverItem} disabled={(solverItem === SolverType.GLPK)}/>
                     {/each}
                   </Select.Content>
                 </Select.Root>

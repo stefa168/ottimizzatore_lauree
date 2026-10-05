@@ -195,9 +195,11 @@ def create_min_durata_model(dat_path: Path) -> pyo.AbstractModel:
         return sum(m.z[sp, com] for sp in model.sp_by_person[pid]) <= 1
 
 
-    # 7. Every person at most in one commission overall
-    def person_comm_c(m, pid):
-        return sum(m.zp[pid, com] for com in m.commissioni) <= 1
+    # 7. Every Session Professor at most in one commission overall. A professor who isn't split has a single SP, so they
+    # sit in one commission; the parts of a split professor can sit in different commissions (e.g. one in the morning
+    # and one in the afternoon), never in the same one (see one_sp_per_person_per_comm).
+    def sp_comm_c(m, sp):
+        return sum(m.z[sp, com] for com in m.commissioni) <= 1
 
     # 8. min_ord is minimum number of ordinari per commission
     def prof_min_ord_c(m, com):
@@ -242,7 +244,7 @@ def create_min_durata_model(dat_path: Path) -> pyo.AbstractModel:
     model.linkPersonLower = pyo.Constraint(model.Persone, model.commissioni, rule=link_person_lower)
 
     model.oneSpPerPersonPerComm = pyo.Constraint(model.Persone, model.commissioni, rule=one_sp_per_person_per_comm)
-    model.personCommCst = pyo.Constraint(model.Persone, rule=person_comm_c)
+    model.spCommCst = pyo.Constraint(model.SPs, rule=sp_comm_c)
 
     model.profMinOrdCst = pyo.Constraint(model.commissioni, rule=prof_min_ord_c)
     model.profMaxOrdCst = pyo.Constraint(model.commissioni, rule=prof_max_ord_c)
