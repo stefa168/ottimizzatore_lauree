@@ -8,6 +8,8 @@ from advanced_alchemy.base import IdentityAuditBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from v2.db.models import SessionEntry, Professor, TimeAvailability, OptimizationConfiguration, SessionProfessor
+from v2.db.models.enums import Degree
+from v2.db.models.optimization_configuration import DiscussionDurations
 
 
 @dataclass
@@ -15,6 +17,8 @@ class GradSession(IdentityAuditBase):
     __tablename__ = "sessions"
 
     title: Mapped[str] = mapped_column(sa.String(256), nullable=False)
+    # Archived sessions are listed separately from the active ones
+    archived: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
     # date
     entries: Mapped[list['SessionEntry']] = relationship(
         "SessionEntry",
@@ -44,7 +48,11 @@ class GradSession(IdentityAuditBase):
     def __repr__(self):
         return f"Commission({self.id=}, {self.title=}, {self.entries=})"
 
-    def export_xls(self) -> bytes:
+    def export_xls(self, durations: DiscussionDurations) -> bytes:
+        """
+        Exports the session for the solver. `Durata` is each discussion's length (configured length plus the
+        student's bonus); `Magistrale` tells master's degree students apart, which can't be inferred from the length.
+        """
         def si_no(yes: bool) -> str:
             return 'SI' if yes else 'NO'
 
@@ -54,7 +62,7 @@ class GradSession(IdentityAuditBase):
             return si_no(av.available_morning), si_no(av.available_afternoon)
 
         columns: Final = [
-            "ID_Studente", "Cognome", "Nome", "Durata",
+            "ID_Studente", "Cognome", "Nome", "Durata", "Magistrale",
             # Supervisor columns (SessionProfessor + Professor)
             "ID_Relatore", "PID_Relatore", "Relatore", "Ruolo_Relatore", "Relatore_Mattina", "Relatore_Pomeriggio",
             # Counter-supervisor columns (optional; if absent the row cells will be NaN and are handled downstream)
@@ -81,7 +89,8 @@ class GradSession(IdentityAuditBase):
                         entry.candidate.id,
                         entry.candidate.surname,
                         entry.candidate.first_name,
-                        entry.get_duration(),
+                        entry.get_duration(durations),
+                        si_no(entry.degree_level == Degree.MASTERS),
 
                         # Supervisor (SessionProfessor + Professor IDs)
                         supervisor_sp.id,

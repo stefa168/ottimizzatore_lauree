@@ -5,9 +5,12 @@ GRAD_SESSIONS_LIST = '/sessions'
 GRAD_SESSIONS_UPLOAD_EXCEL = '/sessions/upload'
 GRAD_SESSION_RETRIEVE = "/sessions/{sid:int}"
 GRAD_SESSION_DELETE = "/sessions/{sid:int}"
+GRAD_SESSION_ARCHIVE = "/sessions/{sid:int}/archive"
+GRAD_SESSION_UNARCHIVE = "/sessions/{sid:int}/unarchive"
 
 # Grad Session Student Urls
 GRAD_SESSION_ENTRY_LIST = "/sessions/{sid:int}/students"
+GRAD_SESSION_ENTRY_UPDATE = "/sessions/{sid:int}/students/{entry_id:int}"
 
 # Professor Urls
 SESSION_PROFESSOR_LIST = "/sessions/{sid:int}/professors"
@@ -25,3 +28,6 @@ GRAD_SESSION_OPT_CONF_DELETE = "/sessions/{sid:int}/configuration/{cid:int}"
 GRAD_SESSION_OPT_CONF_GET_COMPLETE = "/sessions/{sid:int}/configuration/{cid:int}"
 GRAD_SESSION_OPT_CONF_LIST = "/sessions/{sid:int}/configuration/"
 GRAD_SESSION_OPT_CONF_SOLVE = "/sessions/{session_id:int}/configuration/{config_id:int}/solve"
+GRAD_SESSION_OPT_CONF_FREEZE = "/sessions/{sid:int}/configuration/{cid:int}/freeze"
+GRAD_SESSION_OPT_CONF_UNFREEZE = "/sessions/{sid:int}/configuration/{cid:int}/unfreeze"
+GRAD_SESSION_OPT_CONF_EXPORT = "/sessions/{sid:int}/configuration/{cid:int}/export"

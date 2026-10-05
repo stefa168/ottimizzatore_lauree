@@ -39,6 +39,10 @@ class SolutionCommission(IdentityAuditBase):
 
     morning: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='True', default=True)
     duration: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='0', default=0)
+    # Minutes of each student's discussion (by student id) as used by the solver, so the solution keeps them even if
+    # the configured lengths or a student's bonus change later
+    student_minutes: Mapped[dict[str, int]] = mapped_column(
+        sa.JSON, nullable=False, server_default='{}', default=dict)
 
     # The commission that this solution is for
     session_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("sessions.id"), nullable=False)

@@ -281,7 +281,7 @@ async def extract_commissions(
     session_id = config.session_id
 
     for commission_id, commission in enumerate(commission_model):
-        new_commission = SolutionCommission(morning=morning, duration=0)
+        new_commission = SolutionCommission(morning=morning, duration=0, student_minutes={})
 
         # Professors selected for this commission: check z[SP_ID, commission]
         for _, prof_row in cast(DataFrame, model.docenti).iterrows():
@@ -301,8 +301,10 @@ async def extract_commissions(
             if value(model.x[candidate, commission]) > 0.8:
                 session_candidate = await students_repo.get(int(candidate))
 
+                minutes = int(model.tesisti.loc[candidate, 'Durata'])
                 new_commission.students.append(session_candidate)
-                new_commission.duration += int(model.tesisti.loc[candidate, 'Durata'])
+                new_commission.student_minutes[str(int(candidate))] = minutes
+                new_commission.duration += minutes
 
         commissions.append(new_commission)
 

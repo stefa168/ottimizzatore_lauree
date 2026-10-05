@@ -31,7 +31,8 @@ class OptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
 class CloneOptConfDTO(SQLAlchemyDTO[OptimizationConfiguration]):
     config = SQLAlchemyDTOConfig(
         max_nested_depth=0,
-        exclude={"id", "created_at", "updated_at", "run_lock", "optimization_log", "commissions"}
+        # A clone is a new, editable configuration: it's never frozen
+        exclude={"id", "created_at", "updated_at", "run_lock", "frozen", "optimization_log", "commissions"}
     )
 
 
@@ -39,14 +40,15 @@ class OptConfPatchDTO(SQLAlchemyDTO[OptimizationConfiguration]):
     config = SQLAlchemyDTOConfig(
         max_nested_depth=0,
         partial=True,
-        exclude={"id", "created_at", "updated_at", "session_id", "optimization_log", "commissions"}
+        # `frozen` changes only through the freeze/unfreeze endpoints
+        exclude={"id", "created_at", "updated_at", "session_id", "frozen", "optimization_log", "commissions"}
     )
 
 
 class OptConfListDTO(SQLAlchemyDTO[OptimizationConfiguration]):
     config = SQLAlchemyDTOConfig(
         max_nested_depth=0,
-        include={"session_id", "id", "title", "created_at", "updated_at"}
+        include={"session_id", "id", "title", "frozen", "created_at", "updated_at"}
     )
 
 
@@ -74,6 +76,8 @@ class SolutionCommissionDTO(BaseModel):
     order_key: int
     morning: bool
     duration: int
+    # Minutes of each student's discussion (by student id) as used by the solver
+    student_minutes: dict[str, int]
 
     session_id: int
     opt_config_id: int
@@ -122,6 +126,11 @@ class OptConfCompleteDTO(BaseModel):
     optimization_time_limit: int
     optimization_gap: float
     run_lock: bool
+    frozen: bool
+
+    duration_bachelors: int
+    duration_masters: int
+    duration_masters_counter: int
 
     optimization_log: OptimizationLogDTO | None
     commissions: list[SolutionCommissionDTO]

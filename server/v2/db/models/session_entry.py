@@ -13,11 +13,15 @@ from v2.utils.auto_named_enum import auto_named_enum
 
 if TYPE_CHECKING:
     from v2.db.models import Student, GradSession
+    from v2.db.models.optimization_configuration import DiscussionDurations
 
 
 @dataclass
 class SessionEntry(IdentityAuditBase):
     __tablename__ = "session_entries"
+    __table_args__ = (
+        sa.CheckConstraint("bonus_minutes >= 0", name="ck_session_entries_bonus_minutes_non_negative"),
+    )
 
     # Session Foreign Key
     session_id: Mapped[int] = mapped_column(sa.BigInteger, ForeignKey("sessions.id"), nullable=False)
@@ -62,8 +66,22 @@ class SessionEntry(IdentityAuditBase):
     counter_supervisor: Mapped[SessionProfessor | None] = relationship(
         'SessionProfessor', foreign_keys=[counter_supervisor_id])
 
-    def get_duration(self) -> int:
-        return 15 if self.degree_level == Degree.BACHELORS else 20 if self.counter_supervisor is None else 30
+    # Extra minutes granted to the student for the discussion (e.g. for students entitled to more time)
+    bonus_minutes: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=0, server_default='0')
+
+    @property
+    def has_counter_supervisor(self) -> bool:
+        return self.counter_supervisor_id is not None
+
+    def get_duration(self, durations: DiscussionDurations) -> int:
+        """Length of the discussion in minutes: the configured length for the kind of degree, plus the bonus."""
+        if self.degree_level == Degree.BACHELORS:
+            base = durations.bachelors
+        elif self.has_counter_supervisor:
+            base = durations.masters_counter
+        else:
+            base = durations.masters
+        return base + self.bonus_minutes
 
     def __repr__(self):
         return f"CommissionEntry({self.id=}, {self.session_id=}, {self.candidate.full_name}, {self.degree_level=}, " \

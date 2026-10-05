@@ -18,6 +18,15 @@ if TYPE_CHECKING:
 from v2.db.models.enums import SolverEnum
 
 
+@dataclass(frozen=True)
+class DiscussionDurations:
+    """Length in minutes of a discussion, by kind of degree."""
+    bachelors: int = 15
+    masters: int = 20
+    # Master's degree discussion with a counter-supervisor
+    masters_counter: int = 30
+
+
 @dataclass
 class OptimizationConfiguration(IdentityAuditBase):
     __tablename__ = "optimization_configurations"
@@ -25,6 +34,10 @@ class OptimizationConfiguration(IdentityAuditBase):
         CheckConstraint(
             "NOT online OR (min_professor_number IS NOT NULL AND min_professor_number_masters IS NOT NULL AND max_professor_number IS NOT NULL)",
             name="ck_online_requires_professor_numbers"
+        ),
+        CheckConstraint(
+            "duration_bachelors > 0 AND duration_masters > 0 AND duration_masters_counter > 0",
+            name="ck_discussion_durations_positive"
         ),
     )
 
@@ -60,6 +73,14 @@ class OptimizationConfiguration(IdentityAuditBase):
     optimization_gap: Mapped[float] = mapped_column(sa.Float, nullable=False, server_default='0.005', default=0.005)
     run_lock: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
 
+    # Length of each discussion (minutes), by kind of degree
+    duration_bachelors: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='15', default=15)
+    duration_masters: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='20', default=20)
+    duration_masters_counter: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='30', default=30)
+
+    # A frozen configuration holds a solution judged final: it can't be changed or deleted until it's unfrozen
+    frozen: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+
     optimization_log: Mapped[OptimizationLog | None] = relationship(
         "OptimizationLog",
         back_populates="opt_config",
@@ -73,6 +94,10 @@ class OptimizationConfiguration(IdentityAuditBase):
         cascade="all, delete-orphan",
         lazy="selectin"
     )
+
+    @property
+    def durations(self) -> DiscussionDurations:
+        return DiscussionDurations(self.duration_bachelors, self.duration_masters, self.duration_masters_counter)
 
     def create_dat_file(self, base_path: Path) -> tuple[Path, Path]:
         dat_file = base_path / "temp.dat"

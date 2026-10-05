@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import re
 import shutil
+from urllib.parse import quote
 
 import structlog
-from litestar import Controller, get, patch, delete, post
+from litestar import Controller, Response, get, patch, delete, post
 from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from v2.db.models import SolutionCommission
@@ -21,9 +24,18 @@ from v2.domain.grad_sessions.deps import (
 from v2.domain.grad_sessions.schemas import OptConfDTO, OptConfPatchDTO, OptConfListDTO, OptConfCompleteDTO, \
     CloneOptConfDTO
 from v2.domain.grad_sessions.services import check_gs_exists_raise, get_opt_conf_raise
+from v2.domain.grad_sessions.solution_export import XLSX_MEDIA_TYPE, build_solution_xlsx
 from v2.utils import job_queue
 
 logger = structlog.stdlib.get_logger(__name__)
+
+
+def raise_if_frozen(config: OptimizationConfiguration) -> None:
+    if config.frozen:
+        raise HTTPException(
+            detail="The configuration is frozen: unfreeze it before changing or deleting it",
+            status_code=http_statuses.HTTP_409_CONFLICT
+        )
 
 
 class OptimizationConfigurationController(Controller):
@@ -73,14 +85,67 @@ class OptimizationConfigurationController(Controller):
                                    opt_conf_repo: OptimizationConfigurationRepository
                                    ) -> OptimizationConfiguration:
         config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        raise_if_frozen(config)
         return data.update_instance(config)
 
     @delete(urls.GRAD_SESSION_OPT_CONF_UPDATE, status_code=http_statuses.HTTP_200_OK)
     async def delete_configuration(self, sid: int, cid: int,
                                    opt_conf_repo: OptimizationConfigurationRepository
                                    ) -> None:
-        await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        raise_if_frozen(config)
         await opt_conf_repo.delete(cid)
+
+    @post(urls.GRAD_SESSION_OPT_CONF_FREEZE, return_dto=OptConfDTO, status_code=http_statuses.HTTP_200_OK)
+    async def freeze_configuration(self, sid: int, cid: int,
+                                   opt_conf_repo: OptimizationConfigurationRepository
+                                   ) -> OptimizationConfiguration:
+        """Marks the solution of the configuration as final: the configuration can't be changed or deleted."""
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        if len(config.commissions) == 0:
+            raise HTTPException(
+                detail="Only a configuration with a solution can be frozen",
+                status_code=http_statuses.HTTP_409_CONFLICT
+            )
+        config.frozen = True
+        return config
+
+    @post(urls.GRAD_SESSION_OPT_CONF_UNFREEZE, return_dto=OptConfDTO, status_code=http_statuses.HTTP_200_OK)
+    async def unfreeze_configuration(self, sid: int, cid: int,
+                                     opt_conf_repo: OptimizationConfigurationRepository
+                                     ) -> OptimizationConfiguration:
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        config.frozen = False
+        return config
+
+    @get(urls.GRAD_SESSION_OPT_CONF_EXPORT)
+    async def export_solution(self, sid: int, cid: int,
+                              db_session: AsyncSession,
+                              opt_conf_repo: OptimizationConfigurationRepository
+                              ) -> Response[bytes]:
+        """Excel file with the commissions of the solution: one row per student, plus the professors."""
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo, load=[
+            selectinload(OptimizationConfiguration.commissions).options(
+                selectinload(SolutionCommission.professors),
+                selectinload(SolutionCommission.students)
+            )
+        ])
+        if len(config.commissions) == 0:
+            raise HTTPException(
+                detail="The configuration has no solution to export",
+                status_code=http_statuses.HTTP_409_CONFLICT
+            )
+
+        content = await build_solution_xlsx(config, db_session)
+        # Characters that aren't allowed in file names (e.g. "/" in a title) become "-"
+        filename = re.sub(r'[\\/:*?"<>|]+', "-", f"commissioni-{config.session.title}-{config.title}") + ".xlsx"
+        # Headers must be latin-1: an ASCII fallback, plus the UTF-8 name for browsers that support it (RFC 6266)
+        ascii_name = filename.encode("ascii", "replace").decode().replace('"', "'").replace("?", "_")
+        return Response(
+            content,
+            media_type=XLSX_MEDIA_TYPE,
+            headers={"Content-Disposition": f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(filename)}'}
+        )
 
     @get(urls.GRAD_SESSION_OPT_CONF_GET_COMPLETE)
     async def get_complete_configuration(self, sid: int, cid: int,
@@ -138,7 +203,7 @@ class OptimizationConfigurationController(Controller):
             config.create_dat_file(cc_path)
 
             with (cc_path / "val.xls").open('wb') as f:
-                f.write(config.session.export_xls())
+                f.write(config.session.export_xls(config.durations))
         except Exception:
             logger.exception(f"Error during optimization files creation for session {session_id}, config {config_id}")
             if cc_path.exists():

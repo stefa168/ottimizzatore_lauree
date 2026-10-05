@@ -50,6 +50,16 @@ class SessionReadDTO(SQLAlchemyDTO[GradSession]):
     )
 
 
+async def set_archived(grad_session_repository: GradSessionRepository, sid: int, archived: bool) -> GradSession:
+    session_db = await get_one_or_raise(
+        grad_session_repository,
+        GradSession.id == sid,
+        not_found_msg=f"Session with ID {sid} not found"
+    )
+    session_db.archived = archived
+    return session_db
+
+
 class GraduationSessionController(Controller):
     """Graduation Sessions Controller"""
 
@@ -93,6 +103,15 @@ class GraduationSessionController(Controller):
         session_db.title = data
 
         return session_db
+
+    @post(urls.GRAD_SESSION_ARCHIVE, return_dto=SessionReadDTO, status_code=http_statuses.HTTP_200_OK)
+    async def archive_session(self, sid: int, grad_session_repository: GradSessionRepository) -> GradSession:
+        """Moves the session to the archive (it stays readable and can be restored)."""
+        return await set_archived(grad_session_repository, sid, True)
+
+    @post(urls.GRAD_SESSION_UNARCHIVE, return_dto=SessionReadDTO, status_code=http_statuses.HTTP_200_OK)
+    async def unarchive_session(self, sid: int, grad_session_repository: GradSessionRepository) -> GradSession:
+        return await set_archived(grad_session_repository, sid, False)
 
     @post(urls.GRAD_SESSIONS_UPLOAD_EXCEL, return_dto=SessionReadDTO)
     async def upload_xls(

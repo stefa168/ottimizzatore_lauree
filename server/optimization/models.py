@@ -83,6 +83,12 @@ def create_min_durata_model(dat_path: Path) -> pyo.AbstractModel:
     # 9. Parameters
     # Durata per candidato
     model.durata = pyo.Param(model.Candidati, initialize=lambda m, t: int(m.tesisti.loc[t, "Durata"]), within=pyo.NonNegativeIntegers)
+    # Master's degree candidates. Read from the data: the length can't tell (lengths are configurable and include
+    # each student's bonus time)
+    model.magistrale = pyo.Param(
+        model.Candidati,
+        initialize=lambda m, t: 1 if str(m.tesisti.loc[t, "Magistrale"]).upper() == "SI" else 0,
+        within=pyo.Binary)
 
     # Supervisor SP and Counter-supervisor SP for each candidate (NaN -> None)
     def _safe_int(x):
@@ -211,8 +217,7 @@ def create_min_durata_model(dat_path: Path) -> pyo.AbstractModel:
 
     # 12. If a magistrale student is assigned, commission must be magistrale
     def comm_mag1(m, t, com):
-        # duration > 15 is magistrale in this model
-        return m.x[t, com] * int(m.durata[t] > 15) <= m.y2[com]
+        return m.x[t, com] * m.magistrale[t] <= m.y2[com]
 
     # 13. Minimum number of professors for magistrale commission
     def comm_mag2(m, com):
@@ -224,7 +229,7 @@ def create_min_durata_model(dat_path: Path) -> pyo.AbstractModel:
 
     # 15. Commission cannot be magistrale if no magistrale student is present
     def comm_mag4(m, com):
-        return sum(m.x[t, com] * int(m.durata[t] > 15) for t in m.Candidati) >= m.y2[com]
+        return sum(m.x[t, com] * m.magistrale[t] for t in m.Candidati) >= m.y2[com]
 
     model.allCandCst = pyo.Constraint(model.Candidati, rule=all_candidates_c)
     model.commDurCst = pyo.Constraint(model.commissioni, rule=comm_duration_c)
