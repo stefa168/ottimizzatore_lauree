@@ -24,6 +24,7 @@ class Professor(IdentityAuditBase):
 
     __table_args__ = (
         sa.Index("idx_professors_name_surname_unique", "first_name", "surname", unique=True),
+        sa.CheckConstraint("prior_commissions >= 0", name="prior_commissions_non_negative"),
     )
 
     first_name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
@@ -32,6 +33,8 @@ class Professor(IdentityAuditBase):
                                                  nullable=False,
                                                  default=UniversityRole.UNSPECIFIED,
                                                  server_default="UNSPECIFIED")
+    # Commissions the professor took part in before this system was used, entered by hand
+    prior_commissions: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=0, server_default='0')
 
     @property
     def full_name(self):

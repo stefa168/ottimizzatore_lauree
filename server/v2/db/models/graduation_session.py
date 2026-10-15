@@ -19,6 +19,12 @@ class GradSession(IdentityAuditBase):
     title: Mapped[str] = mapped_column(sa.String(256), nullable=False)
     # Archived sessions are listed separately from the active ones
     archived: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default='False', default=False)
+    # The configuration whose solution was actually used. Its commissions count for the professors while the session
+    # is archived. (use_alter: sessions and configurations reference each other)
+    used_configuration_id: Mapped[int | None] = mapped_column(
+        sa.BigInteger,
+        sa.ForeignKey("optimization_configurations.id", ondelete="SET NULL", use_alter=True),
+        nullable=True)
     # date
     entries: Mapped[list['SessionEntry']] = relationship(
         "SessionEntry",
@@ -29,6 +35,7 @@ class GradSession(IdentityAuditBase):
     configurations: Mapped[list['OptimizationConfiguration']] = relationship(
         "OptimizationConfiguration",
         back_populates="session",
+        foreign_keys="OptimizationConfiguration.session_id",
         cascade="all, delete-orphan",
         lazy="subquery"
     )

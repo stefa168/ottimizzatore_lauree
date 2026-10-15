@@ -57,6 +57,9 @@ async def set_archived(grad_session_repository: GradSessionRepository, sid: int,
         not_found_msg=f"Session with ID {sid} not found"
     )
     session_db.archived = archived
+    if not archived:
+        # A restored session is no longer final: its commissions stop being counted until a configuration is used again
+        session_db.used_configuration_id = None
     return session_db
 
 

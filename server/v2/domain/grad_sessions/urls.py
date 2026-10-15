@@ -20,6 +20,7 @@ SESSION_PROFESSOR_SUBSTITUTE = "/sessions/{session_id:int}/professors/{session_p
 SESSION_PROFESSOR_SUBSTITUTE_DELETE = "/sessions/{session_id:int}/professors/{session_professor_id:int}/substitute"
 PROFESSOR_UPDATE = "/professors"
 PROFESSOR_LIST = "/professors"
+PROFESSOR_OVERVIEW = "/professors/overview"
 
 # Optimization Configurations Urls
 GRAD_SESSION_OPT_CONF_NEW = "/sessions/{sid:int}/configuration/new"
@@ -31,3 +32,4 @@ GRAD_SESSION_OPT_CONF_SOLVE = "/sessions/{session_id:int}/configuration/{config_
 GRAD_SESSION_OPT_CONF_FREEZE = "/sessions/{sid:int}/configuration/{cid:int}/freeze"
 GRAD_SESSION_OPT_CONF_UNFREEZE = "/sessions/{sid:int}/configuration/{cid:int}/unfreeze"
 GRAD_SESSION_OPT_CONF_EXPORT = "/sessions/{sid:int}/configuration/{cid:int}/export"
+GRAD_SESSION_OPT_CONF_USE = "/sessions/{sid:int}/configuration/{cid:int}/use"

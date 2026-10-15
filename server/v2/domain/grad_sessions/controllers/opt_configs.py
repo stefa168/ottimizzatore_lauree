@@ -14,7 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from v2.db.models import SolutionCommission
-from v2.db.models import OptimizationConfiguration
+from v2.db.models import OptimizationConfiguration, GradSession
+from v2.domain.grad_sessions.controllers.gs import SessionReadDTO
 from v2.domain.grad_sessions import urls
 from v2.domain.grad_sessions.deps import (
     SessionEntryRepository,
@@ -115,8 +116,33 @@ class OptimizationConfigurationController(Controller):
                                      opt_conf_repo: OptimizationConfigurationRepository
                                      ) -> OptimizationConfiguration:
         config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        if config.session.used_configuration_id == config.id:
+            raise HTTPException(
+                detail="The configuration is the one used for the session: restore the session to change it",
+                status_code=http_statuses.HTTP_409_CONFLICT
+            )
         config.frozen = False
         return config
+
+    @post(urls.GRAD_SESSION_OPT_CONF_USE, return_dto=SessionReadDTO, status_code=http_statuses.HTTP_200_OK)
+    async def use_configuration(self, sid: int, cid: int,
+                                opt_conf_repo: OptimizationConfigurationRepository
+                                ) -> GradSession:
+        """
+        Marks the solution of the configuration as the one actually used: the configuration is frozen and the session
+        archived. From then on its commissions are counted for the professors.
+        """
+        config = await get_opt_conf_raise(cid, sid, opt_conf_repo)
+        if len(config.commissions) == 0:
+            raise HTTPException(
+                detail="Only a configuration with a solution can be used",
+                status_code=http_statuses.HTTP_409_CONFLICT
+            )
+        config.frozen = True
+        session = config.session
+        session.used_configuration_id = config.id
+        session.archived = True
+        return session
 
     @get(urls.GRAD_SESSION_OPT_CONF_EXPORT)
     async def export_solution(self, sid: int, cid: int,

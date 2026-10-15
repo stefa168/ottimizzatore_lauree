@@ -10,9 +10,14 @@ from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 import litestar.status_codes as http_statuses
 from litestar.plugins.sqlalchemy import SQLAlchemyDTO
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
+import sqlalchemy as sa
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from v2.db.models import Professor, SessionProfessor, TimeAvailability, SessionEntry
+from v2.db.models import Professor, SessionProfessor, TimeAvailability, SessionEntry, SolutionCommission, GradSession
+from v2.db.models.enums import UniversityRole
+from v2.db.models.solution_commission import SolutionCommissionProfessor
 from v2.db.models.enums import SessionProfessorRelation
 from v2.domain.grad_sessions import urls
 from v2.domain.grad_sessions.deps import (
@@ -49,6 +54,23 @@ class SessionProfessorSplit(BaseModel):
     when: TimeAvailability
     note: str | None
     students: set[int]
+
+
+class ProfessorOverview(BaseModel):
+    id: int
+    first_name: str
+    surname: str
+    role: UniversityRole
+    # Entered by hand: commissions from before this system
+    prior_commissions: int
+    # Counted from the configurations used for the archived sessions
+    commissions: int
+    sessions: int
+
+    @computed_field
+    @property
+    def total(self) -> int:
+        return self.commissions + self.prior_commissions
 
 
 class SessionProfessorSubstitute(BaseModel):
@@ -354,6 +376,49 @@ class SessionProfessorController(Controller):
         await session_professor_repository.delete(substitute_sp.id)
 
     # todo move to a separate Professors Controller
+    @get(urls.PROFESSOR_OVERVIEW)
+    async def professors_overview(self, db_session: AsyncSession) -> list[ProfessorOverview]:
+        """
+        All the professors, with the commissions they took part in. Only the configuration used for each archived
+        session counts; a professor counts once per commission, whichever of their session professors (original, split
+        part or substitute) sat in it.
+        """
+        counted = (
+            select(
+                SessionProfessor.professor_id.label("professor_id"),
+                sa.func.count(sa.distinct(SolutionCommission.id)).label("commissions"),
+                sa.func.count(sa.distinct(SolutionCommission.session_id)).label("sessions"),
+            )
+            .select_from(SolutionCommissionProfessor)
+            .join(SolutionCommission, SolutionCommission.id == SolutionCommissionProfessor.solution_commission_id)
+            .join(GradSession, sa.and_(
+                GradSession.id == SolutionCommission.session_id,
+                GradSession.archived.is_(True),
+                GradSession.used_configuration_id == SolutionCommission.opt_config_id,
+            ))
+            .join(SessionProfessor, SessionProfessor.id == SolutionCommissionProfessor.professor_id)
+            .group_by(SessionProfessor.professor_id)
+            .subquery()
+        )
+        rows = (await db_session.execute(
+            select(Professor, counted.c.commissions, counted.c.sessions)
+            .outerjoin(counted, counted.c.professor_id == Professor.id)
+            .order_by(Professor.surname, Professor.first_name)
+        )).all()
+
+        return [
+            ProfessorOverview(
+                id=professor.id,
+                first_name=professor.first_name,
+                surname=professor.surname,
+                role=professor.role,
+                prior_commissions=professor.prior_commissions,
+                commissions=commissions or 0,
+                sessions=sessions or 0,
+            )
+            for professor, commissions, sessions in rows
+        ]
+
     @get(urls.PROFESSOR_LIST)
     async def list_professors(self, professor_repository: ProfessorRepository) -> list[Professor]:
         """Lists all the known professors, e.g. to choose a substitute."""
@@ -383,9 +448,14 @@ class SessionProfessorController(Controller):
                                - If no professor with the given ID is found, raises an exception
                                   with a 404 status code.
         """
-        pid = data.as_builtins().get("id")
+        values = data.as_builtins()
+        pid = values.get("id")
         if pid is None:
             raise HTTPException(detail="Field `id` is required for patch",
+                                status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY)
+        prior = values.get("prior_commissions")
+        if prior is not None and not 0 <= prior <= 1000:
+            raise HTTPException(detail="`prior_commissions` must be between 0 and 1000",
                                 status_code=http_statuses.HTTP_422_UNPROCESSABLE_ENTITY)
 
         professor: Professor | None = await professor_repository.get_one_or_none(Professor.id == pid)

@@ -52,6 +52,7 @@ class OptimizationConfiguration(IdentityAuditBase):
     session: Mapped['GradSession'] = relationship(
         "GradSession",
         back_populates="configurations",
+        foreign_keys=[session_id],
         lazy="selectin")
 
     max_duration: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default='210', default=210)
