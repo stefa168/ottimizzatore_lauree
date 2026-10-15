@@ -18,6 +18,7 @@
   import LucideLockOpen from '~icons/lucide/lock-open'
   import LucideCircleCheck from '~icons/lucide/circle-check'
   import LucideLoaderCircle from '~icons/lucide/loader-circle'
+  import LucideTriangleAlert from '~icons/lucide/triangle-alert'
   import {toApiError} from "@/errors";
   import type {SessionData} from "../../../SessionData.svelte";
 
@@ -86,6 +87,11 @@
   let freezeDialogOpen = $state(false);
   let freezing = $state(false);
   const exportUrl = $derived(`/gradsession/${sessionData.session.id}/optimization/${configuration.id}/export`);
+
+  // The solution keeps its commissions as they were computed; it's outdated if the session professors changed since
+  // (a member's split part or substitute was removed, or a member was later split or substituted)
+  const outdated = $derived((configuration.commissions ?? []).some(c => c.outdated || c.members.some(m =>
+    m.session_professor_id !== null && (sessionData.childrenOf.get(m.session_professor_id)?.length ?? 0) > 0)));
 
   // The used configuration is the one whose commissions count for the professors; using it also archives the session
   const isUsed = $derived(sessionData.session.used_configuration_id === configuration.id);
@@ -286,6 +292,17 @@
           </li>
         </ul>
       </div>
+
+      {#if outdated}
+        <Alert.Root class="my-4">
+          <LucideTriangleAlert/>
+          <Alert.Title>I docenti della sessione sono cambiati dopo questa soluzione</Alert.Title>
+          <Alert.Description>
+            Le commissioni mostrano i docenti com'erano al momento dell'ottimizzazione. Per tenere conto delle
+            modifiche (divisioni o sostituzioni) è necessario eseguire una nuova ottimizzazione.
+          </Alert.Description>
+        </Alert.Root>
+      {/if}
 
       {#if commissions.morning.length > 0}
         <h3 class="border-b mb-4 pe-2 pb-1 pt-2">Commissioni Mattutine</h3>

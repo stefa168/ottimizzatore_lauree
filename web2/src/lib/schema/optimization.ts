@@ -33,6 +33,25 @@ export const OptimizationLogSchema = CreationUpdateDateSchema.extend({
 }).passthrough();
 
 
+const CommissionPersonSchema = z.object({
+  id: z.number(),
+  first_name: z.string(),
+  surname: z.string(),
+  role: z.enum(['ordinary', 'associate', 'researcher', 'unspecified']),
+});
+
+// A professor of a solved commission, as they sat in it when the solution was computed
+export const SolutionCommissionMemberSchema = z.object({
+  professor: CommissionPersonSchema,
+  // Null if the session professor was removed after solving (e.g. the split was changed)
+  session_professor_id: z.number().nullable(),
+  relation: z.enum(['ORIGINAL', 'SPLIT', 'SUBSTITUTE']),
+  // Split part (also for the substitute of a part)
+  part: z.number().nullable(),
+  substitute_of: CommissionPersonSchema.nullable(),
+  availability: z.enum(['always', 'morning', 'afternoon']),
+});
+
 export const SolutionCommissionSchema = z.object({
   order_key: z.coerce.number().min(0),
   morning: z.coerce.boolean(),
@@ -43,9 +62,13 @@ export const SolutionCommissionSchema = z.object({
   session_id: z.coerce.number(),
   opt_config_id: z.coerce.number(),
 
-  professor_ids: z.array(z.coerce.number()),
+  members: z.array(SolutionCommissionMemberSchema),
+  // Whether the session professors changed after solving
+  outdated: z.boolean(),
   student_ids: z.array(z.coerce.number()),
 })
+
+export type SolutionCommissionMember = z.infer<typeof SolutionCommissionMemberSchema>;
 
 export const OptimizationConfigurationSchema = OptimizationConfigurationRecapSchema.extend({
   max_duration: z.coerce.number().min(0).default(210),

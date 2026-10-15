@@ -9,7 +9,8 @@ from litestar.datastructures import UploadFile
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from v2.db.models import OptimizationConfiguration, SolverEnum, Degree
+from v2.db.models import OptimizationConfiguration, SolverEnum, Degree, UniversityRole, TimeAvailability
+from v2.db.models.enums import SessionProfessorRelation
 
 
 @dataclass
@@ -70,6 +71,28 @@ class OptimizationLogDTO(BaseModel):
     updated_at: datetime.datetime
 
 
+class CommissionPersonDTO(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    first_name: str
+    surname: str
+    role: UniversityRole
+
+
+class SolutionCommissionMemberDTO(BaseModel):
+    """A professor of a solved commission, as they sat in it when the solution was computed."""
+    model_config = ConfigDict(from_attributes=True)
+
+    professor: CommissionPersonDTO
+    # Null if the session professor was removed after solving
+    session_professor_id: int | None
+    relation: SessionProfessorRelation
+    part: int | None
+    substitute_of: CommissionPersonDTO | None
+    availability: TimeAvailability
+
+
 class SolutionCommissionDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)  # from_attributes is crucial
 
@@ -82,12 +105,15 @@ class SolutionCommissionDTO(BaseModel):
     session_id: int
     opt_config_id: int
 
+    members: list[SolutionCommissionMemberDTO]
+    # Whether the session professors changed after solving
+    outdated: bool
+
     # Use an alias to map from the ORM's attribute name
-    professor_ids: list[int] = Field(..., alias='professors')
     student_ids: list[int] = Field(..., alias='students')
 
     # noinspection PyNestedDecorators
-    @field_validator('professor_ids', 'student_ids', mode='before')
+    @field_validator('student_ids', mode='before')
     @staticmethod
     def convert_objects_to_ids(v: Any) -> list[int]:
         """

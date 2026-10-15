@@ -152,7 +152,7 @@ class OptimizationConfigurationController(Controller):
         """Excel file with the commissions of the solution: one row per student, plus the professors."""
         config = await get_opt_conf_raise(cid, sid, opt_conf_repo, load=[
             selectinload(OptimizationConfiguration.commissions).options(
-                selectinload(SolutionCommission.professors),
+                selectinload(SolutionCommission.members),
                 selectinload(SolutionCommission.students)
             )
         ])
@@ -181,7 +181,7 @@ class OptimizationConfigurationController(Controller):
         await check_gs_exists_raise(grad_session_repository, sid)
         config = await get_opt_conf_raise(cid, sid, opt_conf_repo, load=[
             selectinload(OptimizationConfiguration.commissions).options(
-                selectinload(SolutionCommission.professors),
+                selectinload(SolutionCommission.members),
                 selectinload(SolutionCommission.students)
             )
         ])

@@ -385,7 +385,7 @@ class SessionProfessorController(Controller):
         """
         counted = (
             select(
-                SessionProfessor.professor_id.label("professor_id"),
+                SolutionCommissionProfessor.professor_id.label("professor_id"),
                 sa.func.count(sa.distinct(SolutionCommission.id)).label("commissions"),
                 sa.func.count(sa.distinct(SolutionCommission.session_id)).label("sessions"),
             )
@@ -396,8 +396,7 @@ class SessionProfessorController(Controller):
                 GradSession.archived.is_(True),
                 GradSession.used_configuration_id == SolutionCommission.opt_config_id,
             ))
-            .join(SessionProfessor, SessionProfessor.id == SolutionCommissionProfessor.professor_id)
-            .group_by(SessionProfessor.professor_id)
+            .group_by(SolutionCommissionProfessor.professor_id)
             .subquery()
         )
         rows = (await db_session.execute(

@@ -8,15 +8,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from v2.db.models import OptimizationConfiguration, SessionEntry, SessionProfessor
-from v2.db.models.enums import Degree, SessionProfessorRelation
+from v2.db.models.enums import Degree
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 async def build_solution_xlsx(config: OptimizationConfiguration, db_session: AsyncSession) -> bytes:
     """
-    Builds the commissions export of a solved configuration. `config.commissions` (with professors and students) must
-    be loaded.
+    Builds the commissions export of a solved configuration. `config.commissions` (with members and students) must be
+    loaded.
 
     - sheet "Commissioni": one row per student, grouped by commission;
     - sheet "Docenti": the professors of each commission, with their role.
@@ -36,19 +36,6 @@ async def build_solution_xlsx(config: OptimizationConfiguration, db_session: Asy
     def name(sp_id: int | None) -> str:
         sp = sp_by_id.get(sp_id) if sp_id is not None else None
         return sp.professor.full_name if sp else ""
-
-    def note(sp: SessionProfessor) -> str:
-        """How a split or a substitute relates to the professor it derives from."""
-        parent = sp_by_id.get(sp.derived_from_id) if sp.derived_from_id is not None else None
-        if parent is None:
-            return ""
-        if sp.relation is SessionProfessorRelation.SUBSTITUTE:
-            return f"sostituto di {parent.professor.full_name}"
-        if sp.relation is SessionProfessorRelation.SPLIT:
-            parts = sorted(c.id for c in session_professors
-                           if c.derived_from_id == parent.id and c.relation is SessionProfessorRelation.SPLIT)
-            return f"parte {parts.index(sp.id) + 1}"
-        return ""
 
     student_rows: list[dict] = []
     professor_rows: list[dict] = []
@@ -70,13 +57,14 @@ async def build_solution_xlsx(config: OptimizationConfiguration, db_session: Asy
                 "Controrelatore": name(entry.counter_supervisor_id) if entry else "",
             })
 
-        for sp in sorted(commission.professors, key=lambda p: (p.professor.surname, p.professor.first_name)):
+        # The members are a snapshot of the solution, independent of later changes to the session professors
+        for member in sorted(commission.members, key=lambda m: (m.professor.surname, m.professor.first_name)):
             professor_rows.append({
                 "Commissione": number,
                 "Turno": turn,
-                "Docente": sp.professor.full_name,
-                "Ruolo": sp.professor.role.abbr,
-                "Note": note(sp),
+                "Docente": member.professor.full_name,
+                "Ruolo": member.professor.role.abbr,
+                "Note": member.note,
             })
 
     output = io.BytesIO()

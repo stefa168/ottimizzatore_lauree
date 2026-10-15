@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from optimization.models import create_min_durata_model
+from v2.db.models.solution_commission import SolutionCommissionProfessor
 from v2.db.models import GradSession, OptimizationConfiguration, SolverEnum, OptimizationLog, SolutionCommission, \
     SessionProfessor
 from v2.domain.grad_sessions.deps import GradSessionRepository, OptimizationConfigurationRepository, \
@@ -150,7 +151,7 @@ async def solver_wrapper(
             config.session_id,
             conf_repo,
             load=[selectinload(OptimizationConfiguration.commissions).options(
-                selectinload(SolutionCommission.professors),
+                selectinload(SolutionCommission.members),
                 selectinload(SolutionCommission.students)
             )]
         )
@@ -279,6 +280,8 @@ async def extract_commissions(
     from pyomo.environ import value
     commissions: list[SolutionCommission] = []
     session_id = config.session_id
+    session_professors = list(await session_prof_repo.list(SessionProfessor.session_id == session_id))
+    sp_by_id = {sp.id: sp for sp in session_professors}
 
     for commission_id, commission in enumerate(commission_model):
         new_commission = SolutionCommission(morning=morning, duration=0, student_minutes={})
@@ -287,14 +290,11 @@ async def extract_commissions(
         for _, prof_row in cast(DataFrame, model.docenti).iterrows():
             sp_id = int(prof_row["SP_ID"])
             if value(model.z[sp_id, commission]) > 0.8:
-                session_professor = await session_prof_repo.get_one_or_none(
-                    SessionProfessor.id == sp_id,
-                    SessionProfessor.session_id == session_id
-                )
-
+                session_professor = sp_by_id.get(sp_id)
                 if session_professor is None:
                     raise RuntimeError(f"Missing Session Professor entry for SP_ID={sp_id}")
-                new_commission.professors.append(session_professor)
+                new_commission.members.append(
+                    SolutionCommissionProfessor.snapshot(session_professor, session_professors))
 
         # Students assigned to this commission
         for candidate in cast(Iterable[int], model.Candidati):
