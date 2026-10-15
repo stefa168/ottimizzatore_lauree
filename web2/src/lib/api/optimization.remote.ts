@@ -7,6 +7,7 @@ import {
   type OptimizationConfiguration
 } from "@/schema/optimization";
 import {optimizationTaskStatusFactory} from "@/utils";
+import {getSession, getSessions} from "./sessions.remote";
 
 const id = z.number().int().nonnegative();
 const configRef = z.object({sid: id, cid: id});
@@ -79,4 +80,18 @@ export const setConfigurationFrozen = command(z.object({
 }), async ({sid, cid, frozen}) => {
   await backendFetch(`/sessions/${sid}/configuration/${cid}/${frozen ? 'freeze' : 'unfreeze'}`, {method: 'POST'});
   await Promise.all([getConfiguration({sid, cid}).refresh(), getConfigurations(sid).refresh()]);
+});
+
+/**
+ * Marks the configuration's solution as the one used: it's frozen and the session is archived, so its commissions are
+ * counted for the professors.
+ */
+export const useConfiguration = command(configRef, async ({sid, cid}) => {
+  await backendFetch(`/sessions/${sid}/configuration/${cid}/use`, {method: 'POST'});
+  await Promise.all([
+    getConfiguration({sid, cid}).refresh(),
+    getConfigurations(sid).refresh(),
+    getSession(sid).refresh(),
+    getSessions().refresh(),
+  ]);
 });

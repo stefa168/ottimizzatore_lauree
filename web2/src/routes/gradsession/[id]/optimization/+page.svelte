@@ -5,9 +5,11 @@
   import {initialTableState} from "./columns";
   import type {OptimizationConfigurationRecap} from "@/schema/optimization";
   import {getConfigurations} from "@/api/optimization.remote";
+  import {getSessionData} from "../../SessionData.svelte";
 
   let {params}: PageProps = $props();
   const sessionId = $derived(Number(params.id));
+  const sessionData = getSessionData();
   const configurations = $derived(await getConfigurations(sessionId));
 
   let t: DataTable<OptimizationConfigurationRecap, string> | undefined = $state();
@@ -17,6 +19,6 @@
 <DataTable
     bind:this={t}
     data={configurations}
-    columns={columns(sessionId)}
+    columns={columns(sessionId, () => sessionData.session.used_configuration_id)}
     initialState={initialTableState()}
 />

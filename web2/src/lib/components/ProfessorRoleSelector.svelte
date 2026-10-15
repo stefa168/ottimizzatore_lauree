@@ -23,7 +23,8 @@
 
   const onValueChange = async (v: string) => {
     if (!onUpdateValue) return;
-    await overlay.waitFor(onUpdateValue(v as UniversityRole));
+    // A failure is shown by the overlay (and by the caller, e.g. with a toast)
+    await overlay.waitFor(onUpdateValue(v as UniversityRole)).catch(() => undefined);
   };
 </script>
 

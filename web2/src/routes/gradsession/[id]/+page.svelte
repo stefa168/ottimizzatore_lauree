@@ -10,6 +10,8 @@
   import {Button} from "@/components/ui/button";
   import LucideSnowflake from '~icons/lucide/snowflake'
   import LucideDownload from '~icons/lucide/download'
+  import LucideCircleCheck from '~icons/lucide/circle-check'
+  import {Badge} from "@/components/ui/badge";
   import {dateFormatter} from "@/utils";
 
   let sessionData = getSessionData();
@@ -73,6 +75,9 @@
         <li class="flex items-center justify-between gap-4 px-4 py-2">
           <div>
             <a href={url} class="font-medium hover:underline">{configuration.title}</a>
+            {#if configuration.id === sessionData.session.used_configuration_id}
+              <Badge class="ms-2"><LucideCircleCheck class="size-3"/> Utilizzata</Badge>
+            {/if}
             <p class="text-xs text-muted-foreground">Configurazione creata il {dateFormatter.format(configuration.created_at)}</p>
           </div>
           <Button variant="outline" size="sm" href={`${url}/export`} download data-sveltekit-reload>

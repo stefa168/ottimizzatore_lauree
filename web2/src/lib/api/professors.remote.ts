@@ -3,7 +3,7 @@ import {z} from "zod";
 import {backendFetch, jsonBody} from "$lib/server/backend";
 import {withDates} from "$lib/server/dates";
 import {getSessionProfessors, getSessionStudents} from "./sessions.remote";
-import type {Professor, SessionProfessor} from "@/types";
+import type {Professor, ProfessorOverview, SessionProfessor} from "@/types";
 
 const id = z.number().int().nonnegative();
 const availability = z.enum(['always', 'morning', 'afternoon']);
@@ -76,4 +76,18 @@ export const substituteSessionProfessor = command(z.object({
 export const removeSubstitute = command(z.object({sid: id, spId: id}), async ({sid, spId}) => {
   await backendFetch(`/sessions/${sid}/professors/${spId}/substitute`, {method: 'DELETE'});
   await refreshSession(sid, true);
+});
+
+/** All professors with the commissions they took part in (used configurations of archived sessions + prior ones). */
+export const getProfessorsOverview = query(async () =>
+  backendFetch<ProfessorOverview[]>("/professors/overview"));
+
+/** Updates a professor from the professors list (role, commissions from before this system). */
+export const updateProfessorInfo = command(z.object({
+  id,
+  role: z.enum(['ordinary', 'associate', 'researcher', 'unspecified']).optional(),
+  prior_commissions: z.number().int().min(0).max(1000).optional(),
+}), async (professor) => {
+  await backendFetch("/professors", jsonBody('PATCH', professor));
+  await Promise.all([getProfessorsOverview().refresh(), getProfessors().refresh()]);
 });

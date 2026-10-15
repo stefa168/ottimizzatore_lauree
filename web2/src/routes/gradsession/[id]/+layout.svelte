@@ -12,6 +12,7 @@
   import {page} from '$app/state';
   import {setSessionData} from "../SessionData.svelte";
   import EditableSessionTitle from "./EditableSessionTitle.svelte";
+  import UsedConfigurationNote from "./UsedConfigurationNote.svelte";
   import {getSession, getSessionProfessors, getSessionStudents} from "@/api/sessions.remote";
 
   let {children, params}: LayoutProps = $props();
@@ -67,10 +68,15 @@
 {#if session && students && professors}
 <div class="container mx-auto pb-10">
   {#if session.archived}
-    <div class="mt-4 flex items-center gap-2 rounded-md border px-4 py-2 text-sm text-muted-foreground" role="status">
-      <RadixIconsArchive class="size-4"/>
-      Questa sessione è archiviata. Può essere ripristinata tra le sessioni attive dalla pagina
-      <a href="/archive" class="text-blue-500 hover:underline">Sessioni Archiviate</a>.
+    <div class="mt-4 flex items-start gap-2 rounded-md border px-4 py-2 text-sm text-muted-foreground" role="status">
+      <RadixIconsArchive class="size-4 mt-0.5 shrink-0"/>
+      <div>
+        Questa sessione è archiviata. Può essere ripristinata tra le sessioni attive dalla pagina
+        <a href="/archive" class="text-blue-500 hover:underline">Sessioni Archiviate</a>.
+        {#if session.used_configuration_id !== null}
+          <UsedConfigurationNote sessionId={session.id} configurationId={session.used_configuration_id}/>
+        {/if}
+      </div>
     </div>
   {/if}
   <EditableSessionTitle {sessionData}/>

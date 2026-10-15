@@ -14,7 +14,7 @@ import {toApiError} from "@/errors";
 // Components
 import StyledFullName from "@/components/StyledFullName.svelte";
 import ProfessorBurdenComponent from "./ProfessorBurden.svelte";
-import ProfessorRoleSelector from "./ProfessorRoleSelector.svelte";
+import ProfessorRoleSelector from "@/components/ProfessorRoleSelector.svelte";
 import ProfessorAvailabilitySelector from "./ProfessorAvailabilitySelector.svelte";
 import ProfessorNameCell from "./ProfessorNameCell.svelte";
 import ProfessorRowActions, {type ProfessorAction} from "./ProfessorRowActions.svelte";

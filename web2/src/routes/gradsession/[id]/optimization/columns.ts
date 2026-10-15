@@ -14,7 +14,11 @@ export const initialTableState: () => InitialTableState = () => ({
   }]
 });
 
-export const columns: (session_id: number) => ColumnDef<OptimizationConfigurationRecap>[] = (session_id) => [
+export const columns: (
+  session_id: number,
+  // Read when rendering, so the badge follows the session when it's refreshed
+  usedConfigurationId: () => number | null
+) => ColumnDef<OptimizationConfigurationRecap>[] = (session_id, usedConfigurationId) => [
   {
     accessorKey: "id",
     header: ({column}) => sortableHeader("ID", column)
@@ -22,7 +26,11 @@ export const columns: (session_id: number) => ColumnDef<OptimizationConfiguratio
   {
     accessorKey: 'title',
     header: ({column}) => sortableHeader("Titolo", column),
-    cell: ({row}) => renderComponent(ConfigurationTitle, {title: row.original.title, frozen: row.original.frozen})
+    cell: ({row}) => renderComponent(ConfigurationTitle, {
+      title: row.original.title,
+      frozen: row.original.frozen,
+      used: row.original.id === usedConfigurationId()
+    })
   },
   {
     accessorKey: "created_at",

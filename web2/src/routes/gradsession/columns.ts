@@ -17,7 +17,11 @@ export const columns: ColumnDef<GradSession>[] = [
   }, {
     id: "actions",
     cell: ({row}) => {
-      return renderComponent(DataTableActions, {id: row.original.id, archived: row.original.archived})
+      return renderComponent(DataTableActions, {
+        id: row.original.id,
+        archived: row.original.archived,
+        hasUsedConfiguration: row.original.used_configuration_id !== null
+      })
     }
   }
 ];

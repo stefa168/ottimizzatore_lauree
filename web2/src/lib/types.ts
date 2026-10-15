@@ -17,7 +17,9 @@ export interface CreationUpdateDate {
 export interface GradSession extends CreationUpdateDate {
   id: number,
   title: string,
-  archived: boolean
+  archived: boolean,
+  // Configuration whose solution was used: its commissions count for the professors while the session is archived
+  used_configuration_id: number | null
 }
 
 // Graduation Session Entry
@@ -77,6 +79,18 @@ export interface SessionProfessorSplitPart {
 export interface SessionProfessorSplitConflict {
   substitute_session_professor_ids: number[],
   had_substitutes: boolean
+}
+
+// A professor with the commissions they took part in (see /professors)
+export interface ProfessorOverview extends NameSurname {
+  id: number,
+  role: UniversityRole,
+  // Entered by hand: commissions from before this system
+  prior_commissions: number,
+  // Counted from the configurations used for the archived sessions
+  commissions: number,
+  sessions: number,
+  total: number
 }
 
 export interface ProfessorBurden {

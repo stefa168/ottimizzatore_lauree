@@ -7,7 +7,7 @@ import LucideHash from '~icons/lucide/hash'
 import {sortableHeader} from "@/components/table/utils";
 import DataTableColumnFilterButton from "@/components/DataTableColumnFilterButton.svelte";
 import {DegreeLevels} from "@/const";
-import StudentBonusInput from "./StudentBonusInput.svelte";
+import NumberCellInput from "@/components/NumberCellInput.svelte";
 
 export const initialTableState: () => InitialTableState = () => ({
   sorting: [{
@@ -66,9 +66,13 @@ export const columns: (
     id: "bonus_minutes",
     accessorFn: entry => entry.bonus_minutes,
     header: ({column}) => sortableHeader("Tempo bonus", column),
-    cell: ({row}) => renderComponent(StudentBonusInput, {
+    cell: ({row}) => renderComponent(NumberCellInput, {
       value: row.original.bonus_minutes,
-      onSave: (minutes: number) => onBonusChange(row.original, minutes)
+      onSave: (minutes: number) => onBonusChange(row.original, minutes),
+      label: "Tempo bonus in minuti",
+      max: 120,
+      step: 5,
+      suffix: "min"
     })
   }
 ]

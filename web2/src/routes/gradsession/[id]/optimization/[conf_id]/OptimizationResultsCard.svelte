@@ -5,6 +5,7 @@
   import type {OptimizationConfiguration} from "@/schema/optimization";
   import {
     setConfigurationFrozen,
+    useConfiguration,
     startOptimization as startOptimizationCommand,
     watchConfiguration
   } from "@/api/optimization.remote";
@@ -15,6 +16,7 @@
   import LucideSnowflake from '~icons/lucide/snowflake'
   import LucideDownload from '~icons/lucide/download'
   import LucideLockOpen from '~icons/lucide/lock-open'
+  import LucideCircleCheck from '~icons/lucide/circle-check'
   import LucideLoaderCircle from '~icons/lucide/loader-circle'
   import {toApiError} from "@/errors";
   import type {SessionData} from "../../../SessionData.svelte";
@@ -85,6 +87,24 @@
   let freezing = $state(false);
   const exportUrl = $derived(`/gradsession/${sessionData.session.id}/optimization/${configuration.id}/export`);
 
+  // The used configuration is the one whose commissions count for the professors; using it also archives the session
+  const isUsed = $derived(sessionData.session.used_configuration_id === configuration.id);
+  let useDialogOpen = $state(false);
+  let using = $state(false);
+
+  const markAsUsed = async () => {
+    using = true;
+    try {
+      await useConfiguration({sid: sessionData.session.id, cid: configuration.id});
+      toast.success("Soluzione utilizzata: la sessione è stata archiviata e le sue commissioni sono conteggiate.");
+      useDialogOpen = false;
+    } catch (e) {
+      toast.error("Si è verificato un errore", {description: toApiError(e).detail});
+    } finally {
+      using = false;
+    }
+  };
+
   const toggleFrozen = async () => {
     freezing = true;
     const frozen = !configuration.frozen;
@@ -153,19 +173,28 @@
     </Collapsible.Trigger>
     {#if optStatus.success}
       <div class="flex items-center gap-2">
-        {#if configuration.frozen}
+        {#if isUsed}
+          <Badge title="Per modificarla, ripristinare la sessione dalla pagina Sessioni Archiviate">
+            <LucideCircleCheck class="size-3"/> Utilizzata
+          </Badge>
+        {:else if configuration.frozen}
           <Badge variant="secondary"><LucideSnowflake class="size-3"/> Congelata</Badge>
         {/if}
         <Button variant="outline" size="sm" href={exportUrl} download data-sveltekit-reload>
           <LucideDownload/> Esporta XLS
         </Button>
-        <Button variant={configuration.frozen ? "outline" : "default"} size="sm" onclick={() => freezeDialogOpen = true}>
-          {#if configuration.frozen}
-            <LucideLockOpen/> Sblocca soluzione
-          {:else}
-            <LucideSnowflake/> Congela soluzione
-          {/if}
-        </Button>
+        {#if !isUsed}
+          <Button variant="outline" size="sm" onclick={() => freezeDialogOpen = true}>
+            {#if configuration.frozen}
+              <LucideLockOpen/> Sblocca soluzione
+            {:else}
+              <LucideSnowflake/> Congela soluzione
+            {/if}
+          </Button>
+          <Button size="sm" onclick={() => useDialogOpen = true}>
+            <LucideCircleCheck/> Usa questa soluzione
+          </Button>
+        {/if}
       </div>
     {:else if optStatus.running}
       <div class="flex items-center justify-center">
@@ -325,6 +354,26 @@
       <Button onclick={toggleFrozen} disabled={freezing}>
         {#if freezing}<LucideLoaderCircle class="animate-spin"/>{/if}
         {configuration.frozen ? "Sblocca" : "Congela"}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={useDialogOpen}>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>Usare questa soluzione?</Dialog.Title>
+      <Dialog.Description>
+        La soluzione verrà congelata e indicata come quella utilizzata per la sessione, che verrà archiviata. Da quel
+        momento le sue commissioni verranno conteggiate per i docenti nell'Elenco Docenti. Ripristinando la sessione
+        l'indicazione verrà rimossa e le commissioni non verranno più conteggiate.
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => useDialogOpen = false} disabled={using}>Annulla</Button>
+      <Button onclick={markAsUsed} disabled={using}>
+        {#if using}<LucideLoaderCircle class="animate-spin"/>{/if}
+        Usa e archivia la sessione
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

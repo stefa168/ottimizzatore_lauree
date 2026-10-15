@@ -4,20 +4,36 @@
   // noinspection ES6UnusedImports
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import ButtonGroup from "@/components/ButtonGroup.svelte";
+  // noinspection ES6UnusedImports
+  import * as Dialog from "@/components/ui/dialog";
   import {deleteSession as deleteSessionCommand, setSessionArchived} from "@/api/sessions.remote";
   import {toApiError} from "@/errors";
 
   import LucideLoaderCircle from '~icons/lucide/loader-circle'
   import {toast} from "svelte-sonner";
 
-  let {id, archived = false}: { id: number; archived?: boolean } = $props();
+  let {id, archived = false, hasUsedConfiguration = false}: {
+    id: number;
+    archived?: boolean;
+    hasUsedConfiguration?: boolean
+  } = $props();
+
+  // Restoring a session with a used configuration removes its commissions from the professors' counts: ask first
+  let restoreDialogOpen = $state(false);
+  const onArchiveAction = () => {
+    if (archived && hasUsedConfiguration) restoreDialogOpen = true;
+    else toggleArchived();
+  };
 
   let isDeleting = $state(false);
 
   // The command also refreshes the list of sessions, so the row moves to the other list
   const toggleArchived = async () => {
     await setSessionArchived({sid: id, archived: !archived})
-      .then(() => toast.success(archived ? "La sessione è stata ripristinata tra le sessioni attive." : "La sessione è stata archiviata."))
+      .then(() => {
+        toast.success(archived ? "La sessione è stata ripristinata tra le sessioni attive." : "La sessione è stata archiviata.");
+        restoreDialogOpen = false;
+      })
       .catch((e) => toast.error("Si è verificato un errore durante l'archiviazione della sessione", {
         description: toApiError(e).detail
       }));
@@ -62,7 +78,7 @@
       <DropdownMenu.Content>
         <DropdownMenu.Group>
           <DropdownMenu.Label>Azioni</DropdownMenu.Label>
-          <DropdownMenu.Item onclick={toggleArchived}>{archived ? "Ripristina" : "Archivia"}</DropdownMenu.Item>
+          <DropdownMenu.Item onclick={onArchiveAction}>{archived ? "Ripristina" : "Archivia"}</DropdownMenu.Item>
           <DropdownMenu.Separator/>
           <DropdownMenu.Item
               onclick={deleteSession}
@@ -85,3 +101,19 @@
     <LucideLoaderCircle class="animate-spin"/>
   </Button>
 {/if}
+
+<Dialog.Root bind:open={restoreDialogOpen}>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>Ripristinare la sessione?</Dialog.Title>
+      <Dialog.Description>
+        La sessione tornerà tra quelle attive e non avrà più una soluzione utilizzata: le sue commissioni non verranno
+        più conteggiate nell'Elenco Docenti, finché non verrà di nuovo indicata una soluzione da utilizzare.
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => restoreDialogOpen = false}>Annulla</Button>
+      <Button variant="destructive" onclick={toggleArchived}>Ripristina</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
